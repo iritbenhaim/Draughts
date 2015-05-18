@@ -9,6 +9,8 @@
 #define BLACK_M 'M'
 #define BLACK_K 'K'
 #define EMPTY ' '
+#define BLACK 'B'
+#define WHITE 'W'
 
 #define BOARD_SIZE 10
 
@@ -29,10 +31,12 @@ typedef char** board_t;
 
 typedef struct board_tile board_tile;
 typedef struct game_move game_move;
+typedef struct scoring_board scoring_board;
 
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
+int minimax(scoring_board board, int depth, int maximize);
 
 #endif  

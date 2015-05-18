@@ -15,6 +15,12 @@ struct game_move
 	board_tile data;
 };
 
+struct scoring_board
+{
+	char** board;
+	char player;
+};
+
 
 int main()
 {
@@ -109,6 +115,87 @@ int read_user_input_line(char* input, int* input_size)
 	}
 	input[i] = '\0';
 	return 1;
+}
+
+int minimax(scoring_board board, int depth, int maximize, game_move* best)
+{
+	int tmp_val;
+	int best_val;
+	game_move possible;
+	possible = generate_moves(board);
+	tmp_val = score(board);
+	if (depth == 0 || tmp_val == 100 || tmp_val == -100)
+		return tmp_val;
+	if(maximize)
+	{
+		best_val = INT_MIN;
+		while (possible != NULL)
+		{
+			tmp_val = minimax(do_move(board, possible), depth - 1, 0);
+			if (tmp_val > best_val)
+			{
+				best_val = tmp_val;
+				*best = possible;
+			}
+		}
+		return best_val;
+	}
+	else
+	{
+		best_val = INT_MAX;
+		while (possible != NULL)
+		{
+			tmp_val = minimax(do_move(board, possible), depth - 1, 1);
+			if (tmp_val < best_val)
+			{
+				best_val = tmp_val;
+				*best = possible;
+			}
+		}
+		return best_val;
+	}
+}
+
+/*returns a score for the current board
+  win -> 100
+  lose -> -100
+  */
+int score(scoring_board board)
+{
+	int black = 0;
+	int white = 0;
+	char tile;
+	for (int i = 0; i < 10; i++)
+	{
+		for (int j = 0; i < 10; j++)
+		{
+			tile = board.board[i][j];
+			if (tile == BLACK_K)
+				black += 3;
+			if (tile == BLACK_M)
+				black++;
+			if (tile == WHITE_K)
+				white += 3;
+			if (tile == WHITE_M)
+				white++;
+		}
+	}
+	if (board.player == BLACK)
+	{
+		if (white == 0)
+			return 100;
+		if (black == 0)
+			return -100;
+		return black - white;
+	}
+	else
+	{
+		if (white == 0)
+			return -100;
+		if (black == 0)
+			return 100;
+		return white - black;
+	}
 }
 
 void print_line(){
