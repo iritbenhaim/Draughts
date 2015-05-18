@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -5,8 +7,8 @@
 
 struct board_tile
 {
-	int row;
-	int col;
+	int first_indexer; /*row num?*/
+	int second_indexer; /*col_num?*/
 	char type;
 };
 struct game_move
@@ -15,6 +17,7 @@ struct game_move
 	board_tile data;
 };
 
+
 struct scoring_board
 {
 	char** board;
@@ -22,19 +25,24 @@ struct scoring_board
 };
 
 
+int minmax_depth = 1; /*the debth of minmax algorithm*/
+char* user_color = "white"; /*color of the user player*/
+board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
+
+
 int main()
 {
 	unsigned int input_size = 1024;
-	int m_minmax_debth = 1;
 	char* input = malloc(input_size);
 	if (input == NULL)
 	{
 		perror_message("main");
 		return -1;
 	}
+	init_board(board);
+	print_board(board);
 
 
-	board_tile board[BOARD_SIZE][BOARD_SIZE];
 	print_message(WELCOME_TO_DRAUGHTS);
 	print_message(ENTER_SETTINGS);
 	while (1)
@@ -43,46 +51,97 @@ int main()
 		{
 			return -1; /*no resources were allocated yet*/
 		}
-		if (cmp_input_command(input, "minimax_depth"))
-		{
-
-		}
-		if (cmp_input_command(input, "user_color"))
-		{
-
-		}
-		if (cmp_input_command(input, "clear"))
-		{
-
-		}
-		if (cmp_input_command(input, "rm"))
-		{
-
-		}
-		if (cmp_input_command(input, "set"))
-		{
-
-		}
-		if (cmp_input_command(input, "print"))
-		{
-
-		}
-		if (cmp_input_command(input, "quit"))
-		{
-
-		}
-		if (cmp_input_command(input, "start"))
-		{
-
-		}
+		settings(input);
+		
 		
 	}
 	init_board(board);
 	print_board(board);
 	print_message(WRONG_MINIMAX_DEPTH);
+	free(input);
 	getchar();
 	return 0;
 }
+
+
+void settings(char* input)
+{
+	int temp, i, j;
+	if (0 == cmp_input_command(input, "minimax_depth "))
+	{
+		temp = atoi(input + strlen("minimax_depth "));
+		if (temp < 1 || temp > 6)
+		{
+			print_message(WRONG_MINIMAX_DEPTH)
+		}
+		else
+		{
+			minmax_depth = temp;
+		}
+		return;
+	}
+	if (0 == cmp_input_command(input, "user_color "))
+	{
+		if (0 == cmp_input_command(input + strlen("user_color "), "white"))
+			user_color = "white";
+		else if (0 == cmp_input_command(input + strlen("user_color "), "black"))
+			user_color = "black";
+		return;
+	}
+	if (0 == cmp_input_command(input, "clear"))
+	{
+		for (i = 0; i < BOARD_SIZE; ++i)
+		{
+			for (j = 0; j < BOARD_SIZE; ++j)
+			{
+				board[i][j].type = EMPTY;
+			}
+		}
+		return;
+	}
+	if (0 == cmp_input_command(input, "rm"))
+	{
+		i = strchr(input, '<') - input;
+		j = strchr(input, ',') - input;
+		if (j - i != 2 || input[i + 1] < 'a' || input[i + 1] > 'j')
+		{
+			print_message(WRONG_POSITION);
+			return;
+		}
+		*strchr(input, '>') = '\0';
+		temp = atoi(input + j + 1);
+		if (temp < 1 || temp > 10)
+		{
+			print_message(WRONG_POSITION);
+			return;
+		}
+		board[temp - 1][input[i + 1] - 'a'].type = EMPTY;/*check me!!!*/
+		print_board(board);
+		return;
+
+	}
+	if (0 == cmp_input_command(input, "set"))
+	{
+
+		return;
+	}
+	if (0 == cmp_input_command(input, "print"))
+	{
+		return;
+
+	}
+	if (0 == cmp_input_command(input, "quit"))
+	{
+
+		return;
+	}
+	if (0 == cmp_input_command(input, "start"))
+	{
+
+		return;
+	}
+}
+
 
 /*return 0 if input ==  command*/
 int cmp_input_command(char* input, char* cmd)
@@ -98,9 +157,17 @@ int read_user_input_line(char* input, int* input_size)
 {
 	int i = 0;
 	char c = ' ';
-	while (c != '\n') /*read string from user. the string length can be varied*/
+	int ch;
+	while (c != '\0') /*read string from user. the string length can be varied*/
 	{
-		c = getchar();
+		ch = getchar();
+		if (ch == EOF)
+		{
+			free(input);
+			perror_message("main");
+			return -1;
+		}
+		c = ch;
 		if (i >= *input_size-1)
 		{
 			*input_size *= 2;
@@ -111,9 +178,10 @@ int read_user_input_line(char* input, int* input_size)
 				return -1;
 			}
 		}
+		if (c == '\n')
+			c = '\0';
 		input[i++] = c;
 	}
-	input[i] = '\0';
 	return 1;
 }
 
@@ -233,6 +301,8 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 	int i,j;
 	for (i = 0; i < BOARD_SIZE; i++){
 		for (j = 0; j < BOARD_SIZE; j++){
+			board[i][j].first_indexer = i;
+			board[i][j].second_indexer = j;
 			if ((i + j) % 2 == 0){
 				if (j <= 3){
 					board[i][j].type = WHITE_M;

@@ -38,5 +38,6 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
 int minimax(scoring_board board, int depth, int maximize);
+void settings(char* input);
 
 #endif  
