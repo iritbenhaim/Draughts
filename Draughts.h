@@ -32,12 +32,16 @@ typedef char** board_t;
 typedef struct board_tile board_tile;
 typedef struct game_move game_move;
 typedef struct scoring_board scoring_board;
+typedef struct node node;
 
+int is_board_init_legal();
+char get_tool_type(char* color, char type);
+int get_board_position(char* input, int* i, int* j);
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
 int minimax(scoring_board board, int depth, int maximize);
-void settings(char* input);
+int settings(char* input);
 
 #endif  

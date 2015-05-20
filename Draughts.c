@@ -1,4 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
+#define DEBUG 1
 
 #include <string.h>
 #include <stdlib.h>
@@ -11,12 +12,19 @@ struct board_tile
 	int second_indexer; /*col_num?*/
 	char type;
 };
-struct game_move
+
+struct node
 {
-	game_move* next;
-	board_tile data;
+	void* data;
+	node* next;
 };
 
+struct game_move
+{
+	board_tile start;
+	int jumps_len;
+	node jumps;
+};
 
 struct scoring_board
 {
@@ -24,11 +32,10 @@ struct scoring_board
 	char player;
 };
 
-
 int minmax_depth = 1; /*the debth of minmax algorithm*/
 char* user_color = "white"; /*color of the user player*/
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
-
+int should_terminate = 0;
 
 int main()
 {
@@ -40,7 +47,8 @@ int main()
 		return -1;
 	}
 	init_board(board);
-	print_board(board);
+	if (DEBUG)
+		print_board(board);
 
 
 	print_message(WELCOME_TO_DRAUGHTS);
@@ -51,22 +59,31 @@ int main()
 		{
 			return -1; /*no resources were allocated yet*/
 		}
-		settings(input);
-		
-		
+		if (settings(input))
+			break;
+		if (should_terminate)
+		{
+			free(input);
+			return;
+		}
 	}
-	init_board(board);
-	print_board(board);
+	while (1)
+	{/*game play*/
+
+	}
 	print_message(WRONG_MINIMAX_DEPTH);
 	free(input);
-	getchar();
+	if (DEBUG)
+		getchar();
 	return 0;
 }
 
-
-void settings(char* input)
+/*runs the game settings phase of the game on a given command.
+returns 1 if game start command was sent. else returns 0*/
+int settings(char* input)
 {
 	int temp, i, j;
+	char* input_copy;
 	if (0 == cmp_input_command(input, "minimax_depth "))
 	{
 		temp = atoi(input + strlen("minimax_depth "));
@@ -78,15 +95,18 @@ void settings(char* input)
 		{
 			minmax_depth = temp;
 		}
-		return;
+		return 0;
 	}
 	if (0 == cmp_input_command(input, "user_color "))
 	{
-		if (0 == cmp_input_command(input + strlen("user_color "), "white"))
+		input += strlen("user_color ");
+		while (input[0] == ' ')
+			++input;
+		if (0 == cmp_input_command(input, "white"))
 			user_color = "white";
-		else if (0 == cmp_input_command(input + strlen("user_color "), "black"))
+		else if (0 == cmp_input_command(input, "black"))
 			user_color = "black";
-		return;
+		return 0;
 	}
 	if (0 == cmp_input_command(input, "clear"))
 	{
@@ -97,51 +117,126 @@ void settings(char* input)
 				board[i][j].type = EMPTY;
 			}
 		}
-		return;
+		return 0;
 	}
 	if (0 == cmp_input_command(input, "rm"))
 	{
-		i = strchr(input, '<') - input;
-		j = strchr(input, ',') - input;
-		if (j - i != 2 || input[i + 1] < 'a' || input[i + 1] > 'j')
-		{
-			print_message(WRONG_POSITION);
-			return;
-		}
-		*strchr(input, '>') = '\0';
-		temp = atoi(input + j + 1);
-		if (temp < 1 || temp > 10)
-		{
-			print_message(WRONG_POSITION);
-			return;
-		}
-		board[temp - 1][input[i + 1] - 'a'].type = EMPTY;/*check me!!!*/
-		print_board(board);
-		return;
+		get_board_position(input, &i, &j);
+		board[i][j].type = EMPTY;
+		return 0;
 
 	}
 	if (0 == cmp_input_command(input, "set"))
 	{
-
-		return;
+		char* color;
+		char type;
+		input_copy = strchr(input, '>') + 2;
+		get_board_position(input, &i, &j);
+		while (input_copy[0] == ' ')
+			++input_copy;
+		if (0 == cmp_input_command(input_copy, "white"))
+			color = "white";
+		else if (0 == cmp_input_command(input_copy, "black"))
+			color = "black";
+		else
+			return 0;
+		input_copy += 5;
+		while (input_copy[0] == ' ')
+			++input_copy;
+		type = input_copy[0];
+		board[i][j].type = get_tool_type(color, type);
+		return 0; 
 	}
 	if (0 == cmp_input_command(input, "print"))
 	{
-		return;
+		print_board(board);
+		return 0;
 
 	}
 	if (0 == cmp_input_command(input, "quit"))
 	{
-
-		return;
+		should_terminate = 1;
+		return 0;
 	}
 	if (0 == cmp_input_command(input, "start"))
 	{
-
-		return;
+		if (!is_board_init_legal())
+		{
+			print_message(WROND_BOARD_INITIALIZATION);
+			return 0;
+		}
+		return 1;
 	}
+	return 0;
 }
 
+/*returns 0 if the board is empty or if there are discs of only one color
+or if there are more than 20 discs of the same color
+else returns 1*/
+int is_board_init_legal()
+{
+	int count_black = 0;
+	int count_white = 0;
+	int i, j;
+	for (i = 0; i < BOARD_SIZE; i++)
+	{
+		for (j = 0; j < BOARD_SIZE; j++)
+		{
+			if (board[i][j].type == BLACK_K || board[i][j].type == BLACK_M)
+				++count_black;
+			else if (board[i][j].type == WHITE_K || board[i][j].type == WHITE_M)
+				++count_white;
+		}
+	}
+	if (!count_black || !count_white || count_black > 20 || count_white > 20)
+		return 0;
+	return 1;
+}
+
+
+/*returns the char used on board to represent the given type and color of tool*/
+char get_tool_type(char* color, char type)
+{
+	if (color[0] == 'w')
+	{
+		if (type == 'm')
+		{
+			return WHITE_M;
+		}
+		return WHITE_K;
+	}
+	if (type == 'm')
+	{
+		return BLACK_M;
+	}
+	return BLACK_K;
+}
+
+/*gets a string containing <x,y> - a board position.
+fills i and j - the indieces pointed by x, y
+returns 0 if the position is outside the range. else 1*/
+int get_board_position(char* input, int* i, int* j)
+{
+	int temp;
+	int start = strchr(input, '<') - input;
+	int end = strchr(input, ',') - input;
+	if (end - start != 2 || input[start + 1] < 'a' || input[start + 1] > 'j')
+	{
+		print_message(WRONG_POSITION);
+		return 0;
+	}
+	*strchr(input, '>') = '\0';
+	temp = atoi(input + end + 1);
+	if (temp < 1 || temp > 10)
+	{
+		print_message(WRONG_POSITION);
+		return 0;
+	}
+	*j = temp - 1;
+	*i = input[start + 1] - 'a';
+	return 1;
+
+}
 
 /*return 0 if input ==  command*/
 int cmp_input_command(char* input, char* cmd)
@@ -184,7 +279,7 @@ int read_user_input_line(char* input, int* input_size)
 	}
 	return 1;
 }
-
+/*
 int minimax(scoring_board board, int depth, int maximize, game_move* best)
 {
 	int tmp_val;
@@ -223,7 +318,7 @@ int minimax(scoring_board board, int depth, int maximize, game_move* best)
 		return best_val;
 	}
 }
-
+*/
 /*returns a score for the current board
   win -> 100
   lose -> -100
