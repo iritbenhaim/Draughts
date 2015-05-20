@@ -23,7 +23,7 @@ struct game_move
 {
 	board_tile start;
 	int jumps_len;
-	node jumps;
+	node* jumps;
 };
 
 struct scoring_board
@@ -178,13 +178,15 @@ int is_board_init_legal()
 	int count_black = 0;
 	int count_white = 0;
 	int i, j;
+	char color;
 	for (i = 0; i < BOARD_SIZE; i++)
 	{
 		for (j = 0; j < BOARD_SIZE; j++)
 		{
-			if (board[i][j].type == BLACK_K || board[i][j].type == BLACK_M)
+			color = get_tile_color(board[i][j]);
+			if (color == BLACK)
 				++count_black;
-			else if (board[i][j].type == WHITE_K || board[i][j].type == WHITE_M)
+			else if (color == WHITE)
 				++count_white;
 		}
 	}
@@ -319,6 +321,126 @@ int minimax(scoring_board board, int depth, int maximize, game_move* best)
 	}
 }
 */
+
+game_move generate_moves(board_tile** board)
+{
+	int i, j;
+	node* best_moves = NULL;
+	node* temp_moves = NULL;
+	game_move chosen_move;
+	int temp_num_eats, num_eats = 0;
+	char type, color;
+	for (i = 0; i < BOARD_SIZE; ++i)
+	{
+		for (j = 0; j < BOARD_SIZE; j++)
+		{
+			type = get_tile_type(board[i][j]);
+			color = get_tile_color(board[i][j]);
+			if (type == KING)
+			{
+				temp_moves = generate_king_moves(board[i][j], color);
+			}
+			else if (type == MAN)
+			{
+				temp_moves = generate_man_moves(board[i][j], color);
+			}
+			else
+				continue;
+			temp_num_eats = ((game_move*)temp_moves->data)->jumps_len;
+			if (temp_num_eats < num_eats)
+			{ /*new move doesn't have enough eats*/
+				free_moves(temp_moves);
+			}
+			else if (temp_num_eats > num_eats)
+			{ /*old move doesn't have enough eats replace it*/
+				free_moves(best_moves);
+				num_eats = temp_num_eats;
+				best_moves = temp_moves;
+			}
+			else
+			{ /*join lists*/
+				(get_last(best_moves))->next = temp_moves;
+			}
+		}
+	}
+	chosen_move = *((game_move*)best_moves->data);
+	free_moves(best_moves);
+	return chosen_move;
+}
+
+node* generate_man_moves(board_tile tile, char color)
+{
+	return NULL;
+}
+
+node* generate_king_moves(board_tile tile, char color)
+{
+	return NULL;
+}
+node* get_last(node* list)
+{
+	while (list->next != NULL)
+	{
+		list = list->next;
+	}
+	return list;
+}
+
+void free_moves(node* list)
+{
+	if (list == NULL)
+		return;
+	node* prev = list;
+	while (list->next != NULL)
+	{
+		list = list->next;
+		free_list(((game_move*)prev->data)->jumps);
+		free(prev);
+		prev = list;
+	}
+	free_list(((game_move*)prev->data)->jumps->next);
+	free(prev);
+}
+
+void free_list(node* list)
+{
+	if (list == NULL)
+		return;
+	node* prev = list;
+	while (list->next != NULL)
+	{
+		list = list->next;
+		free(prev);
+		prev = list;
+	}
+	free(prev);
+}
+
+char get_tile_color(board_tile b)
+{
+	if (b.type == WHITE_K || b.type == WHITE_M)
+		return WHITE;
+	if (b.type == BLACK_K || b.type == BLACK_M)
+		return BLACK;
+	if (b.type == EMPTY)
+		return EMPTY;
+	return 0;
+}
+
+char get_tile_type(board_tile b)
+{
+	if (b.type == WHITE_K || b.type == BLACK_K)
+		return KING;
+	if (b.type == WHITE_M || b.type == BLACK_M)
+		return MAN;
+	if (b.type == EMPTY)
+		return EMPTY;
+	return 0;
+}
+
+
+
+
 /*returns a score for the current board
   win -> 100
   lose -> -100

@@ -11,6 +11,8 @@
 #define EMPTY ' '
 #define BLACK 'B'
 #define WHITE 'W'
+#define KING 'k'
+#define MAN 'm'
 
 #define BOARD_SIZE 10
 
@@ -34,6 +36,14 @@ typedef struct game_move game_move;
 typedef struct scoring_board scoring_board;
 typedef struct node node;
 
+node* generate_man_moves(board_tile tile, char color);
+node* generate_king_moves(board_tile tile, char color);
+void free_moves(node* list);
+void free_list(node* list);
+node* get_last(node* list);
+char get_tile_color(board_tile b);
+char get_tile_type(board_tile b);
+game_move generate_moves(board_tile** board);
 int is_board_init_legal();
 char get_tool_type(char* color, char type);
 int get_board_position(char* input, int* i, int* j);
