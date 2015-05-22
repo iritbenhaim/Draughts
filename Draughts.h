@@ -1,7 +1,7 @@
 #ifndef DRAUGHTS_
 #define DRAUGHTS_
 
-#include<stdio.h>
+#include <stdio.h>
 
 
 #define WHITE_M 'm'
@@ -35,15 +35,17 @@ typedef struct board_tile board_tile;
 typedef struct game_move game_move;
 typedef struct scoring_board scoring_board;
 typedef struct node node;
+typedef struct linked_list linked_list;
 
-node* generate_man_moves(board_tile tile, char color);
-node* generate_king_moves(board_tile tile, char color);
-void free_moves(node* list);
-void free_list(node* list);
-node* get_last(node* list);
+void generate_man_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats);
+void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats);
+linked_list new_list();
+void free_moves(linked_list list);
+void free_list(linked_list list);
+void list_add(linked_list list, void* data);
 char get_tile_color(board_tile b);
 char get_tile_type(board_tile b);
-game_move generate_moves(board_tile** board);
+game_move generate_moves(board_tile** board, char cur_player_color);
 int is_board_init_legal();
 char get_tool_type(char* color, char type);
 int get_board_position(char* input, int* i, int* j);

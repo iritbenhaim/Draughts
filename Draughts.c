@@ -19,11 +19,18 @@ struct node
 	node* next;
 };
 
+/*linked list*/
+struct linked_list
+{
+	node* first;
+	node* last;
+	int len;
+};
+
 struct game_move
 {
 	board_tile start;
-	int jumps_len;
-	node* jumps;
+	linked_list jumps;
 };
 
 struct scoring_board
@@ -288,6 +295,8 @@ int minimax(scoring_board board, int depth, int maximize, game_move* best)
 	int best_val;
 	game_move possible;
 	possible = generate_moves(board);
+	if (should_terminate)
+	{//DO STUFF!}
 	tmp_val = score(board);
 	if (depth == 0 || tmp_val == 100 || tmp_val == -100)
 		return tmp_val;
@@ -322,98 +331,79 @@ int minimax(scoring_board board, int depth, int maximize, game_move* best)
 }
 */
 
-game_move generate_moves(board_tile** board)
+/*cur_player_color - the color of the current player*/
+game_move generate_moves(board_tile** board, char cur_player_color)
 {
 	int i, j;
-	node* best_moves = NULL;
-	node* temp_moves = NULL;
+	linked_list best_moves;
 	game_move chosen_move;
-	int temp_num_eats, num_eats = 0;
-	char type, color;
+	int num_eats = 0;
+	char type;
+
+	chosen_move.jumps.first = NULL;
+	best_moves = new_list();
+	if (should_terminate)
+		return chosen_move;
 	for (i = 0; i < BOARD_SIZE; ++i)
 	{
 		for (j = 0; j < BOARD_SIZE; j++)
 		{
+			if (cur_player_color != get_tile_color(board[i][j]));
+				continue;
 			type = get_tile_type(board[i][j]);
-			color = get_tile_color(board[i][j]);
 			if (type == KING)
 			{
-				temp_moves = generate_king_moves(board[i][j], color);
+				generate_king_moves(board[i][j], cur_player_color, &best_moves, &num_eats);
 			}
 			else if (type == MAN)
 			{
-				temp_moves = generate_man_moves(board[i][j], color);
+				generate_man_moves(board[i][j], cur_player_color, &best_moves, &num_eats);
+				if (should_terminate)
+					break;
 			}
 			else
 				continue;
-			temp_num_eats = ((game_move*)temp_moves->data)->jumps_len;
-			if (temp_num_eats < num_eats)
-			{ /*new move doesn't have enough eats*/
-				free_moves(temp_moves);
-			}
-			else if (temp_num_eats > num_eats)
-			{ /*old move doesn't have enough eats replace it*/
-				free_moves(best_moves);
-				num_eats = temp_num_eats;
-				best_moves = temp_moves;
-			}
-			else
-			{ /*join lists*/
-				(get_last(best_moves))->next = temp_moves;
-			}
 		}
 	}
-	chosen_move = *((game_move*)best_moves->data);
+	chosen_move = *((game_move*)best_moves.first);
 	free_moves(best_moves);
 	return chosen_move;
 }
 
-node* generate_man_moves(board_tile tile, char color)
+/*tile, the tile in which the man is at*/
+void generate_man_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
-	return NULL;
-}
-
-node* generate_king_moves(board_tile tile, char color)
-{
-	return NULL;
-}
-node* get_last(node* list)
-{
-	while (list->next != NULL)
+	int direction = color == 'w' ? 1 : -1; //black goes downwards.
+	int i;
+	int max_eats = 0;
+	board_tile* next_tile = malloc(sizeof(board_tile));
+	if (next_tile == NULL)
 	{
-		list = list->next;
-	}
-	return list;
-}
-
-void free_moves(node* list)
-{
-	if (list == NULL)
+		should_terminate = 1;
 		return;
-	node* prev = list;
-	while (list->next != NULL)
-	{
-		list = list->next;
-		free_list(((game_move*)prev->data)->jumps);
-		free(prev);
-		prev = list;
 	}
-	free_list(((game_move*)prev->data)->jumps->next);
-	free(prev);
+	game_move* cur_move = malloc(sizeof(game_move));
+	if (NULL == cur_move)
+	{
+		should_terminate = 1;
+		free(next_tile);
+		return;
+	}
+	for (i = 1; i > -2; i-=2) /*when i=1, move right. when i=0 move left*/
+	{
+		char c = get_tile_color(tile.first_indexer + i, tile.second_indexer + direction);
+		if (0 == max_eats && c == EMPTY)/*check me!!!!!!!!!*/
+		{
+			list_add(*best_moves, &board[tile.first_indexer + i][tile.second_indexer + direction])
+		}
+		else if ((c == BLACK && color == WHITE) || (c==WHITE && color == BLACK)
+
+	}
 }
 
-void free_list(node* list)
+void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
-	if (list == NULL)
-		return;
-	node* prev = list;
-	while (list->next != NULL)
-	{
-		list = list->next;
-		free(prev);
-		prev = list;
-	}
-	free(prev);
+	
 }
 
 char get_tile_color(board_tile b)
@@ -538,3 +528,62 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 	}
 }
 
+
+linked_list new_list()
+{
+	linked_list l;
+	l.first = malloc(sizeof(node));
+	if (l.first == NULL)
+	{
+		should_terminate = 1;
+		return l;
+	}
+	l.last = l.first;
+	l.first->next = NULL;
+	l.first->data = NULL;
+	l.len = 0;
+	return l;
+}
+
+void free_moves(linked_list list)
+{
+	node* cur = list.first;
+	node* prev = list.first;
+	while (cur->next != NULL)
+	{
+		cur = cur->next;
+		free_list(((game_move*)prev->data)->jumps);
+		free(prev->data);
+		free(prev);
+		prev = cur;
+	}
+	free(prev);
+}
+
+/*does not free the data!*/
+void free_list(linked_list list)
+{
+	node* cur = list.first;
+	node* prev = list.first;
+	while (cur->next != NULL)
+	{
+		cur = cur->next;
+		free(prev);
+		prev = cur;
+	}
+	free(prev);
+}
+
+void list_add(linked_list list, void* data)
+{
+	list.last->next = malloc(sizeof(node));
+	if (NULL == list.last->next)
+	{
+		should_terminate = 1;
+		return;
+	}
+	list.last = list.last->next;
+	(list.last)->data = data;
+	(list.last)->next = NULL;
+	list.len++;
+}
