@@ -371,6 +371,7 @@ game_move generate_moves(board_tile** board, char cur_player_color)
 }
 
 /*tile, the tile in which the man is at*/
+/* ^ grammar level: noob */
 void generate_man_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
 	int direction = color == 'w' ? 1 : -1; //black goes downwards.
@@ -391,19 +392,72 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 	}
 	for (i = 1; i > -2; i-=2) /*when i=1, move right. when i=0 move left*/
 	{
-		char c = get_tile_color(tile.first_indexer + i, tile.second_indexer + direction);
+		char c = get_tile_color(board[tile.first_indexer + i][tile.second_indexer + direction]);
 		if (0 == max_eats && c == EMPTY)/*check me!!!!!!!!!*/
 		{
-			list_add(*best_moves, &board[tile.first_indexer + i][tile.second_indexer + direction])
+			list_add(*best_moves, &board[tile.first_indexer + i][tile.second_indexer + direction]);
 		}
-		else if ((c == BLACK && color == WHITE) || (c==WHITE && color == BLACK)
+		else if ((c == BLACK && color == WHITE) || (c==WHITE && color == BLACK))
 
 	}
 }
 
 void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
-	
+
+}
+
+/*
+performs a whole move with all steps
+removes all opponent pawns eaten
+*/
+void do_move(board_tile** board, game_move move)
+{
+	board_tile current = move.start;
+	node* next_move = move.jumps.first;
+	board_tile next = *((board_tile*)next_move->data);
+
+	for (int i = 0; i < move.jumps.len; i++)
+	{
+		do_part_move(board, current, next);
+		current = next;
+		next_move = next_move->next;
+		next = *((board_tile*)next_move->data);
+	}
+}
+
+/*
+performs a single step within a move
+removes opponent pawn(if exists) and moves current pawn
+*/
+void do_part_move(board_tile** board, board_tile start, board_tile end)
+{
+	int start_c, start_r, end_c, end_r;
+	char pawn = board[start.first_indexer][start.second_indexer].type;
+	if (start.first_indexer < end.first_indexer)
+	{
+		start_r = start.first_indexer;
+		end_r = end.first_indexer;
+	}
+	else
+	{
+		start_r = end.first_indexer;
+		end_r = start.first_indexer;
+	}
+	if (start.second_indexer < end.second_indexer)
+	{
+		start_c = start.second_indexer;
+		end_c = end.second_indexer;
+	}
+	else
+	{
+		start_c = end.second_indexer;
+		end_c = start.second_indexer;
+	}
+	for (; start_r < end_r; start_r++)
+		for (; start_c < end_c; start_c++)
+			board[start_r][start_c].type = EMPTY;
+	board[end_r][end_c].type = pawn;
 }
 
 char get_tile_color(board_tile b)

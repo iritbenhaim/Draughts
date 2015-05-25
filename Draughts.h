@@ -55,5 +55,7 @@ int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
 int minimax(scoring_board board, int depth, int maximize);
 int settings(char* input);
+void do_part_move(board_tile** board, board_tile start, board_tile end);
+void do_move(board_tile** board, game_move move);
 
 #endif  
