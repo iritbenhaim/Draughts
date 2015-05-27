@@ -389,14 +389,24 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 		free(next_tile);
 		return;
 	}
+	cur_move->jumps = new_list();
+	if (should_terminate)
+	{
+		free(next_tile);
+		free(cur_move);
+		return;
+	}
 	for (i = 1; i > -2; i-=2) /*when i=1, move right. when i=0 move left*/
 	{
-		char c = get_tile_color(tile.first_indexer + i, tile.second_indexer + direction);
+		char c = get_tile_color(board[(tile.first_indexer) + i][tile.second_indexer + direction]);
 		if (0 == max_eats && c == EMPTY)/*check me!!!!!!!!!*/
 		{
-			list_add(*best_moves, &board[tile.first_indexer + i][tile.second_indexer + direction])
+			list_add(cur_move->jumps, &board[tile.first_indexer + i][tile.second_indexer + direction]);
 		}
-		else if ((c == BLACK && color == WHITE) || (c==WHITE && color == BLACK)
+		else if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))
+		{
+
+		}
 
 	}
 }
