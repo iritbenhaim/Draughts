@@ -74,16 +74,44 @@ int main()
 			return;
 		}
 	}
+	int is_user_turn = user_color == "white";
 	while (1)
 	{/*game play*/
+		while (is_user_turn)
+		{
+			print_message(ENTER_YOUR_MOVE);
+			if (read_user_input_line(input, &input_size) == -1)
+			{
+				return -1; /*no resources were allocated yet*/
+			}
+			if (user_move(input))
+				break;
+			if (should_terminate)
+			{
+				free(input);
+				return;
+			}
+			is_user_turn = 0;
+		}
+		/*computer turn*/
+		{ 
+		}
 
 	}
-	print_message(WRONG_MINIMAX_DEPTH);
 	free(input);
 	if (DEBUG)
+	{
 		getchar();
+		print_message(WRONG_MINIMAX_DEPTH);
+	}
 	return 0;
 }
+
+int user_move(char* input)
+{
+	return 0;
+}
+
 
 /*runs the game settings phase of the game on a given command.
 returns 1 if game start command was sent. else returns 0*/
@@ -374,43 +402,188 @@ game_move generate_moves(board_tile** board, char cur_player_color)
 void generate_man_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
 	int direction = color == 'w' ? 1 : -1; //black goes downwards.
-	int i;
-	int max_eats = 0;
-	board_tile* next_tile = malloc(sizeof(board_tile));
-	if (next_tile == NULL)
-	{
-		should_terminate = 1;
-		return;
-	}
 	game_move* cur_move = malloc(sizeof(game_move));
-	if (NULL == cur_move)
+	if (cur_move == NULL)
 	{
 		should_terminate = 1;
-		free(next_tile);
 		return;
 	}
 	cur_move->jumps = new_list();
 	if (should_terminate)
 	{
-		free(next_tile);
 		free(cur_move);
 		return;
 	}
-	for (i = 1; i > -2; i-=2) /*when i=1, move right. when i=0 move left*/
+
+	generate_eater_moves(tile, color, best_moves, num_eats, cur_move);
+	if (should_terminate)
 	{
-		char c = get_tile_color(board[(tile.first_indexer) + i][tile.second_indexer + direction]);
-		if (0 == max_eats && c == EMPTY)/*check me!!!!!!!!!*/
+		free_list(cur_move->jumps);
+		free(cur_move);
+		return;
+	}
+	if (0 == *num_eats) /*no eats yet*/
+	{
+		for (int i = 1; i > -2; i -= 2) /*when i=1, move right. when i=0 move left*/
 		{
-			list_add(cur_move->jumps, &board[tile.first_indexer + i][tile.second_indexer + direction]);
+			if (out_of_boarders((tile.first_indexer) + i, tile.second_indexer + direction))
+				continue;
+			board_tile* next = &board[(tile.first_indexer) + i][tile.second_indexer + direction];
+			char c = get_tile_color(*next);
+			if (next->type == EMPTY)
+			{
+				/*add the move to the best moves list*/
+				list_add(cur_move->jumps, next);
+				if (should_terminate)
+				{
+					free_list(cur_move->jumps);
+					free(cur_move);
+					return;
+				}
+				list_add(*best_moves, cur_move);
+				if (should_terminate)
+				{
+					free_list(cur_move->jumps);
+					free(cur_move);
+					return;
+				}
+				/*malloc the next move*/
+				cur_move = malloc(sizeof(game_move));
+				if (cur_move == NULL)
+				{
+					should_terminate = 1;
+					return;
+				}
+				cur_move->jumps = new_list();
+				if (should_terminate)
+				{
+					free(cur_move);
+					return;
+				}
+				continue;
+			}
 		}
-		else if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))
+	}
+	free_list(cur_move->jumps);
+	free(cur_move);
+}
+
+void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats, game_move* cur_move)
+{
+	int ud_direction = color == 'w' ? 1 : -1; //black goes downwards.
+	int used_cur_move = 0;
+	int old_eats = *num_eats;
+	for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
+	{
+		for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
 		{
+			if (out_of_boarders((tile.first_indexer) + lr_direction * 2, tile.second_indexer + ud_direction * 2))
+				continue;
+			board_tile* next = &board[(tile.first_indexer) + lr_direction][tile.second_indexer + ud_direction];
+			char c = get_tile_color(*next);
+			if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))/*the next tile belongs to the oponnents*/
+			{
+				game_move* cur_move_copy = copy_move(cur_move);
+				if (should_terminate)
+				{
+					free_list(cur_move->jumps);
+					free(cur_move);
+					return;
+				}
 
+				board_tile* next = &board[(tile.first_indexer) + lr_direction * 2][tile.second_indexer + ud_direction * 2];
+				/*add cur eat to move*/
+				list_add(cur_move_copy->jumps, next);
+				if (should_terminate)
+				{
+					free_list(cur_move->jumps);
+					free(cur_move);
+					free_list(cur_move_copy->jumps);
+					free(cur_move_copy);
+					return;
+				}
+				generate_eater_moves(tile, color, best_moves, num_eats, cur_move_copy);
+				if (should_terminate)
+				{
+					free_list(cur_move->jumps);
+					free(cur_move);
+					free_list(cur_move_copy->jumps);
+					free(cur_move_copy);
+					return;
+				}
+			}
 		}
-
+	}
+	if (*num_eats == old_eats && old_eats > 0)
+	{
+		if (cur_move->jumps.len == *num_eats)
+		{
+			/*add the current move to the best moves list*/
+			list_add(*best_moves, cur_move);
+			if (should_terminate)
+			{
+				free_list(cur_move->jumps);
+				free(cur_move);
+				return;
+			}
+		}
+		else if (cur_move->jumps.len > *num_eats)
+		{
+			free_moves(*best_moves);
+			*best_moves = new_list();
+			if (should_terminate)
+			{
+				free_list(cur_move->jumps);
+				free(cur_move);
+				return;
+			}
+			/*add the current move to the best moves list*/
+			list_add(*best_moves, cur_move);
+			if (should_terminate)
+			{
+				free_list(cur_move->jumps);
+				free(cur_move);
+				return;
+			}
+		}
+	}
+	else
+	{
+		free_list(cur_move->jumps);
+		free(cur_move);
 	}
 }
 
+game_move* copy_move(game_move* cur_move)
+{
+	game_move* copy = malloc(sizeof(game_move));
+	if (copy == NULL)
+	{
+		should_terminate = 1;
+		return NULL;
+	}
+	copy->start = cur_move->start;
+	copy->jumps.len = cur_move->jumps.len;
+	node* cur = cur_move->jumps.first;
+	while (cur != NULL)
+	{
+		list_add(copy->jumps, cur->data);
+		if (should_terminate)
+		{
+			free_list(copy->jumps);
+			free(copy);
+			return NULL;
+		}
+		cur = cur->next;
+	}
+	return copy;
+}
+
+/*checks if given indices out of counds of board*/
+int out_of_boarders(int first_indexer, int second_indexer)
+{
+	return (first_indexer < 0 || first_indexer > BOARD_SIZE || second_indexer < 0 || second_indexer > BOARD_SIZE);
+}
 void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
 
@@ -608,6 +781,7 @@ linked_list new_list()
 	return l;
 }
 
+/*gets a list of game moves, and frees it*/
 void free_moves(linked_list list)
 {
 	node* cur = list.first;

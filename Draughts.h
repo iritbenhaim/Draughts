@@ -27,8 +27,8 @@ typedef char** board_t;
 #define WROND_BOARD_INITIALIZATION "Wrong board initialization\n"
  
 #define ENTER_YOUR_MOVE "Enter your move:\n" 
- 
-#define perror_message(func_name) (printf("Error: standard function %s has failed", func_name))
+
+#define perror_message(func_name) (fprintf(stderr, "Error: standard function %s has failed\n", func_name))
 #define print_message(message) (printf("%s", message));
 
 typedef struct board_tile board_tile;
@@ -37,8 +37,11 @@ typedef struct scoring_board scoring_board;
 typedef struct node node;
 typedef struct linked_list linked_list;
 
+game_move* copy_move(game_move* cur_move);
+int out_of_boarders(int first_indexer, int second_indexer);
 void generate_man_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats);
 void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats);
+void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats, game_move* cur_move);
 linked_list new_list();
 void free_moves(linked_list list);
 void free_list(linked_list list);
@@ -53,8 +56,9 @@ void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
-int minimax(scoring_board board, int depth, int maximize);
+int minimax(scoring_board board, int depth, int maximize, game_move* best);
 int settings(char* input);
+int user_move(char* input);
 void do_part_move(board_tile** board, board_tile start, board_tile end);
 void do_move(board_tile** board, game_move move);
 
