@@ -33,11 +33,6 @@ struct game_move
 	linked_list jumps;
 };
 
-struct scoring_board
-{
-	char** board;
-	char player;
-};
 
 int minmax_depth = 1; /*the debth of minmax algorithm*/
 char* user_color = "white"; /*color of the user player*/
@@ -94,7 +89,11 @@ int main()
 			is_user_turn = 0;
 		}
 		/*computer turn*/
-		{ 
+		{
+			do_computer_move(board, flip_color(user_color));
+			is_user_turn = 1;
+			if (DEBUG)
+				print_board(board);
 		}
 
 	}
@@ -112,6 +111,19 @@ int user_move(char* input)
 	return 0;
 }
 
+void do_computer_move(board_tile** board, char color)
+{
+	game_move* chosen_move = malloc(sizeof(game_move));
+	if (chosen_move == NULL)
+	{
+		should_terminate = 1;
+		return;
+	}
+	minimax(board, minmax_depth, 1, chosen_move, color);
+	do_move(board, *chosen_move);
+	free_list(chosen_move->jumps);
+	free(chosen_move);
+}
 
 /*runs the game settings phase of the game on a given command.
 returns 1 if game start command was sent. else returns 0*/
@@ -316,28 +328,30 @@ int read_user_input_line(char* input, int* input_size)
 	}
 	return 1;
 }
-/*
-int minimax(scoring_board board, int depth, int maximize, game_move* best)
+
+int minimax(board_tile** board, int depth, int maximize, game_move* best, char color)
 {
 	int tmp_val;
 	int best_val;
-	game_move possible;
-	possible = generate_moves(board);
+	linked_list possible;
+	possible = generate_moves(board, color);
+	node* crnt = possible.first;
 	if (should_terminate)
-	{//DO STUFF!}
-	tmp_val = score(board);
+	{/*DO STUFF!*/}
+	
+	tmp_val = score(board, maximize? color: flip_color(color));
 	if (depth == 0 || tmp_val == 100 || tmp_val == -100)
 		return tmp_val;
 	if(maximize)
 	{
 		best_val = INT_MIN;
-		while (possible != NULL)
+		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
-			tmp_val = minimax(do_move(board, possible), depth - 1, 0);
+			tmp_val = minimax(do_move(board, (*(game_move*)crnt->data)), depth - 1, 0,best, color);
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
-				*best = possible;
+				*best = *(game_move*)crnt->data;
 			}
 		}
 		return best_val;
@@ -345,33 +359,35 @@ int minimax(scoring_board board, int depth, int maximize, game_move* best)
 	else
 	{
 		best_val = INT_MAX;
-		while (possible != NULL)
+		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
-			tmp_val = minimax(do_move(board, possible), depth - 1, 1);
+			tmp_val = minimax(do_move(board, (*(game_move*)crnt->data)), depth - 1, 1, best, color);
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
-				*best = possible;
+				*best = (*(game_move*)crnt->data);
 			}
 		}
 		return best_val;
 	}
 }
-*/
+
+char flip_color(color)
+{
+	return BLACK == color ? WHITE: BLACK;
+}
 
 /*cur_player_color - the color of the current player*/
-game_move generate_moves(board_tile** board, char cur_player_color)
+linked_list generate_moves(board_tile** board, char cur_player_color)
 {
 	int i, j;
 	linked_list best_moves;
-	game_move chosen_move;
 	int num_eats = 0;
 	char type;
 
-	chosen_move.jumps.first = NULL;
 	best_moves = new_list();
 	if (should_terminate)
-		return chosen_move;
+		return best_moves;
 	for (i = 0; i < BOARD_SIZE; ++i)
 	{
 		for (j = 0; j < BOARD_SIZE; j++)
@@ -393,9 +409,7 @@ game_move generate_moves(board_tile** board, char cur_player_color)
 				continue;
 		}
 	}
-	chosen_move = *((game_move*)best_moves.first);
-	free_moves(best_moves);
-	return chosen_move;
+	return best_moves;
 }
 
 /*tile - the tile in which the man is at*/
@@ -593,7 +607,7 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 performs a whole move with all steps
 removes all opponent pawns eaten
 */
-void do_move(board_tile** board, game_move move)
+board_tile** do_move(board_tile** board, game_move move)
 {
 	board_tile current = move.start;
 	node* next_move = move.jumps.first;
@@ -606,6 +620,7 @@ void do_move(board_tile** board, game_move move)
 		next_move = next_move->next;
 		next = *((board_tile*)next_move->data);
 	}
+	return board;
 }
 
 /*
@@ -671,7 +686,7 @@ char get_tile_type(board_tile b)
   win -> 100
   lose -> -100
   */
-int score(scoring_board board)
+int score(board_tile** board, char color)
 {
 	int black = 0;
 	int white = 0;
@@ -680,7 +695,7 @@ int score(scoring_board board)
 	{
 		for (int j = 0; i < 10; j++)
 		{
-			tile = board.board[i][j];
+			tile = board[i][j].type;
 			if (tile == BLACK_K)
 				black += 3;
 			if (tile == BLACK_M)
@@ -691,7 +706,7 @@ int score(scoring_board board)
 				white++;
 		}
 	}
-	if (board.player == BLACK)
+	if (color == BLACK)
 	{
 		if (white == 0)
 			return 100;
