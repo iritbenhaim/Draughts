@@ -90,7 +90,8 @@ int main()
 		}
 		/*computer turn*/
 		{
-			do_computer_move(board, flip_color(user_color));
+			if (do_computer_move(flip_color(user_color)))
+				break;
 			is_user_turn = 1;
 			if (DEBUG)
 				print_board(board);
@@ -111,18 +112,22 @@ int user_move(char* input)
 	return 0;
 }
 
-void do_computer_move(board_tile** board, char color)
+/*return 1 if game ended*/
+int do_computer_move(char color)
 {
 	game_move* chosen_move = malloc(sizeof(game_move));
 	if (chosen_move == NULL)
 	{
 		should_terminate = 1;
-		return;
+		return 1;
 	}
-	minimax(board, minmax_depth, 1, chosen_move, color);
+	int s = minimax(board, minmax_depth, 1, chosen_move, color);
+	if (s == INT_MIN)
+		return 1;
 	do_move(board, *chosen_move);
 	free_list(chosen_move->jumps);
 	free(chosen_move);
+	return 0;
 }
 
 /*runs the game settings phase of the game on a given command.
@@ -329,15 +334,15 @@ int read_user_input_line(char* input, int* input_size)
 	return 1;
 }
 
-int minimax(board_tile** board, int depth, int maximize, game_move* best, char color)
+int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move* best, char color)
 {
 	int tmp_val;
 	int best_val;
 	linked_list possible;
 	possible = generate_moves(board, color);
-	node* crnt = possible.first;
 	if (should_terminate)
 	{/*DO STUFF!*/}
+	node* crnt = possible.first;
 	
 	tmp_val = score(board, maximize? color: flip_color(color));
 	if (depth == 0 || tmp_val == 100 || tmp_val == -100)
@@ -347,7 +352,8 @@ int minimax(board_tile** board, int depth, int maximize, game_move* best, char c
 		best_val = INT_MIN;
 		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
-			tmp_val = minimax(do_move(board, (*(game_move*)crnt->data)), depth - 1, 0,best, color);
+			do_move(board, (*(game_move*)crnt->data));
+			tmp_val = minimax(board, depth - 1, 0, best, color);
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
@@ -361,7 +367,8 @@ int minimax(board_tile** board, int depth, int maximize, game_move* best, char c
 		best_val = INT_MAX;
 		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
-			tmp_val = minimax(do_move(board, (*(game_move*)crnt->data)), depth - 1, 1, best, color);
+			do_move(board, (*(game_move*)crnt->data));
+			tmp_val = minimax(board, depth - 1, 1, best, color);
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
@@ -378,7 +385,7 @@ char flip_color(color)
 }
 
 /*cur_player_color - the color of the current player*/
-linked_list generate_moves(board_tile** board, char cur_player_color)
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color)
 {
 	int i, j;
 	linked_list best_moves;
@@ -392,7 +399,7 @@ linked_list generate_moves(board_tile** board, char cur_player_color)
 	{
 		for (j = 0; j < BOARD_SIZE; j++)
 		{
-			if (cur_player_color != get_tile_color(board[i][j]));
+			if (cur_player_color != get_tile_color(board[i][j]))
 				continue;
 			type = get_tile_type(board[i][j]);
 			if (type == KING)
@@ -607,7 +614,7 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 performs a whole move with all steps
 removes all opponent pawns eaten
 */
-board_tile** do_move(board_tile** board, game_move move)
+void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 {
 	board_tile current = move.start;
 	node* next_move = move.jumps.first;
@@ -615,22 +622,21 @@ board_tile** do_move(board_tile** board, game_move move)
 
 	for (int i = 0; i < move.jumps.len; i++)
 	{
-		do_part_move(board, current, next);
+		do_part_move(m_board, current, next);
 		current = next;
 		next_move = next_move->next;
 		next = *((board_tile*)next_move->data);
 	}
-	return board;
 }
 
 /*
 performs a single step within a move
 removes opponent pawn(if exists) and moves current pawn
 */
-void do_part_move(board_tile** board, board_tile start, board_tile end)
+void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile end)
 {
 	int start_c, start_r, end_c, end_r;
-	char pawn = board[start.first_indexer][start.second_indexer].type;
+	char pawn = m_board[start.first_indexer][start.second_indexer].type;
 	if (start.first_indexer < end.first_indexer)
 	{
 		start_r = start.first_indexer;
@@ -653,8 +659,8 @@ void do_part_move(board_tile** board, board_tile start, board_tile end)
 	}
 	for (; start_r < end_r; start_r++)
 		for (; start_c < end_c; start_c++)
-			board[start_r][start_c].type = EMPTY;
-	board[end_r][end_c].type = pawn;
+			m_board[start_r][start_c].type = EMPTY;
+	m_board[end_r][end_c].type = pawn;
 }
 
 char get_tile_color(board_tile b)
@@ -686,14 +692,14 @@ char get_tile_type(board_tile b)
   win -> 100
   lose -> -100
   */
-int score(board_tile** board, char color)
+int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
 	int black = 0;
 	int white = 0;
 	char tile;
 	for (int i = 0; i < 10; i++)
 	{
-		for (int j = 0; i < 10; j++)
+		for (int j = 0; j < 10; j++)
 		{
 			tile = board[i][j].type;
 			if (tile == BLACK_K)
@@ -789,9 +795,9 @@ linked_list new_list()
 		should_terminate = 1;
 		return l;
 	}
-	l.last = l.first;
 	l.first->next = NULL;
 	l.first->data = NULL;
+	l.last = l.first;
 	l.len = 0;
 	return l;
 }

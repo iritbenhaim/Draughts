@@ -47,7 +47,7 @@ void free_list(linked_list list);
 void list_add(linked_list list, void* data);
 char get_tile_color(board_tile b);
 char get_tile_type(board_tile b);
-linked_list generate_moves(board_tile** board, char cur_player_color);
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color);
 int is_board_init_legal();
 char get_tool_type(char* color, char type);
 int get_board_position(char* input, int* i, int* j);
@@ -55,13 +55,13 @@ void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
-int minimax(board_tile** board, int depth, int maximize, game_move* best, char color);
-int score(board_tile** board, char color);
+int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move* best, char color);
+int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 char flip_color(color);
 int settings(char* input);
 int user_move(char* input);
-void do_part_move(board_tile** board, board_tile start, board_tile end);
-void do_computer_move(board_tile** board, char color);
-board_tile** do_move(board_tile** board, game_move move);
+void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile end);
+int do_computer_move(char color);
+void do_move(board_tile m_board[][BOARD_SIZE], game_move move);
 
 #endif  
