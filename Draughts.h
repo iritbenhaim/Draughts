@@ -44,7 +44,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 linked_list new_list();
 void free_moves(linked_list list);
 void free_list(linked_list list);
-void list_add(linked_list list, void* data);
+void list_add(linked_list* list, void* data);
 char get_tile_color(board_tile b);
 char get_tile_type(board_tile b);
 linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color);

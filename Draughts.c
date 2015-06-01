@@ -55,7 +55,7 @@ int main()
 
 	print_message(WELCOME_TO_DRAUGHTS);
 	print_message(ENTER_SETTINGS);
-	while (1)
+	while (1 && !DEBUG)
 	{ /*game settings*/
 		if (read_user_input_line(input, &input_size) == -1)
 		{
@@ -454,14 +454,14 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 			if (next->type == EMPTY)
 			{
 				/*add the move to the best moves list*/
-				list_add(cur_move->jumps, next);
+				list_add(&cur_move->jumps, next);
 				if (should_terminate)
 				{
 					free_list(cur_move->jumps);
 					free(cur_move);
 					return;
 				}
-				list_add(*best_moves, cur_move);
+				list_add(best_moves, cur_move);
 				if (should_terminate)
 				{
 					free_list(cur_move->jumps);
@@ -514,7 +514,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 
 				board_tile* next = &board[(tile.first_indexer) + lr_direction * 2][tile.second_indexer + ud_direction * 2];
 				/*add cur eat to move*/
-				list_add(cur_move_copy->jumps, next);
+				list_add(&cur_move_copy->jumps, next);
 				if (should_terminate)
 				{
 					free_list(cur_move->jumps);
@@ -540,7 +540,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 		if (cur_move->jumps.len == *num_eats)
 		{
 			/*add the current move to the best moves list*/
-			list_add(*best_moves, cur_move);
+			list_add(best_moves, cur_move);
 			if (should_terminate)
 			{
 				free_list(cur_move->jumps);
@@ -559,7 +559,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 				return;
 			}
 			/*add the current move to the best moves list*/
-			list_add(*best_moves, cur_move);
+			list_add(best_moves, cur_move);
 			if (should_terminate)
 			{
 				free_list(cur_move->jumps);
@@ -567,11 +567,6 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 				return;
 			}
 		}
-	}
-	else
-	{
-		free_list(cur_move->jumps);
-		free(cur_move);
 	}
 }
 
@@ -588,7 +583,7 @@ game_move* copy_move(game_move* cur_move)
 	node* cur = cur_move->jumps.first;
 	while (cur != NULL)
 	{
-		list_add(copy->jumps, cur->data);
+		list_add(&copy->jumps, cur->data);
 		if (should_terminate)
 		{
 			free_list(copy->jumps);
@@ -832,16 +827,16 @@ void free_list(linked_list list)
 	free(prev);
 }
 
-void list_add(linked_list list, void* data)
+void list_add(linked_list* list, void* data)
 {
-	list.last->next = malloc(sizeof(node));
-	if (NULL == list.last->next)
+	(*list).last->next = malloc(sizeof(node));
+	if (NULL == (*list).last->next)
 	{
 		should_terminate = 1;
 		return;
 	}
-	list.last = list.last->next;
-	(list.last)->data = data;
-	(list.last)->next = NULL;
-	list.len++;
+	(*list).last = (*list).last->next;
+	((*list).last)->data = data;
+	((*list).last)->next = NULL;
+	(*list).len++;
 }
