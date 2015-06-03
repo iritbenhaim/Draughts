@@ -35,7 +35,7 @@ struct game_move
 
 
 int minmax_depth = 1; /*the debth of minmax algorithm*/
-char* user_color = "white"; /*color of the user player*/
+char user_color = WHITE; /*color of the user player*/
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 int should_terminate = 0;
 
@@ -69,7 +69,7 @@ int main()
 			return;
 		}
 	}
-	int is_user_turn = user_color == "white";
+	int is_user_turn = user_color == WHITE;
 	while (1)
 	{/*game play*/
 		while (is_user_turn)
@@ -109,9 +109,74 @@ int main()
 
 int user_move(char* input)
 {
+
+	if (0 == cmp_input_command(input, "move "))
+	{
+		int i, j;
+		game_move move;
+		char* input_copy = strchr(input, '>') + 1;
+		get_board_position(input, &i, &j);
+		input = input_copy;
+		if (out_of_boarders(i, j))
+		{
+			print_message(WRONG_POSITION);
+			return 0;
+		}
+		
+		move.start = board[i][j];
+		move.jumps = new_list();
+		if (should_terminate)
+			return -1;
+		while (input[0] == ' ')
+			++input;
+		input += strlen("to"); /*\0 will skip the space*/
+		while (input[0] = '<')
+		{
+			input_copy = strchr(input, '>') + 1;
+			get_board_position(input, &i, &j);
+			input = input_copy;
+			if (out_of_boarders(i, j))
+			{
+				print_message(WRONG_POSITION);
+				free_list(move.jumps);
+				return 0;
+			}
+		}
+		if (get_tile_color(move.start) != user_color)
+		{
+			print_message(NO_DICS);
+			free_list(move.jumps);
+			return 0;
+		}
+		is_legal_move(move, user_color);
+		if (should_terminate)
+		{
+			free_list(move.jumps);
+			return -1;
+		}
+
+
+		do_move(board, move);
+		free_list(move.jumps);
+	}
 	return 0;
 }
 
+int is_legal_move(game_move move, char color)
+{
+	linked_list all_moves = generate_moves(board, user_color);
+	if (should_terminate)
+	{
+		free_list(move.jumps);
+		return 0;
+	}
+	int is_success = find_move(all_moves, move);
+
+	free_list(move.jumps);
+	free_moves(all_moves);
+	return is_success;
+
+}
 /*return 1 if game ended*/
 int do_computer_move(char color)
 {
@@ -155,9 +220,9 @@ int settings(char* input)
 		while (input[0] == ' ')
 			++input;
 		if (0 == cmp_input_command(input, "white"))
-			user_color = "white";
+			user_color = WHITE;
 		else if (0 == cmp_input_command(input, "black"))
-			user_color = "black";
+			user_color = BLACK;
 		return 0;
 	}
 	if (0 == cmp_input_command(input, "clear"))
@@ -379,7 +444,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	}
 }
 
-char flip_color(color)
+char flip_color(char color)
 {
 	return BLACK == color ? WHITE: BLACK;
 }
@@ -600,6 +665,7 @@ int out_of_boarders(int first_indexer, int second_indexer)
 {
 	return (first_indexer < 0 || first_indexer > BOARD_SIZE || second_indexer < 0 || second_indexer > BOARD_SIZE);
 }
+
 void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
 	game_move* cur_move = malloc(sizeof(game_move));
@@ -964,4 +1030,41 @@ void list_add(linked_list* list, void* data)
 	((*list).last)->data = data;
 	((*list).last)->next = NULL;
 	(*list).len++;
+}
+
+/*checks if the game move list are the same*/
+int game_move_list_cmp(linked_list list1, linked_list list2)
+{
+	if (list1.len != list2.len)
+		return 0;
+	if (list1.len == 0)
+		return 1;
+	node* cur1 = list1.first;
+	node* cur2 = list2.first;
+	do
+	{
+		board_tile b1 = *(board_tile*)(cur1->data);
+		board_tile b2 = *(board_tile*)(cur2->data);
+		if (b1.first_indexer != b2.first_indexer && b1.second_indexer != b2.second_indexer)
+			return 0;
+		cur1 = cur1->next;
+		cur2 = cur2->next;
+	} while (cur1->next != NULL);
+	return 1;
+
+
+}
+
+/*searches for the move in possible moves list. return 1 if found. else 0*/
+int find_move(linked_list possible_moves, game_move move)
+{
+	node* cur = possible_moves.first;
+	while (cur->next != NULL)
+	{
+		cur = cur->next;
+		game_move cur_move = *((game_move*)cur->data);
+		if (game_move_list_cmp(cur_move.jumps, move.jumps))
+			return 1;
+	}
+	return 0;
 }
