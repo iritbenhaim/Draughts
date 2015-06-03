@@ -491,7 +491,6 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 
 void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats, game_move* cur_move)
 {
-	int ud_direction = color == 'w' ? 1 : -1; //black goes downwards.
 	int used_cur_move = 0;
 	int old_eats = *num_eats;
 	for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
@@ -566,6 +565,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 				free(cur_move);
 				return;
 			}
+			++*num_eats;
 		}
 	}
 }
@@ -602,7 +602,132 @@ int out_of_boarders(int first_indexer, int second_indexer)
 }
 void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
+	game_move* cur_move = malloc(sizeof(game_move));
+	if (cur_move == NULL)
+	{
+		should_terminate = 1;
+		return;
+	}
+	cur_move->jumps = new_list();
+	if (should_terminate)
+	{
+		free(cur_move);
+		return;
+	}
 
+	
+	for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
+	{
+		for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
+		{
+			for (int i = 1; !out_of_boarders(tile.first_indexer + ud_direction*i, tile.second_indexer + lr_direction*i); ++i)/*check me!!!*/
+			{
+				char tile_color = (get_tile_color(board[tile.first_indexer + ud_direction*i][tile.second_indexer + lr_direction*i]));
+				
+				if (EMPTY == tile_color)
+				{
+					if (*num_eats != 0)
+						continue;
+					board_tile* next = &board[(tile.first_indexer) + lr_direction*i][tile.second_indexer + ud_direction*i];
+					/*add the move to the best moves list*/
+					list_add(&cur_move->jumps, next);
+					if (should_terminate)
+					{
+						free_list(cur_move->jumps);
+						free(cur_move);
+						return;
+					}
+					list_add(best_moves, cur_move);
+					if (should_terminate)
+					{
+						free_list(cur_move->jumps);
+						free(cur_move);
+						return;
+					}
+					/*malloc the next move*/
+					cur_move = malloc(sizeof(game_move));
+					if (cur_move == NULL)
+					{
+						should_terminate = 1;
+						return;
+					}
+					cur_move->jumps = new_list();
+					if (should_terminate)
+					{
+						free(cur_move);
+						return;
+					}
+				}
+				else if (tile_color == flip_color(color))
+				{/*try eating the oponnent. then stop this direction*/
+					if (out_of_boarders(tile.first_indexer + ud_direction*(i + 1), tile.second_indexer + lr_direction*(i + 1)))
+						break;
+					board_tile* next = &board[(tile.first_indexer) + lr_direction*(i + 1)][tile.second_indexer + ud_direction*(i + 1)];
+					if (EMPTY != (*next).type)
+						break;
+					/*add cur eat to move*/
+					list_add(&cur_move->jumps, next);
+					if (should_terminate)
+					{
+						free_list(cur_move->jumps);
+						free(cur_move);
+						return;
+					}
+					generate_eater_moves(tile, color, best_moves, num_eats, cur_move);
+					if (should_terminate)
+					{
+						free_list(cur_move->jumps);
+						free(cur_move);
+						return;
+					}
+					/*if one eat only, add it*/
+						
+
+					if (*num_eats <= 1)
+					{
+						if (cur_move->jumps.len == *num_eats)
+						{
+							/*add the current move to the best moves list*/
+							list_add(best_moves, cur_move);
+							if (should_terminate)
+							{
+								free_list(cur_move->jumps);
+								free(cur_move);
+								return;
+							}
+						}
+						else if (cur_move->jumps.len > *num_eats)
+						{
+							free_moves(*best_moves);
+							*best_moves = new_list();
+							if (should_terminate)
+							{
+								free_list(cur_move->jumps);
+								free(cur_move);
+								return;
+							}
+							/*add the current move to the best moves list*/
+							list_add(best_moves, cur_move);
+							if (should_terminate)
+							{
+								free_list(cur_move->jumps);
+								free(cur_move);
+								return;
+							}
+							++*num_eats;
+						}
+					}
+
+
+					break;
+				}
+				else /*the tile contains a man of your own color. stop this direction.*/
+					break;
+			}
+		}
+	}
+	free_list(cur_move->jumps);
+	free(cur_move);
 }
 
 /*
