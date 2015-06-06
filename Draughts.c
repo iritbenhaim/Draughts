@@ -1020,15 +1020,29 @@ void free_list(linked_list list)
 
 void list_add(linked_list* list, void* data)
 {
-	(*list).last->next = malloc(sizeof(node));
-	if (NULL == (*list).last->next)
+	if ((*list).len == 0)
 	{
-		should_terminate = 1;
-		return;
+		(*list).first = malloc(sizeof(node));
+		if (NULL == (*list).first)
+		{
+			should_terminate = 1;
+			return;
+		}
+		(*list).first->data = data;
+		(*list).last = (*list).first;
 	}
-	(*list).last = (*list).last->next;
-	((*list).last)->data = data;
-	((*list).last)->next = NULL;
+	else
+	{
+		(*list).last->next = malloc(sizeof(node));
+		if (NULL == (*list).last->next)
+		{
+			should_terminate = 1;
+			return;
+		}
+		(*list).last = (*list).last->next;
+		((*list).last)->data = data;
+		((*list).last)->next = NULL;
+	}
 	(*list).len++;
 }
 
