@@ -495,6 +495,7 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 		return;
 	}
 	cur_move->jumps = new_list();
+	cur_move->start = tile;
 	if (should_terminate)
 	{
 		free(cur_move);
@@ -541,6 +542,7 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 					return;
 				}
 				cur_move->jumps = new_list();
+				cur_move->start = tile;
 				if (should_terminate)
 				{
 					free(cur_move);
@@ -804,14 +806,14 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 {
 	board_tile current = move.start;
 	node* next_move = move.jumps.first;
-	board_tile next = *((board_tile*)next_move->data);
+	board_tile next;
 
 	for (int i = 0; i < move.jumps.len; i++)
 	{
+		next = *((board_tile*)next_move->data);
 		do_part_move(m_board, current, next);
 		current = next;
 		next_move = next_move->next;
-		next = *((board_tile*)next_move->data);
 	}
 }
 
@@ -1020,29 +1022,15 @@ void free_list(linked_list list)
 
 void list_add(linked_list* list, void* data)
 {
-	if ((*list).len == 0)
+	(*list).last->data = data;
+	(*list).last->next = malloc(sizeof(node));
+	if (NULL == (*list).last->next)
 	{
-		(*list).first = malloc(sizeof(node));
-		if (NULL == (*list).first)
-		{
-			should_terminate = 1;
-			return;
-		}
-		(*list).first->data = data;
-		(*list).last = (*list).first;
+		should_terminate = 1;
+		return;
 	}
-	else
-	{
-		(*list).last->next = malloc(sizeof(node));
-		if (NULL == (*list).last->next)
-		{
-			should_terminate = 1;
-			return;
-		}
-		(*list).last = (*list).last->next;
-		((*list).last)->data = data;
-		((*list).last)->next = NULL;
-	}
+	(*list).last = (*list).last->next;
+	((*list).last)->next = NULL;
 	(*list).len++;
 }
 
