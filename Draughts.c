@@ -90,6 +90,9 @@ int main()
 		}
 		/*computer turn*/
 		{
+			/*if (DEBUG)
+				board[5][5].type = BLACK_K;
+				print_board(board);*/
 			if (do_computer_move(flip_color(user_color)))
 				break;
 			is_user_turn = 1;
@@ -807,7 +810,6 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 	board_tile current = move.start;
 	node* next_move = move.jumps.first;
 	board_tile next;
-
 	for (int i = 0; i < move.jumps.len; i++)
 	{
 		next = *((board_tile*)next_move->data);
@@ -815,6 +817,8 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 		current = next;
 		next_move = next_move->next;
 	}
+	if (DEBUG)
+		print_board(m_board);
 }
 
 /*
@@ -825,6 +829,7 @@ void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile
 {
 	int start_c, start_r, end_c, end_r;
 	char pawn = m_board[start.first_indexer][start.second_indexer].type;
+	int up = get_tile_color(start) == WHITE || get_tile_type(start) == KING ? 1 : -1; /*check king!*/
 	if (start.first_indexer < end.first_indexer)
 	{
 		start_r = start.first_indexer;
@@ -835,7 +840,7 @@ void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile
 		start_r = end.first_indexer;
 		end_r = start.first_indexer;
 	}
-	if (start.second_indexer < end.second_indexer)
+	if (up_direction(start.second_indexer, end.second_indexer, up))
 	{
 		start_c = start.second_indexer;
 		end_c = end.second_indexer;
@@ -845,12 +850,38 @@ void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile
 		start_c = end.second_indexer;
 		end_c = start.second_indexer;
 	}
-	for (; start_r < end_r; start_r++)
-		for (; start_c < end_c; start_c++)
-			m_board[start_r][start_c].type = EMPTY;
+	for (; start_r < end_r; start_r++, start_c+=up)
+	{
+		m_board[start_r][start_c].type = EMPTY;
+	}
 	m_board[end_r][end_c].type = pawn;
 }
 
+/*
+determines if current player direction is up 
+according to tile and color
+*/
+int up_direction(int start_c, int end_c, int is_white)
+{
+	if ((start_c < end_c))
+	{
+		if (is_white == 1)
+			return 1;
+		else
+			return 0;
+	}
+	else
+	{
+		if (is_white == 1)
+			return 0;
+		else
+			return 1;
+	}
+}
+
+/*
+returns a tile's color
+*/
 char get_tile_color(board_tile b)
 {
 	if (b.type == WHITE_K || b.type == WHITE_M)
@@ -862,6 +893,9 @@ char get_tile_color(board_tile b)
 	return 0;
 }
 
+/*
+returns a tile's type
+*/
 char get_tile_type(board_tile b)
 {
 	if (b.type == WHITE_K || b.type == BLACK_K)

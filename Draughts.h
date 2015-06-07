@@ -66,5 +66,6 @@ int user_move(char* input);
 void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile end);
 int do_computer_move(char color);
 void do_move(board_tile m_board[][BOARD_SIZE], game_move move);
+int up_direction(int start_c, int end_c, int is_white);
 
 #endif  
