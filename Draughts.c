@@ -228,9 +228,16 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 /*prints the first and last tiles of a move*/
 void print_single_move(game_move move)
 {
+	node crnt_node = *move.jumps.first;
+	board_tile tile;
 	print_tile(move.start);
 	printf(" to ");
-	print_tile(*(board_tile*)move.jumps.last->data); /*last tile in jumps*/
+	for (int i = 0; i < move.jumps.len; i++)
+	{
+		tile = *(board_tile*)crnt_node.data;
+		crnt_node = *crnt_node.next;
+		print_tile(tile);
+	}
 	printf("\n");
 }
 
