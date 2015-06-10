@@ -859,8 +859,8 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 		current = next;
 		next_move = next_move->next;
 	}
-	/*if (DEBUG)
-		print_board(m_board);*/
+	if (DEBUG)
+		print_board(m_board);
 }
 
 /*
@@ -869,34 +869,19 @@ removes opponent pawn(if exists) and moves current pawn
 */
 void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile end)
 {
-	int start_c, start_r, end_c, end_r;
 	char pawn = m_board[start.char_indexer][start.int_indexer].type;
-	int up = get_tile_color(start) == WHITE || get_tile_type(start) == KING ? 1 : -1; /*check king!*/
-	if (start.char_indexer < end.char_indexer)
+	int start_c = start.char_indexer; 
+	int start_r = start.int_indexer;
+	int end_c = end.char_indexer;
+	int end_r = end.int_indexer;
+	int col_d, row_d;
+	col_d = start_c < end_c ? 1 : -1;
+	row_d = start_r < end_r ? 1 : -1;
+	for (; start_c != end_c; start_c += col_d, start_r += row_d)
 	{
-		start_r = start.char_indexer;
-		end_r = end.char_indexer;
+		m_board[start_c][start_r].type = EMPTY;
 	}
-	else
-	{
-		start_r = end.char_indexer;
-		end_r = start.char_indexer;
-	}
-	if (up_direction(start.int_indexer, end.int_indexer, up))
-	{
-		start_c = start.int_indexer;
-		end_c = end.int_indexer;
-	}
-	else
-	{
-		start_c = end.int_indexer;
-		end_c = start.int_indexer;
-	}
-	for (; start_r < end_r; start_r++, start_c+=up)
-	{
-		m_board[start_r][start_c].type = EMPTY;
-	}
-	m_board[end_r][end_c].type = pawn;
+	m_board[start_c][start_r].type = pawn;
 }
 
 /*
