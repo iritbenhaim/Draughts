@@ -8,8 +8,8 @@
 
 struct board_tile
 {
-	int first_indexer; /*col_num - char*/
-	int second_indexer; /*row_num - int*/
+	int char_indexer; /*col_num - char*/
+	int int_indexer; /*row_num - int*/
 	char type;
 };
 
@@ -38,6 +38,7 @@ int minmax_depth = 1; /*the debth of minmax algorithm*/
 char user_color = WHITE; /*color of the user player*/
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 int should_terminate = 0;
+int is_user_turn;
 
 int main()
 {
@@ -69,24 +70,23 @@ int main()
 			return;
 		}
 	}
-	int is_user_turn = user_color == WHITE;
+	is_user_turn = user_color == WHITE;
 	while (1)
 	{/*game play*/
 		while (is_user_turn)
 		{
+			is_user_turn = 0;
 			print_message(ENTER_YOUR_MOVE);
 			if (read_user_input_line(input, &input_size) == -1)
 			{
 				return -1; /*no resources were allocated yet*/
 			}
-			if (user_move(input))
-				break;
+			is_user_turn = user_move(input);
 			if (should_terminate)
 			{
 				free(input);
 				return;
 			}
-			is_user_turn = 0;
 		}
 		/*computer turn*/
 		{
@@ -132,8 +132,8 @@ int user_move(char* input)
 			return -1;
 		while (input[0] == ' ')
 			++input;
-		input += strlen("to"); /*\0 will skip the space*/
-		while (input[0] = '<')
+		input += strlen("to "); 
+		while (input[0] == '<')
 		{
 			input_copy = strchr(input, '>') + 1;
 			get_board_position(input, &i, &j);
@@ -144,6 +144,7 @@ int user_move(char* input)
 				free_list(move.jumps);
 				return 0;
 			}
+			list_add(&move.jumps, &board[i][j]);
 		}
 		if (get_tile_color(move.start) != user_color)
 		{
@@ -151,16 +152,32 @@ int user_move(char* input)
 			free_list(move.jumps);
 			return 0;
 		}
-		is_legal_move(move, user_color);
+		int legal = is_legal_move(move, user_color);
 		if (should_terminate)
 		{
 			free_list(move.jumps);
 			return -1;
 		}
+		if (legal)
+		{
+			do_move(board, move);
+			print_board(board);
+		}
+		else
+		{
+			print_message(ILLEGAL_MOVE);
+			free_list(move.jumps);
+			return 0;
+		}
 
-
-		do_move(board, move);
 		free_list(move.jumps);
+		game_move temp;
+		if (minimax(board, 1, 1, &temp, user_color) == 100)
+		{
+			char* winner = user_color == 'w' ? "white player wins!\n" : "black player wins!\n";
+			print_message(winner);
+		}
+		return 1;
 	}
 	return 0;
 }
@@ -175,11 +192,10 @@ int is_legal_move(game_move move, char color)
 	}
 	int is_success = find_move(all_moves, move);
 
-	free_list(move.jumps);
 	free_moves(all_moves);
 	return is_success;
-
 }
+
 /*return 1 if game ended*/
 int do_computer_move(char color)
 {
@@ -221,8 +237,8 @@ void print_single_move(game_move move)
 /*prints a single board tile*/
 void print_tile(board_tile tile)
 {
-	char index = 'a' + tile.first_indexer;
-	printf("<%c,%d>", index, tile.second_indexer);
+	char index = 'a' + tile.char_indexer;
+	printf("<%c,%d>", index, tile.int_indexer);
 }
 
 /*runs the game settings phase of the game on a given command.
@@ -517,7 +533,7 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 /*tile - the tile in which the man is at*/
 void generate_man_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
-	int direction = color == 'w' ? 1 : -1; //black goes downwards.
+	int direction = color == 'w' ? -1 : 1; //black goes downwards.
 	game_move* cur_move = malloc(sizeof(game_move));
 	if (cur_move == NULL)
 	{
@@ -543,9 +559,9 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 	{
 		for (int i = 1; i > -2; i -= 2) /*when i=1, move right. when i=0 move left*/
 		{
-			if (out_of_boarders((tile.first_indexer) + i, tile.second_indexer + direction))
+			if (out_of_boarders((tile.char_indexer) + i, tile.int_indexer + direction))
 				continue;
-			board_tile* next = &board[(tile.first_indexer) + i][tile.second_indexer + direction];
+			board_tile* next = &board[(tile.char_indexer) + i][tile.int_indexer + direction];
 			char c = get_tile_color(*next);
 			if (next->type == EMPTY)
 			{
@@ -594,9 +610,9 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 	{
 		for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
 		{
-			if (out_of_boarders((tile.first_indexer) + lr_direction * 2, tile.second_indexer + ud_direction * 2))
+			if (out_of_boarders((tile.char_indexer) + lr_direction * 2, tile.int_indexer + ud_direction * 2))
 				continue;
-			board_tile* next = &board[(tile.first_indexer) + lr_direction][tile.second_indexer + ud_direction];
+			board_tile* next = &board[(tile.char_indexer) + lr_direction][tile.int_indexer + ud_direction];
 			char c = get_tile_color(*next);
 			if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))/*the next tile belongs to the oponnents*/
 			{
@@ -608,7 +624,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 					return;
 				}
 
-				board_tile* next = &board[(tile.first_indexer) + lr_direction * 2][tile.second_indexer + ud_direction * 2];
+				board_tile* next = &board[(tile.char_indexer) + lr_direction * 2][tile.int_indexer + ud_direction * 2];
 				/*add cur eat to move*/
 				list_add(&cur_move_copy->jumps, next);
 				if (should_terminate)
@@ -676,7 +692,6 @@ game_move* copy_move(game_move* cur_move)
 		return NULL;
 	}
 	copy->start = cur_move->start;
-	copy->jumps.len = cur_move->jumps.len;
 	node* cur = cur_move->jumps.first;
 	while (cur != NULL)
 	{
@@ -693,9 +708,9 @@ game_move* copy_move(game_move* cur_move)
 }
 
 /*checks if given indices out of counds of board*/
-int out_of_boarders(int first_indexer, int second_indexer)
+int out_of_boarders(int char_indexer, int int_indexer)
 {
-	return (first_indexer < 0 || first_indexer > BOARD_SIZE || second_indexer < 0 || second_indexer > BOARD_SIZE);
+	return (char_indexer < 0 || char_indexer > BOARD_SIZE || int_indexer < 0 || int_indexer > BOARD_SIZE);
 }
 
 void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
@@ -718,15 +733,15 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 	{
 		for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
 		{
-			for (int i = 1; !out_of_boarders(tile.first_indexer + ud_direction*i, tile.second_indexer + lr_direction*i); ++i)/*check me!!!*/
+			for (int i = 1; !out_of_boarders(tile.char_indexer + ud_direction*i, tile.int_indexer + lr_direction*i); ++i)/*check me!!!*/
 			{
-				char tile_color = (get_tile_color(board[tile.first_indexer + ud_direction*i][tile.second_indexer + lr_direction*i]));
+				char tile_color = (get_tile_color(board[tile.char_indexer + ud_direction*i][tile.int_indexer + lr_direction*i]));
 				
 				if (EMPTY == tile_color)
 				{
 					if (*num_eats != 0)
 						continue;
-					board_tile* next = &board[(tile.first_indexer) + lr_direction*i][tile.second_indexer + ud_direction*i];
+					board_tile* next = &board[(tile.char_indexer) + lr_direction*i][tile.int_indexer + ud_direction*i];
 					/*add the move to the best moves list*/
 					list_add(&cur_move->jumps, next);
 					if (should_terminate)
@@ -758,9 +773,9 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 				}
 				else if (tile_color == flip_color(color))
 				{/*try eating the oponnent. then stop this direction*/
-					if (out_of_boarders(tile.first_indexer + ud_direction*(i + 1), tile.second_indexer + lr_direction*(i + 1)))
+					if (out_of_boarders(tile.char_indexer + ud_direction*(i + 1), tile.int_indexer + lr_direction*(i + 1)))
 						break;
-					board_tile* next = &board[(tile.first_indexer) + lr_direction*(i + 1)][tile.second_indexer + ud_direction*(i + 1)];
+					board_tile* next = &board[(tile.char_indexer) + lr_direction*(i + 1)][tile.int_indexer + ud_direction*(i + 1)];
 					if (EMPTY != (*next).type)
 						break;
 					/*add cur eat to move*/
@@ -844,8 +859,8 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 		current = next;
 		next_move = next_move->next;
 	}
-	if (DEBUG)
-		print_board(m_board);
+	/*if (DEBUG)
+		print_board(m_board);*/
 }
 
 /*
@@ -855,27 +870,27 @@ removes opponent pawn(if exists) and moves current pawn
 void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile end)
 {
 	int start_c, start_r, end_c, end_r;
-	char pawn = m_board[start.first_indexer][start.second_indexer].type;
+	char pawn = m_board[start.char_indexer][start.int_indexer].type;
 	int up = get_tile_color(start) == WHITE || get_tile_type(start) == KING ? 1 : -1; /*check king!*/
-	if (start.first_indexer < end.first_indexer)
+	if (start.char_indexer < end.char_indexer)
 	{
-		start_r = start.first_indexer;
-		end_r = end.first_indexer;
+		start_r = start.char_indexer;
+		end_r = end.char_indexer;
 	}
 	else
 	{
-		start_r = end.first_indexer;
-		end_r = start.first_indexer;
+		start_r = end.char_indexer;
+		end_r = start.char_indexer;
 	}
-	if (up_direction(start.second_indexer, end.second_indexer, up))
+	if (up_direction(start.int_indexer, end.int_indexer, up))
 	{
-		start_c = start.second_indexer;
-		end_c = end.second_indexer;
+		start_c = start.int_indexer;
+		end_c = end.int_indexer;
 	}
 	else
 	{
-		start_c = end.second_indexer;
-		end_c = start.second_indexer;
+		start_c = end.int_indexer;
+		end_c = start.int_indexer;
 	}
 	for (; start_r < end_r; start_r++, start_c+=up)
 	{
@@ -1013,8 +1028,8 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 	int i,j;
 	for (i = 0; i < BOARD_SIZE; i++){
 		for (j = 0; j < BOARD_SIZE; j++){
-			board[i][j].first_indexer = i;
-			board[i][j].second_indexer = j;
+			board[i][j].char_indexer = i;
+			board[i][j].int_indexer = j;
 			if ((i + j) % 2 == 0){
 				if (j <= 3){
 					board[i][j].type = WHITE_M;
@@ -1107,7 +1122,7 @@ int game_move_list_cmp(linked_list list1, linked_list list2)
 	{
 		board_tile b1 = *(board_tile*)(cur1->data);
 		board_tile b2 = *(board_tile*)(cur2->data);
-		if (b1.first_indexer != b2.first_indexer && b1.second_indexer != b2.second_indexer)
+		if (b1.char_indexer != b2.char_indexer && b1.int_indexer != b2.int_indexer)
 			return 0;
 		cur1 = cur1->next;
 		cur2 = cur2->next;
