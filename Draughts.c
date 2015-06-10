@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "Draughts.h"
 
+/*represents a tile on the board*/
 struct board_tile
 {
 	int char_indexer; /*col_num - char*/
@@ -13,6 +14,7 @@ struct board_tile
 	char type;
 };
 
+/*linked list node*/
 struct node
 {
 	void* data;
@@ -27,6 +29,7 @@ struct linked_list
 	int len;
 };
 
+/*represent a movement with the game piece on "start" tile*/
 struct game_move
 {
 	board_tile start;
@@ -56,7 +59,7 @@ int main()
 
 	print_message(WELCOME_TO_DRAUGHTS);
 	print_message(ENTER_SETTINGS);
-	while (1 && !DEBUG)
+	while (!DEBUG)
 	{ /*game settings*/
 		if (read_user_input_line(input, &input_size) == -1)
 		{
@@ -75,13 +78,12 @@ int main()
 	{/*game play*/
 		while (is_user_turn)
 		{
-			is_user_turn = 0;
 			print_message(ENTER_YOUR_MOVE);
 			if (read_user_input_line(input, &input_size) == -1)
 			{
 				return -1; /*no resources were allocated yet*/
 			}
-			is_user_turn = user_move(input);
+			is_user_turn = !user_move(input);
 			if (should_terminate)
 			{
 				free(input);
@@ -90,9 +92,6 @@ int main()
 		}
 		/*computer turn*/
 		{
-			/*if (DEBUG)
-				board[5][5].type = BLACK_K;
-				print_board(board);*/
 			if (do_computer_move(flip_color(user_color)))
 				break;
 			is_user_turn = 1;
@@ -105,14 +104,24 @@ int main()
 	if (DEBUG)
 	{
 		getchar();
-		print_message(WRONG_MINIMAX_DEPTH);
 	}
 	return 0;
 }
 
+/*returns 1 if user turn ended. else returns 0*/
 int user_move(char* input)
 {
 
+	if (0 == cmp_input_command(input, "quit"))
+	{
+		should_terminate = 1;
+		return 1;
+	}
+	if (0 == cmp_input_command(input, "get_moves"))
+	{
+		print_moves(board, user_color);
+		return 0;
+	}
 	if (0 == cmp_input_command(input, "move "))
 	{
 		int i, j;
@@ -465,13 +474,23 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	tmp_val = score(board, maximize? color: flip_color(color));
 	if (depth == 0 || tmp_val == 100 || tmp_val == -100)
 		return tmp_val;
+	/*copy board*/
+	board_tile board_copy[BOARD_SIZE][BOARD_SIZE];
+	for (int i = 0; i <BOARD_SIZE; i++)
+	{
+		for (int j = 0; j < BOARD_SIZE; j++)
+		{
+			board_copy[i][j] = board[i][j];
+		}
+
+	}
 	if(maximize)
 	{
 		best_val = INT_MIN;
 		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
-			do_move(board, (*(game_move*)crnt->data));
-			tmp_val = minimax(board, depth - 1, 0, best, color);
+			do_move(board_copy, (*(game_move*)crnt->data));
+			tmp_val = minimax(board_copy, depth - 1, 0, best, color);
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
@@ -485,8 +504,8 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 		best_val = INT_MAX;
 		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
-			do_move(board, (*(game_move*)crnt->data));
-			tmp_val = minimax(board, depth - 1, 1, best, color);
+			do_move(board_copy, (*(game_move*)crnt->data));
+			tmp_val = minimax(board_copy, depth - 1, 1, best, color);
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
@@ -617,10 +636,15 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 	{
 		for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
 		{
-			if (out_of_boarders((tile.char_indexer) + lr_direction * 2, tile.int_indexer + ud_direction * 2))
+			int dest_lr = (tile.char_indexer) + lr_direction * 2;
+			int dest_ud = tile.int_indexer + ud_direction * 2;
+			if (out_of_boarders(dest_lr, dest_ud))
 				continue;
-			board_tile* next = &board[(tile.char_indexer) + lr_direction][tile.int_indexer + ud_direction];
-			char c = get_tile_color(*next);
+			board_tile* next = &board[dest_lr][dest_ud];
+			if (contains_jump(cur_move, *next, tile))
+				continue; //already ate this tile on this move..
+			board_tile* mid = &board[(tile.char_indexer) + lr_direction][tile.int_indexer + ud_direction];
+			char c = get_tile_color(*mid);
 			if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))/*the next tile belongs to the oponnents*/
 			{
 				game_move* cur_move_copy = copy_move(cur_move);
@@ -631,7 +655,6 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 					return;
 				}
 
-				board_tile* next = &board[(tile.char_indexer) + lr_direction * 2][tile.int_indexer + ud_direction * 2];
 				/*add cur eat to move*/
 				list_add(&cur_move_copy->jumps, next);
 				if (should_terminate)
@@ -642,7 +665,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 					free(cur_move_copy);
 					return;
 				}
-				generate_eater_moves(tile, color, best_moves, num_eats, cur_move_copy);
+				generate_eater_moves(*next, color, best_moves, num_eats, cur_move_copy);
 				if (should_terminate)
 				{
 					free_list(cur_move->jumps);
@@ -689,7 +712,26 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 		}
 	}
 }
-
+/*returns 1 if cur_move jumps eats the tile between cur and next*/
+int contains_jump(game_move* cur_move, board_tile second, board_tile first)
+{
+	board_tile cur_tile = cur_move->start;
+	node* cur_node = cur_move->jumps.first;
+	while (cur_node != NULL && cur_node->data != NULL)
+	{
+		board_tile next_tile = *((board_tile*)(cur_node->data));
+		if ((same_tile(next_tile, second) && same_tile(cur_tile, first)) ||
+			(same_tile(next_tile, first) && same_tile(cur_tile, second)))
+			return 1;
+		cur_node = cur_node->next;
+		cur_tile = next_tile;
+	}
+	return 0;
+}
+int same_tile(board_tile first, board_tile second)
+{
+	return (first.char_indexer == second.char_indexer && first.int_indexer == second.int_indexer);
+}
 game_move* copy_move(game_move* cur_move)
 {
 	game_move* copy = malloc(sizeof(game_move));
@@ -700,7 +742,13 @@ game_move* copy_move(game_move* cur_move)
 	}
 	copy->start = cur_move->start;
 	node* cur = cur_move->jumps.first;
-	while (cur != NULL)
+	copy->jumps = new_list();
+	if (should_terminate)
+	{
+		free(copy);
+		return NULL;
+	}
+	for (int i = 0; i < cur_move->jumps.len; i++)
 	{
 		list_add(&copy->jumps, cur->data);
 		if (should_terminate)
@@ -866,8 +914,8 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 		current = next;
 		next_move = next_move->next;
 	}
-	if (DEBUG)
-		print_board(m_board);
+	/*if (DEBUG)
+		print_board(m_board);*/
 }
 
 /*
@@ -1098,6 +1146,7 @@ void list_add(linked_list* list, void* data)
 	}
 	(*list).last = (*list).last->next;
 	((*list).last)->next = NULL;
+	((*list).last)->data = NULL;
 	(*list).len++;
 }
 

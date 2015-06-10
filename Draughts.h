@@ -36,6 +36,8 @@ typedef struct game_move game_move;
 typedef struct node node;
 typedef struct linked_list linked_list;
 
+int contains_jump(game_move* cur_move, board_tile second, board_tile first);
+int same_tile(board_tile first, board_tile second);
 int is_legal_move(game_move move, char color);
 game_move* copy_move(game_move* cur_move);
 int out_of_boarders(int first_indexer, int second_indexer);
