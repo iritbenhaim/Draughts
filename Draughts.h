@@ -67,5 +67,8 @@ void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile
 int do_computer_move(char color);
 void do_move(board_tile m_board[][BOARD_SIZE], game_move move);
 int up_direction(int start_c, int end_c, int is_white);
+void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
+void print_single_move(game_move move);
+void print_tile(board_tile tile);
 
 #endif  

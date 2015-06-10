@@ -8,8 +8,8 @@
 
 struct board_tile
 {
-	int first_indexer; /*row num?*/
-	int second_indexer; /*col_num?*/
+	int first_indexer; /*col_num - char*/
+	int second_indexer; /*row_num - int*/
 	char type;
 };
 
@@ -196,6 +196,33 @@ int do_computer_move(char color)
 	free_list(chosen_move->jumps);
 	free(chosen_move);
 	return 0;
+}
+
+/*prints to the user all his legal moves*/
+void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+{
+	linked_list moves = generate_moves(board, color);
+	node* crnt_move = moves.first;
+	for (int i = 0; i < moves.len; i++)
+	{
+		print_single_move((*(game_move*)crnt_move->data));
+	}
+}
+
+/*prints the first and last tiles of a move*/
+void print_single_move(game_move move)
+{
+	print_tile(move.start);
+	printf(" to ");
+	print_tile(*(board_tile*)move.jumps.last->data); /*last tile in jumps*/
+	printf("\n");
+}
+
+/*prints a single board tile*/
+void print_tile(board_tile tile)
+{
+	char index = 'a' + tile.first_indexer;
+	printf("<%c,%d>", index, tile.second_indexer);
 }
 
 /*runs the game settings phase of the game on a given command.
@@ -980,7 +1007,6 @@ void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
 	}
 	printf("\n");
 }
-
 
 
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
