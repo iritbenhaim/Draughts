@@ -233,7 +233,9 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	for (int i = 0; i < moves.len; i++)
 	{
 		print_single_move((*(game_move*)crnt_move->data));
+		crnt_move = crnt_move->next;
 	}
+	free_moves(moves);
 }
 
 /*prints a single move*/
@@ -472,6 +474,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	int best_val;
 	linked_list possible;
 	possible = generate_moves(board, color);
+
 	if (DEBUG && top)
 	{
 		node* f = possible.first;
@@ -575,7 +578,7 @@ if a better move was found, best moves will be freed and replaced.
 tile - the tile in which the man is at*/
 void generate_man_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
-	int direction = color == 'w' ? -1 : 1; //black goes downwards.
+	int direction = color == WHITE ? 1 : -1; //black goes downwards.
 	game_move* cur_move = malloc(sizeof(game_move));
 	if (cur_move == NULL)
 	{
@@ -1015,9 +1018,6 @@ char get_tile_type(board_tile b)
 		return EMPTY;
 	return 0;
 }
-
-
-
 
 /*returns a score for the current board
   win -> 100
