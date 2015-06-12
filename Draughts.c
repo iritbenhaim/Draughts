@@ -182,7 +182,7 @@ int user_move(char* input)
 
 		free_list(move.jumps);
 		game_move temp;
-		if (minimax(board, 1, 1, &temp, user_color) == 100)
+		if (score(board, user_color) == 100)
 		{
 			char* winner = user_color == 'w' ? "white player wins!\n" : "black player wins!\n";
 			print_message(winner);
@@ -216,7 +216,7 @@ int do_computer_move(char color)
 		should_terminate = 1;
 		return 1;
 	}
-	int s = minimax(board, minmax_depth, 1, chosen_move, color);
+	int s = minimax(board, minmax_depth, 1, chosen_move, color, 1);
 	if (s == INT_MIN)
 		return 1;
 	do_move(board, *chosen_move);
@@ -236,7 +236,7 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	}
 }
 
-/*prints the first and last tiles of a move*/
+/*prints a single move*/
 void print_single_move(game_move move)
 {
 	node crnt_node = *move.jumps.first;
@@ -256,7 +256,7 @@ void print_single_move(game_move move)
 void print_tile(board_tile tile)
 {
 	char index = 'a' + tile.char_indexer;
-	printf("<%c,%d>", index, tile.int_indexer);
+	printf("<%c,%d>", index, tile.int_indexer + 1);
 }
 
 /*runs the game settings phase of the game on a given command.
@@ -466,12 +466,21 @@ int read_user_input_line(char* input, int* input_size)
 
 /*runs minimax algorithm and gets the best move possible 
 returns the best move score*/
-int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move* best, char color)
+int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move* best, char color, int top)
 {
 	int tmp_val;
 	int best_val;
 	linked_list possible;
 	possible = generate_moves(board, color);
+	if (DEBUG && top)
+	{
+		node* f = possible.first;
+		for (int i = 0; i < possible.len; i++)
+		{
+			print_single_move(*(game_move*)f->data);
+			f = f->next;
+		}
+	}
 	if (should_terminate)
 	{/*DO STUFF!*/}
 	node* crnt = possible.first;
@@ -495,14 +504,13 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
 			do_move(board_copy, (*(game_move*)crnt->data));
-			tmp_val = minimax(board_copy, depth - 1, 0, best, color);
+			tmp_val = minimax(board_copy, depth - 1, 0, best, color, 0);
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
-				*best = *(game_move*)crnt->data;
+				*best = top ? *(game_move*)crnt->data : *best;
 			}
 		}
-		return best_val;
 	}
 	else
 	{
@@ -510,11 +518,11 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
 			do_move(board_copy, (*(game_move*)crnt->data));
-			tmp_val = minimax(board_copy, depth - 1, 1, best, color);
+			tmp_val = minimax(board_copy, depth - 1, 1, best, color, 0);
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
-				*best = (*(game_move*)crnt->data);
+				*best = top ? *(game_move*)crnt->data : *best;
 			}
 		}
 		return best_val;
