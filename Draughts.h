@@ -72,5 +72,7 @@ int up_direction(int start_c, int end_c, int is_white);
 void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void print_single_move(game_move move);
 void print_tile(board_tile tile);
+int is_changed_to_king(char pawn, board_tile loc);
+char is_end_of_game(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 
 #endif  

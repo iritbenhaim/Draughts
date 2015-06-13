@@ -378,7 +378,24 @@ int is_board_init_legal()
 	return 1;
 }
 
-
+/*if a player has won return its color
+  if no one won yet return 0*/
+char is_end_of_game(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+{
+	linked_list possible_moves;
+	int board_score = score(board, color);
+	if (score == 100)
+		return color;
+	if (score == -100)
+		return flip_color(color);
+	possible_moves = generate_moves(board, color);
+	if (possible_moves.len == 0)
+		return flip_color(color);
+	possible_moves = generate_moves(board, flip_color(color));
+	if (possible_moves.len == 0)
+		return color;
+	return 0;
+}
 /*returns the char used on board to represent the given type and color of tool*/
 char get_tool_type(char* color, char type)
 {
@@ -473,7 +490,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	int tmp_val;
 	int best_val;
 	linked_list possible;
-	possible = generate_moves(board, color);
+	possible = generate_moves(board, color); /*all possible moves for current player*/
 
 	if (DEBUG && top)
 	{
@@ -488,8 +505,8 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	{/*DO STUFF!*/}
 	node* crnt = possible.first;
 	
-	tmp_val = score(board, maximize? color: flip_color(color));
-	if (depth == 0 || tmp_val == 100 || tmp_val == -100)
+	tmp_val = score(board, maximize ? color : flip_color(color)); /*current board score*/
+	if (depth == 0 || is_end_of_game(board, color)) /*reached minimax depth or end of game*/
 		return tmp_val;
 	/*copy board*/
 	board_tile board_copy[BOARD_SIZE][BOARD_SIZE];
@@ -511,7 +528,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
-				*best = top ? *(game_move*)crnt->data : *best;
+				*best = top ? *(game_move*)crnt->data : *best; /*only change move if this is depth 0*/
 			}
 		}
 		return best_val;
@@ -526,13 +543,14 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
-				*best = top ? *(game_move*)crnt->data : *best;
+				*best = top ? *(game_move*)crnt->data : *best; /*only change move if this is depth 0*/
 			}
 		}
 		return best_val;
 	}
 }
 
+/*returns the opposite color*/
 char flip_color(char color)
 {
 	return BLACK == color ? WHITE: BLACK;
@@ -941,7 +959,7 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 	for (int i = 0; i < move.jumps.len; i++)
 	{
 		next = *((board_tile*)next_move->data);
-		do_part_move(m_board, current, next);
+		do_part_move(m_board, current, next); /*do each jump separately*/
 		current = next;
 		next_move = next_move->next;
 	}
@@ -961,13 +979,26 @@ void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile
 	int end_c = end.char_indexer;
 	int end_r = end.int_indexer;
 	int col_d, row_d;
-	col_d = start_c < end_c ? 1 : -1;
-	row_d = start_r < end_r ? 1 : -1;
+	col_d = start_c < end_c ? 1 : -1; /*check columns direction*/
+	row_d = start_r < end_r ? 1 : -1; /*check rows direction*/
 	for (; start_c != end_c; start_c += col_d, start_r += row_d)
 	{
-		m_board[start_c][start_r].type = EMPTY;
+		m_board[start_c][start_r].type = EMPTY; 
 	}
-	m_board[start_c][start_r].type = pawn;
+	if (is_changed_to_king(pawn, end))
+		m_board[start_c][start_r].type = pawn == WHITE_M ? WHITE_K : BLACK_K;
+	else
+		m_board[start_c][start_r].type = pawn;
+}
+
+/*checks if current move changed man to king*/
+int is_changed_to_king(char pawn, board_tile loc)
+{
+	if (pawn == BLACK_M)
+		return loc.int_indexer == 0 ? 1 : 0;
+	if (pawn == WHITE_M)
+		return loc.int_indexer == 9 ? 1 : 0;
+	return 0;
 }
 
 /*
