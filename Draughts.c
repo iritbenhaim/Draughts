@@ -1,5 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
-#define DEBUG 1
+#define DEBUG 0
 
 #include <string.h>
 #include <stdlib.h>
@@ -83,21 +83,25 @@ int main()
 			{
 				return -1; /*no resources were allocated yet*/
 			}
-			is_user_turn = !user_move(input);
+			int is_comp_turn = user_move(input);
 			if (should_terminate)
 			{
 				free(input);
 				return;
 			}
+			if (is_comp_turn == -1)
+			{
+				free(input);
+				return;
+			}
+			is_user_turn = !is_comp_turn;
 		}
 		/*computer turn*/
-		{
-			if (do_computer_move(flip_color(user_color)))
-				break;
-			is_user_turn = 1;
-			if (DEBUG)
-				print_board(board);
-		}
+		if (1==do_computer_move(flip_color(user_color)))
+			break;
+		is_user_turn = 1;
+		if (DEBUG)
+			print_board(board);
 
 	}
 	free(input);
@@ -109,7 +113,7 @@ int main()
 }
 
 /*gets user input, parses it, and run the command in it
-returns 1 if user turn ended. else returns 0*/
+returns 1 if user turn ended. -1 if game ended. else returns 0*/
 int user_move(char* input)
 {
 
@@ -128,7 +132,8 @@ int user_move(char* input)
 		int i, j;
 		game_move move;
 		char* input_copy = strchr(input, '>') + 1;
-		get_board_position(input, &i, &j);
+		if (0 == get_board_position(input, &i, &j))
+			return 0;
 		input = input_copy;
 		if (out_of_boarders(i, j))
 		{
@@ -146,7 +151,8 @@ int user_move(char* input)
 		while (input[0] == '<')
 		{
 			input_copy = strchr(input, '>') + 1;
-			get_board_position(input, &i, &j);
+			if (0 == get_board_position(input, &i, &j))
+				return 0;
 			input = input_copy;
 			if (out_of_boarders(i, j))
 			{
@@ -181,13 +187,15 @@ int user_move(char* input)
 		}
 
 		free_list(move.jumps);
-		if (score(board, user_color) == 100)
+		if (is_end_of_game(board, flip_color(user_color)))
 		{
-			char* winner = user_color == 'w' ? "white player wins!\n" : "black player wins!\n";
+			char* winner = user_color == WHITE ? "White player wins!\n" : "Black player wins!\n";
 			print_message(winner);
+			return -1;
 		}
 		return 1;
 	}
+	print_message(ILLEGAL_COMMAND);
 	return 0;
 }
 
@@ -219,6 +227,14 @@ int do_computer_move(char color)
 	if (s == INT_MIN)
 		return 1;
 	do_move(board, *chosen_move);
+	print_message("Computer: move ");
+	print_single_move(*chosen_move);
+	print_board(board);
+	if (is_end_of_game(board, flip_color(user_color)))
+	{
+		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
+		return 1;
+	}
 	free_list(chosen_move->jumps);
 	free(chosen_move);
 	return 0;
@@ -237,7 +253,7 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	free_moves(moves);
 }
 
-/*prints a single move*/
+/*prints a single move in format "<x,y> to <i,j>[<k,l>…]\n" */
 void print_single_move(game_move move)
 {
 	node crnt_node = *move.jumps.first;
@@ -350,6 +366,7 @@ int settings(char* input)
 		}
 		return 1;
 	}
+	print_message(ILLEGAL_COMMAND);
 	return 0;
 }
 
@@ -384,9 +401,9 @@ char is_end_of_game(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
 	linked_list possible_moves;
 	int board_score = score(board, color);
-	if (score == 100)
+	if (board_score == 100)
 		return color;
-	if (score == -100)
+	if (board_score == -100)
 		return flip_color(color);
 	possible_moves = generate_moves(board, color);
 	if (possible_moves.len == 0)
@@ -399,7 +416,7 @@ char is_end_of_game(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 /*returns the char used on board to represent the given type and color of tool*/
 char get_tool_type(char* color, char type)
 {
-	if (color[0] == 'w')
+	if (color[0] == WHITE)
 	{
 		if (type == 'm')
 		{
@@ -422,7 +439,7 @@ int get_board_position(char* input, int* i, int* j)
 	int temp;
 	int start = strchr(input, '<') - input;
 	int end = strchr(input, ',') - input;
-	if ((*i + *j) % 2 != 0 || end - start != 2 || input[start + 1] < 'a' || input[start + 1] > 'j')
+	if (end - start != 2 || input[start + 1] < 'a' || input[start + 1] > 'j')
 	{
 		print_message(WRONG_POSITION);
 		return 0;
@@ -436,6 +453,11 @@ int get_board_position(char* input, int* i, int* j)
 	}
 	*j = temp - 1;
 	*i = input[start + 1] - 'a';
+	if ((*i + *j) % 2 != 0)
+	{
+		print_message(WRONG_POSITION);
+		return 0;
+	}
 	return 1;
 
 }
@@ -683,7 +705,7 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 		free(cur_move);
 		return;
 	}
-
+	cur_move->start = tile;
 
 	for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
 	{
@@ -721,6 +743,7 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 						return;
 					}
 					cur_move->jumps = new_list();
+					cur_move->start = tile;
 					if (should_terminate)
 					{
 						free(cur_move);
@@ -750,8 +773,6 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 						return;
 					}
 					/*if one eat only, add it*/
-
-
 					if (*num_eats <= 1)
 					{
 						if (cur_move->jumps.len == *num_eats)
