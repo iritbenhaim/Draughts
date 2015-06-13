@@ -59,7 +59,7 @@ int main()
 
 	print_message(WELCOME_TO_DRAUGHTS);
 	print_message(ENTER_SETTINGS);
-	while (!DEBUG)
+	while (1)//!DEBUG)
 	{ /*game settings*/
 		if (read_user_input_line(input, &input_size) == -1)
 		{
@@ -181,7 +181,6 @@ int user_move(char* input)
 		}
 
 		free_list(move.jumps);
-		game_move temp;
 		if (score(board, user_color) == 100)
 		{
 			char* winner = user_color == 'w' ? "white player wins!\n" : "black player wins!\n";
@@ -195,7 +194,7 @@ int user_move(char* input)
 /*returns 1 if the move is legal for the player of color "color"*/
 int is_legal_move(game_move move, char color)
 {
-	linked_list all_moves = generate_moves(board, user_color);
+	linked_list all_moves = generate_moves(board, color);
 	if (should_terminate)
 	{
 		free_list(move.jumps);
@@ -314,7 +313,8 @@ int settings(char* input)
 		char* color;
 		char type;
 		input_copy = strchr(input, '>') + 2;
-		get_board_position(input, &i, &j);
+		if (0 == get_board_position(input, &i, &j))
+			return 0;
 		while (input_copy[0] == ' ')
 			++input_copy;
 		if (0 == cmp_input_command(input_copy, "white"))
@@ -405,7 +405,7 @@ int get_board_position(char* input, int* i, int* j)
 	int temp;
 	int start = strchr(input, '<') - input;
 	int end = strchr(input, ',') - input;
-	if (end - start != 2 || input[start + 1] < 'a' || input[start + 1] > 'j')
+	if ((*i + *j) % 2 != 0 || end - start != 2 || input[start + 1] < 'a' || input[start + 1] > 'j')
 	{
 		print_message(WRONG_POSITION);
 		return 0;
@@ -514,6 +514,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 				*best = top ? *(game_move*)crnt->data : *best;
 			}
 		}
+		return best_val;
 	}
 	else
 	{
@@ -796,7 +797,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 			if (out_of_boarders(dest_lr, dest_ud))
 				continue;
 			board_tile* next = &board[dest_lr][dest_ud];
-			if (contains_jump(cur_move, *next, tile))
+			if (contains_jump(cur_move, *next, tile) || get_tile_color(*next) != EMPTY)
 				continue; //already ate this tile on this move..
 			board_tile* mid = &board[(tile.char_indexer) + lr_direction][tile.int_indexer + ud_direction];
 			char c = get_tile_color(*mid);
@@ -832,7 +833,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 			}
 		}
 	}
-	if (*num_eats == old_eats && old_eats > 0)
+	if (old_eats == *num_eats && cur_move->jumps.len != 0)
 	{
 		if (cur_move->jumps.len == *num_eats)
 		{
@@ -863,7 +864,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 				free(cur_move);
 				return;
 			}
-			++*num_eats;
+			*num_eats = cur_move->jumps.len;
 		}
 	}
 }
@@ -1203,12 +1204,12 @@ int game_move_list_cmp(linked_list list1, linked_list list2)
 int find_move(linked_list possible_moves, game_move move)
 {
 	node* cur = possible_moves.first;
-	while (cur->next != NULL)
+	for (int i = 0; i < possible_moves.len; i++)
 	{
-		cur = cur->next;
 		game_move cur_move = *((game_move*)cur->data);
 		if (game_move_list_cmp(cur_move.jumps, move.jumps))
 			return 1;
+		cur = cur->next;
 	}
 	return 0;
 }
