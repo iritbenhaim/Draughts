@@ -4,37 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 #include "Draughts.h"
-
-/*represents a tile on the board*/
-struct board_tile
-{
-	int char_indexer; /*col_num - char*/
-	int int_indexer; /*row_num - int*/
-	char type;
-};
-
-/*linked list node*/
-struct node
-{
-	void* data;
-	node* next;
-};
-
-/*linked list*/
-struct linked_list
-{
-	node* first;
-	node* last;
-	int len;
-};
-
-/*represent a movement with the game piece on "start" tile*/
-struct game_move
-{
-	board_tile start;
-	linked_list jumps;
-};
 
 
 int minmax_depth = 1; /*the debth of minmax algorithm*/
@@ -45,7 +16,7 @@ int is_user_turn;
 
 int main()
 {
-	unsigned int input_size = 1024;
+	int input_size = 1024;
 	char* input = malloc(input_size);
 	if (input == NULL)
 	{
@@ -71,7 +42,7 @@ int main()
 		if (should_terminate)
 		{
 			free(input);
-			return;
+			return -1;
 		}
 	}
 	is_user_turn = user_color == WHITE;
@@ -89,7 +60,7 @@ int main()
 			if (should_terminate)
 			{
 				free(input);
-				return;
+				return -1;
 			}
 			if (is_comp_turn == -1)
 			{
@@ -98,7 +69,7 @@ int main()
 					getchar();
 				}
 				free(input);
-				return;
+				return -1;
 			}
 			is_user_turn = !is_comp_turn;
 		}
@@ -708,7 +679,6 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 			if (out_of_boarders((tile.char_indexer) + i, tile.int_indexer + direction))
 				continue;
 			board_tile* next = &board[(tile.char_indexer) + i][tile.int_indexer + direction];
-			char c = get_tile_color(*next);
 			if (next->type == EMPTY)
 			{
 				/*add the move to the best moves list*/
