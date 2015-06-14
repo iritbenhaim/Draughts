@@ -31,7 +31,7 @@ int main()
 
 	print_message(WELCOME_TO_DRAUGHTS);
 	print_message(ENTER_SETTINGS);
-	while (1)//!DEBUG)
+	while (1)
 	{ /*game settings*/
 		if (read_user_input_line(input, &input_size) == -1)
 		{
@@ -48,10 +48,10 @@ int main()
 	is_user_turn = user_color == WHITE;
 	while (1)
 	{/*game play*/
-		if (is_user_turn)
-			print_message(ENTER_YOUR_MOVE);
 		while (is_user_turn)
 		{
+			if (is_user_turn)
+				print_message(ENTER_YOUR_MOVE);
 			if (read_user_input_line(input, &input_size) == -1)
 			{
 				return -1; /*no resources were allocated yet*/
@@ -213,7 +213,7 @@ int do_computer_move(char color)
 		perror_message("malloc");
 		return 1;
 	}
-	int s = minimax(board, minmax_depth, 1, chosen_move, color, 1);
+	int s = minimax(board, minmax_depth, 1, &chosen_move, color, 1);
 	if (s == INT_MIN)
 		return 1;
 	do_move(board, *chosen_move);
@@ -522,7 +522,7 @@ int read_user_input_line(char* input, int* input_size)
 
 /*runs minimax algorithm and gets the best move possible 
 returns the best move score*/
-int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move* best, char color, int top)
+int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move** best, char color, int top)
 {
 	int tmp_val;
 	int best_val;
@@ -578,11 +578,9 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
-				*best = top ? *(game_move*)crnt->data : *best; /*only change move if this is depth 0*/
+				**best = top ? *(game_move*)crnt->data : **best; /*only change move if this is depth 0*/
 			}
 		}
-		free_moves(possible);
-		return best_val;
 	}
 	else
 	{
@@ -604,12 +602,13 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
-				*best = top ? *(game_move*)crnt->data : *best; /*only change move if this is depth 0*/
+				**best = top ? *(game_move*)crnt->data : **best; /*only change move if this is depth 0*/
 			}
 		}
-		free_moves(possible);
-		return best_val;
 	}
+	*best = copy_move(*best);
+	free_moves(possible);
+	return best_val;
 }
 
 /*returns the opposite color*/
@@ -640,6 +639,8 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 			if (type == KING)
 			{
 				generate_king_moves(board[i][j], cur_player_color, &best_moves, &num_eats);
+				if (should_terminate)
+					break;
 			}
 			else if (type == MAN)
 			{

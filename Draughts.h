@@ -90,7 +90,7 @@ void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
-int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move* best, char color, int top);
+int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move** best, char color, int top);
 int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 char flip_color(char color);
 int settings(char* input);
