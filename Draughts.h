@@ -54,7 +54,7 @@ char get_tile_color(board_tile b);
 char get_tile_type(board_tile b);
 linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color);
 int is_board_init_legal();
-char get_tool_type(char* color, char type);
+char get_tool_type(char color, char type);
 int get_board_position(char* input, int* i, int* j);
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
@@ -73,6 +73,6 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void print_single_move(game_move move);
 void print_tile(board_tile tile);
 int is_changed_to_king(char pawn, board_tile loc);
-char is_end_of_game(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
+char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 
 #endif  

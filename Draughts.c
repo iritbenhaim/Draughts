@@ -329,14 +329,15 @@ int settings(char* input)
 	}
 	if (0 == cmp_input_command(input, "rm"))
 	{
-		get_board_position(input, &i, &j);
+		if (0 == get_board_position(input, &i, &j))
+			return 0;
 		board[i][j].type = EMPTY;
 		return 0;
 
 	}
 	if (0 == cmp_input_command(input, "set"))
 	{
-		char* color;
+		char color;
 		char type;
 		input_copy = strchr(input, '>') + 2;
 		if (0 == get_board_position(input, &i, &j))
@@ -344,9 +345,9 @@ int settings(char* input)
 		while (input_copy[0] == ' ')
 			++input_copy;
 		if (0 == cmp_input_command(input_copy, "white"))
-			color = "white";
+			color = WHITE;
 		else if (0 == cmp_input_command(input_copy, "black"))
-			color = "black";
+			color = BLACK;
 		else
 			return 0;
 		input_copy += 5;
@@ -434,10 +435,11 @@ char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	free_moves(possible_moves);
 	return 0;
 }
+
 /*returns the char used on board to represent the given type and color of tool*/
-char get_tool_type(char* color, char type)
+char get_tool_type(char color, char type)
 {
-	if (color[0] == WHITE)
+	if (color == WHITE)
 	{
 		if (type == 'm')
 		{
