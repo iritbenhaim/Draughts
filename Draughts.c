@@ -1,5 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
-#define DEBUG 0
+#define DEBUG 1
 
 #include <string.h>
 #include <stdlib.h>
@@ -92,14 +92,25 @@ int main()
 			}
 			if (is_comp_turn == -1)
 			{
+				if (DEBUG)
+				{
+					getchar();
+				}
 				free(input);
 				return;
 			}
 			is_user_turn = !is_comp_turn;
 		}
 		/*computer turn*/
-		if (1==do_computer_move(flip_color(user_color)))
+		if (1 == do_computer_move(flip_color(user_color)))
+		{
 			break;
+
+			if (DEBUG)
+			{
+				getchar();
+			}
+		}
 		is_user_turn = 1;
 		if (DEBUG)
 			print_board(board);
@@ -845,57 +856,51 @@ if a better move was found, best moves will be freed and replaced.
 tile - the tile in which the piece is at*/
 void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats, game_move* cur_move)
 {
-	if ((get_tile_type(cur_move->start) == MAN) && tile.int_indexer == (color == BLACK ? 0 : 9))
-	{
-		free_list(cur_move->jumps);
-		free(cur_move);
-		return;
-	}
-
-
-	int used_cur_move = 0;
 	int old_eats = *num_eats;
-	for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
+	if (!((get_tile_type(cur_move->start) == MAN) && tile.int_indexer == (color == BLACK ? 0 : 9)))
 	{
-		for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
+		for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
 		{
-			int dest_lr = (tile.char_indexer) + lr_direction * 2;
-			int dest_ud = tile.int_indexer + ud_direction * 2;
-			if (out_of_boarders(dest_lr, dest_ud))
-				continue;
-			board_tile* next = &board[dest_lr][dest_ud];
-			if (contains_jump(cur_move, *next, tile) || get_tile_color(*next) != EMPTY)
-				continue; //already ate this tile on this move..
-			board_tile* mid = &board[(tile.char_indexer) + lr_direction][tile.int_indexer + ud_direction];
-			char c = get_tile_color(*mid);
-			if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))/*the next tile belongs to the oponnents*/
+			for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
 			{
-				game_move* cur_move_copy = copy_move(cur_move);
-				if (should_terminate)
+				int dest_lr = (tile.char_indexer) + lr_direction * 2;
+				int dest_ud = tile.int_indexer + ud_direction * 2;
+				if (out_of_boarders(dest_lr, dest_ud))
+					continue;
+				board_tile* next = &board[dest_lr][dest_ud];
+				if (contains_jump(cur_move, *next, tile) || get_tile_color(*next) != EMPTY)
+					continue; //already ate this tile on this move..
+				board_tile* mid = &board[(tile.char_indexer) + lr_direction][tile.int_indexer + ud_direction];
+				char c = get_tile_color(*mid);
+				if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))/*the next tile belongs to the oponnents*/
 				{
-					free_list(cur_move->jumps);
-					free(cur_move);
-					return;
-				}
+					game_move* cur_move_copy = copy_move(cur_move);
+					if (should_terminate)
+					{
+						free_list(cur_move->jumps);
+						free(cur_move);
+						return;
+					}
 
-				/*add cur eat to move*/
-				list_add(&cur_move_copy->jumps, next);
-				if (should_terminate)
-				{
-					free_list(cur_move->jumps);
-					free(cur_move);
-					free_list(cur_move_copy->jumps);
-					free(cur_move_copy);
-					return;
-				}
-				generate_eater_moves(*next, color, best_moves, num_eats, cur_move_copy);
-				if (should_terminate)
-				{
-					free_list(cur_move->jumps);
-					free(cur_move);
-					free_list(cur_move_copy->jumps);
-					free(cur_move_copy);
-					return;
+					/*add cur eat to move*/
+					list_add(&cur_move_copy->jumps, next);
+					if (should_terminate)
+					{
+						free_list(cur_move->jumps);
+						free(cur_move);
+						free_list(cur_move_copy->jumps);
+						free(cur_move_copy);
+						return;
+					}
+					generate_eater_moves(*next, color, best_moves, num_eats, cur_move_copy);
+					if (should_terminate)
+					{
+						free_list(cur_move->jumps);
+						free(cur_move);
+						free_list(cur_move_copy->jumps);
+						free(cur_move_copy);
+						return;
+					}
 				}
 			}
 		}
@@ -946,6 +951,18 @@ int contains_jump(game_move* cur_move, board_tile second, board_tile first)
 {
 	board_tile cur_tile = cur_move->start;
 	node* cur_node = cur_move->jumps.first;
+	if (get_tile_type(cur_move->start) == KING)
+	{
+		board_tile next_tile = *((board_tile*)(cur_node->data));
+		int mid_char = cur_tile.char_indexer > next_tile.char_indexer ? next_tile.char_indexer + 2 : next_tile.char_indexer - 2;
+		int mid_int = cur_tile.int_indexer > next_tile.int_indexer ? next_tile.int_indexer + 2 : next_tile.int_indexer - 2;
+		board_tile start_eat = board[mid_char][mid_int];
+		if ((same_tile(next_tile, second) && same_tile(start_eat, first)) ||
+			(same_tile(next_tile, first) && same_tile(start_eat, second)))
+		{
+			return 1;
+		}
+	}
 	while (cur_node != NULL && cur_node->data != NULL)
 	{
 		board_tile next_tile = *((board_tile*)(cur_node->data));
