@@ -222,9 +222,15 @@ int do_computer_move(char color)
 	print_board(board);
 	end_game = get_winner(board, flip_color(user_color));
 	if (should_terminate)
+	{
+		free_list(chosen_move->jumps);
+		free(chosen_move);
 		return -1;
+	}
 	if (end_game != 0)
 	{
+		free_list(chosen_move->jumps);
+		free(chosen_move);
 		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
 		return 1;
 	}
@@ -534,15 +540,24 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 		}
 	}
 	if (should_terminate)
-	{/*DO STUFF!*/}
+	{
+		free_moves(possible);
+		return -1;
+	}
 	node* crnt = possible.first;
 	
 	tmp_val = score(board, color); /*current board score*/
 	end_game = get_winner(board, color);
 	if (should_terminate)
+	{
+		free_moves(possible);
 		return -1;
+	}
 	if (depth == 0 || end_game != 0) /*reached minimax depth or end of game*/
+	{
+		free_moves(possible);
 		return tmp_val;
+	}
 	if(maximize)
 	{
 		best_val = INT_MIN;
@@ -566,6 +581,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 				*best = top ? *(game_move*)crnt->data : *best; /*only change move if this is depth 0*/
 			}
 		}
+		free_moves(possible);
 		return best_val;
 	}
 	else
@@ -591,6 +607,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 				*best = top ? *(game_move*)crnt->data : *best; /*only change move if this is depth 0*/
 			}
 		}
+		free_moves(possible);
 		return best_val;
 	}
 }
@@ -827,6 +844,7 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 /*appends to the best_moves list all the legal eater moves (man or ling eating moves) from the current tile.
 if a better move was found, best moves will be freed and replaced.
 tile - the tile in which the piece is at*/
+
 void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats, game_move* cur_move)
 {
 	int old_eats = *num_eats;
@@ -916,6 +934,11 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 			free_list(cur_move->jumps);
 			free(cur_move);
 		}
+	}
+	else
+	{
+		free_list(cur_move->jumps);
+		free(cur_move);
 	}
 }
 
@@ -1268,7 +1291,7 @@ int game_move_list_cmp(linked_list list1, linked_list list2)
 	{
 		board_tile b1 = *(board_tile*)(cur1->data);
 		board_tile b2 = *(board_tile*)(cur2->data);
-		if (b1.char_indexer != b2.char_indexer && b1.int_indexer != b2.int_indexer)
+		if (b1.char_indexer != b2.char_indexer || b1.int_indexer != b2.int_indexer)
 			return 0;
 		cur1 = cur1->next;
 		cur2 = cur2->next;
