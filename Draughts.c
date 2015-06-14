@@ -554,29 +554,29 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	{/*DO STUFF!*/}
 	node* crnt = possible.first;
 	
-	tmp_val = score(board, maximize ? color : flip_color(color)); /*current board score*/
+	tmp_val = score(board, color); /*current board score*/
 	end_game = get_winner(board, color);
 	if (should_terminate)
 		return -1;
 	if (depth == 0 || end_game != 0) /*reached minimax depth or end of game*/
 		return tmp_val;
-	/*copy board*/
-	board_tile board_copy[BOARD_SIZE][BOARD_SIZE];
-	for (int i = 0; i <BOARD_SIZE; i++)
-	{
-		for (int j = 0; j < BOARD_SIZE; j++)
-		{
-			board_copy[i][j] = board[i][j];
-		}
-
-	}
 	if(maximize)
 	{
 		best_val = INT_MIN;
 		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
+			/*copy board*/
+			board_tile board_copy[BOARD_SIZE][BOARD_SIZE];
+			for (int i = 0; i <BOARD_SIZE; i++)
+			{
+				for (int j = 0; j < BOARD_SIZE; j++)
+				{
+					board_copy[i][j] = board[i][j];
+				}
+
+			}
 			do_move(board_copy, (*(game_move*)crnt->data));
-			tmp_val = minimax(board_copy, depth - 1, 0, best, color, 0);
+			tmp_val = minimax(board_copy, depth - 1, 0, best, flip_color(color), 0);
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
@@ -590,8 +590,18 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 		best_val = INT_MAX;
 		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 		{
+			/*copy board*/
+			board_tile board_copy[BOARD_SIZE][BOARD_SIZE];
+			for (int i = 0; i <BOARD_SIZE; i++)
+			{
+				for (int j = 0; j < BOARD_SIZE; j++)
+				{
+					board_copy[i][j] = board[i][j];
+				}
+
+			}
 			do_move(board_copy, (*(game_move*)crnt->data));
-			tmp_val = minimax(board_copy, depth - 1, 1, best, color, 0);
+			tmp_val = minimax(board_copy, depth - 1, 1, best, flip_color(color), 0);
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
@@ -683,9 +693,9 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 	{
 		for (int i = 1; i > -2; i -= 2) /*when i=1, move right. when i=0 move left*/
 		{
-			if (out_of_boarders((tile.char_indexer) + direction, tile.int_indexer + i))
+			if (out_of_boarders((tile.char_indexer) + i, tile.int_indexer + direction))
 				continue;
-			board_tile* next = &board[(tile.char_indexer) + direction][tile.int_indexer + i];
+			board_tile* next = &board[(tile.char_indexer) + i][tile.int_indexer + direction];
 			char c = get_tile_color(*next);
 			if (next->type == EMPTY)
 			{
