@@ -49,7 +49,8 @@ int main()
 	char* input = malloc(input_size);
 	if (input == NULL)
 	{
-		perror_message("main");
+		should_terminate = 1;
+		perror_message("malloc");
 		return -1;
 	}
 	init_board(board);
@@ -130,6 +131,7 @@ int user_move(char* input)
 	if (0 == cmp_input_command(input, "move "))
 	{
 		int i, j;
+		int end_game;
 		game_move move;
 		char* input_copy = strchr(input, '>') + 1;
 		if (0 == get_board_position(input, &i, &j))
@@ -187,7 +189,10 @@ int user_move(char* input)
 		}
 
 		free_list(move.jumps);
-		if (is_end_of_game(board, flip_color(user_color)))
+		end_game = get_winner(board, flip_color(user_color));
+		if (should_terminate)
+			return -1;
+		if (end_game != 0)
 		{
 			char* winner = user_color == WHITE ? "White player wins!\n" : "Black player wins!\n";
 			print_message(winner);
@@ -217,10 +222,12 @@ int is_legal_move(game_move move, char color)
 /*return 1 if game ended*/
 int do_computer_move(char color)
 {
+	int end_game;
 	game_move* chosen_move = malloc(sizeof(game_move));
 	if (chosen_move == NULL)
 	{
 		should_terminate = 1;
+		perror_message("malloc");
 		return 1;
 	}
 	int s = minimax(board, minmax_depth, 1, chosen_move, color, 1);
@@ -230,7 +237,10 @@ int do_computer_move(char color)
 	print_message("Computer: move ");
 	print_single_move(*chosen_move);
 	print_board(board);
-	if (is_end_of_game(board, flip_color(user_color)))
+	end_game = get_winner(board, flip_color(user_color));
+	if (should_terminate)
+		return -1;
+	if (end_game != 0)
 	{
 		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
 		return 1;
@@ -397,7 +407,7 @@ int is_board_init_legal()
 
 /*if a player has won return its color
   if no one won yet return 0*/
-char is_end_of_game(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
 	linked_list possible_moves;
 	int board_score = score(board, color);
@@ -406,11 +416,22 @@ char is_end_of_game(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	if (board_score == -100)
 		return flip_color(color);
 	possible_moves = generate_moves(board, color);
+	if (should_terminate)
+		return -1;
 	if (possible_moves.len == 0)
+	{
+		free_moves(possible_moves);
 		return flip_color(color);
+	}
 	possible_moves = generate_moves(board, flip_color(color));
+	if (should_terminate)
+		return -1;
 	if (possible_moves.len == 0)
+	{
+		free_moves(possible_moves);
 		return color;
+	}
+	free_moves(possible_moves);
 	return 0;
 }
 /*returns the char used on board to represent the given type and color of tool*/
@@ -484,7 +505,8 @@ int read_user_input_line(char* input, int* input_size)
 		if (ch == EOF)
 		{
 			free(input);
-			perror_message("main");
+			should_terminate = 1;
+			perror_message("getchar");
 			return -1;
 		}
 		c = ch;
@@ -494,7 +516,8 @@ int read_user_input_line(char* input, int* input_size)
 			input = realloc(input, *input_size);
 			if (input == NULL)
 			{
-				perror_message("main");
+				should_terminate = 1;
+				perror_message("realloc");
 				return -1;
 			}
 		}
@@ -511,6 +534,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 {
 	int tmp_val;
 	int best_val;
+	int end_game = 0;
 	linked_list possible;
 	possible = generate_moves(board, color); /*all possible moves for current player*/
 
@@ -528,7 +552,10 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	node* crnt = possible.first;
 	
 	tmp_val = score(board, maximize ? color : flip_color(color)); /*current board score*/
-	if (depth == 0 || is_end_of_game(board, color)) /*reached minimax depth or end of game*/
+	end_game = get_winner(board, color);
+	if (should_terminate)
+		return -1;
+	if (depth == 0 || end_game != 0) /*reached minimax depth or end of game*/
 		return tmp_val;
 	/*copy board*/
 	board_tile board_copy[BOARD_SIZE][BOARD_SIZE];
@@ -624,6 +651,7 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 	if (cur_move == NULL)
 	{
 		should_terminate = 1;
+		perror_message("malloc");
 		return;
 	}
 	cur_move->jumps = new_list();
@@ -697,6 +725,7 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 	if (cur_move == NULL)
 	{
 		should_terminate = 1;
+		perror_message("malloc");
 		return;
 	}
 	cur_move->jumps = new_list();
@@ -740,6 +769,7 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 					if (cur_move == NULL)
 					{
 						should_terminate = 1;
+						perror_message("malloc");
 						return;
 					}
 					cur_move->jumps = new_list();
@@ -938,6 +968,7 @@ game_move* copy_move(game_move* cur_move)
 	if (copy == NULL)
 	{
 		should_terminate = 1;
+		perror_message("malloc");
 		return NULL;
 	}
 	copy->start = cur_move->start;
@@ -1175,6 +1206,7 @@ linked_list new_list()
 	if (l.first == NULL)
 	{
 		should_terminate = 1;
+		perror_message("malloc");
 		return l;
 	}
 	l.first->next = NULL;
@@ -1221,6 +1253,7 @@ void list_add(linked_list* list, void* data)
 	if (NULL == (*list).last->next)
 	{
 		should_terminate = 1;
+		perror_message("malloc");
 		return;
 	}
 	(*list).last = (*list).last->next;
