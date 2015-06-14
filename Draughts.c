@@ -77,9 +77,10 @@ int main()
 	is_user_turn = user_color == WHITE;
 	while (1)
 	{/*game play*/
+		if (is_user_turn)
+			print_message(ENTER_YOUR_MOVE);
 		while (is_user_turn)
 		{
-			print_message(ENTER_YOUR_MOVE);
 			if (read_user_input_line(input, &input_size) == -1)
 			{
 				return -1; /*no resources were allocated yet*/
@@ -773,6 +774,8 @@ void generate_king_moves(board_tile tile, char color, linked_list* best_moves, i
 		{
 			for (int i = 1; !out_of_boarders(tile.char_indexer + lr_direction*i, tile.int_indexer + ud_direction*i); ++i)/*check me!!!*/
 			{
+				if (out_of_boarders((tile.char_indexer) + lr_direction*i, tile.int_indexer + ud_direction*i))
+					continue;
 				char tile_color = (get_tile_color(board[tile.char_indexer + lr_direction*i][tile.int_indexer + ud_direction*i]));
 
 				if (EMPTY == tile_color)
@@ -1016,7 +1019,7 @@ game_move* copy_move(game_move* cur_move)
 /*checks if given indices out of counds of board*/
 int out_of_boarders(int char_indexer, int int_indexer)
 {
-	return (char_indexer < 0 || char_indexer > BOARD_SIZE || int_indexer < 0 || int_indexer > BOARD_SIZE);
+	return (char_indexer < 0 || char_indexer >= BOARD_SIZE || int_indexer < 0 || int_indexer >= BOARD_SIZE);
 }
 
 /*
