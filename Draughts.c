@@ -1,5 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
-#define DEBUG 1
+#define DEBUG 0
 
 #include <string.h>
 #include <stdlib.h>
@@ -550,7 +550,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	int best_val;
 	int end_game = 0;
 	linked_list possible;
-	possible = generate_moves(board, color); /*all possible moves for current player*/
+	possible = generate_moves(board, maximize ? color : flip_color(color)); /*all possible moves for current player*/
 
 	if (DEBUG && top)
 	{
@@ -587,7 +587,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 
 			}
 			do_move(board_copy, (*(game_move*)crnt->data));
-			tmp_val = minimax(board_copy, depth - 1, 0, best, flip_color(color), 0);
+			tmp_val = minimax(board_copy, depth - 1, 0, best, color, 0);
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
@@ -612,7 +612,7 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 
 			}
 			do_move(board_copy, (*(game_move*)crnt->data));
-			tmp_val = minimax(board_copy, depth - 1, 1, best, flip_color(color), 0);
+			tmp_val = minimax(board_copy, depth - 1, 1, best, color, 0);
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
