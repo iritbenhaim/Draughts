@@ -608,7 +608,8 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 			}
 		}
 	}
-	*best = copy_move(*best);
+	if (top)
+		*best = copy_move(*best);
 	free_moves(possible);
 	return best_val;
 }
