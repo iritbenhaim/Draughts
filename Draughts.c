@@ -206,13 +206,13 @@ int is_legal_move(game_move move, char color)
 int do_computer_move(char color)
 {
 	int end_game;
-	game_move* chosen_move = malloc(sizeof(game_move));
+	game_move* chosen_move = NULL;/* = malloc(sizeof(game_move));
 	if (chosen_move == NULL)
 	{
 		should_terminate = 1;
 		perror_message("malloc");
 		return 1;
-	}
+	}*/
 	int s = minimax(board, minmax_depth, 1, &chosen_move, color, 1);
 	if (s == INT_MIN)
 		return 1;
@@ -578,7 +578,8 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 			if (tmp_val > best_val)
 			{
 				best_val = tmp_val;
-				**best = top ? *(game_move*)crnt->data : **best; /*only change move if this is depth 0*/
+				if (top)
+					*best = (game_move*)crnt->data; /*only change move if this is depth 0*/
 			}
 		}
 	}
@@ -602,7 +603,8 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 			if (tmp_val < best_val)
 			{
 				best_val = tmp_val;
-				**best = top ? *(game_move*)crnt->data : **best; /*only change move if this is depth 0*/
+				if (top)
+					*best = (game_move*)crnt->data; /*only change move if this is depth 0*/
 			}
 		}
 	}
@@ -981,6 +983,8 @@ int same_tile(board_tile first, board_tile second)
 /*copies a game move to new memory*/
 game_move* copy_move(game_move* cur_move)
 {
+	if (cur_move == NULL)
+		return NULL;
 	game_move* copy = malloc(sizeof(game_move));
 	if (copy == NULL)
 	{
