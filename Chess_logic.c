@@ -157,15 +157,17 @@ char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 /*returns the char used on board to represent the given type and color of tool*/
 char get_tool_type(char color, char type)
 {
+	if (color == EMPTY)
+		return EMPTY;
 	if (color == WHITE)
 	{
-		if (type == 'm')
+		if (type == WHITE_P)
 		{
 			return WHITE_P;
 		}
 		return WHITE_K;
 	}
-	if (type == 'm')
+	if (type == WHITE_P)
 	{
 		return BLACK_P;
 	}
@@ -749,10 +751,7 @@ void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
 	{
 		printf((j < 9 ? " %d" : "%d"), j+1);
 		for (i = 0; i < BOARD_SIZE; i++){
-			if (BLACK != board[i][j].color)
-				printf("| %c ", board[i][j].type2);
-			else
-				printf("| %c ", toupper(board[i][j].type2));
+			printf("| %c ", get_tool_type(board[i][j].color, board[i][j].type2));
 
 		}
 		printf("|\n");
