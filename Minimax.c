@@ -10,25 +10,31 @@
 extern int should_terminate;
 int minimax_depth = 1;		/*levels considered in minimax tree*/
 
-/*runs minimax algorithm and gets the best move possible
-returns the best move score*/
-int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, game_move** best, char color, int top)
+/*wrapper function for the minimax algorithm which determines all default values and runs minimax*/
+int run_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, game_move** best)
 {
-	int tmp_val;
-	int best_val;
-	int end_game = 0;
-	linked_list possible;
-	possible = generate_moves(board, maximize ? color : flip_color(color)); /*all possible moves for current player*/
+	int a, b, depth, top, max;
+	a = INT_MIN;
+	b = INT_MAX;
+	depth = minimax_depth;
+	top = 1;
+	max = 1;
+	return minimax_algo(board, depth, max, a, b, best, color, top);
+}
 
-	if (DEBUG && top)
+/*running minimax algorithm with alpha-beta pruning*/
+int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int max, int a, int b, game_move** best, char color, int top)
+{
+	int v = max ? INT_MIN : INT_MAX;
+	int tmp_v;
+	linked_list possible;
+
+	if (is_leaf(board, depth, color))	/*reached max depth or a winning/losig board*/
 	{
-		node* f = possible.first;
-		for (int i = 0; i < possible.len; i++)
-		{
-			print_single_move(*(game_move*)f->data);
-			f = f->next;
-		}
+		return score(board, color);
 	}
+
+	possible = generate_moves(board, max ? color : flip_color(color)); /*all possible moves for current player*/
 	if (should_terminate)
 	{
 		free_moves(possible);
@@ -36,88 +42,31 @@ int minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int maximize, g
 	}
 	node* crnt = possible.first;
 
-	tmp_val = score(board, color); /*current board score*/
-	end_game = get_winner(board, color);
-	if (should_terminate)
+	for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 	{
-		free_moves(possible);
-		return -1;
-	}
-	if (depth == 0 || end_game != 0) /*reached minimax depth or end of game*/
-	{
-		free_moves(possible);
-		return tmp_val;
-	}
-	if (maximize)
-	{
-		best_val = INT_MIN;
-		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
+		board_tile copy[BOARD_SIZE][BOARD_SIZE] = copy_board(board);
+		do_move(copy, *(game_move*)(crnt->data));
+		tmp_v = minimax_algo(copy, depth - 1, flip_max(max), a, b, best, color, 0);
+		if (determine_v(v, tmp_v, max))		/*change node value and best move if needed*/
 		{
-			/*copy board*/
-			board_tile board_copy[BOARD_SIZE][BOARD_SIZE];
-			for (int i = 0; i <BOARD_SIZE; i++)
-			{
-				for (int j = 0; j < BOARD_SIZE; j++)
-				{
-					board_copy[i][j] = board[i][j];
-				}
-
-			}
-			do_move(board_copy, (*(game_move*)crnt->data));
-			tmp_val = minimax(board_copy, depth - 1, 0, best, color, 0);
-			if (tmp_val > best_val)
-			{
-				best_val = tmp_val;
-				if (top)
-					*best = (game_move*)crnt->data; /*only change move if this is depth 0*/
-			}
+			v = tmp_v;
+			if (top)
+				*best = (game_move*)(crnt->data);
 		}
-	}
-	else
-	{
-		best_val = INT_MAX;
-		for (int i = 0; i < possible.len; i++, crnt = crnt->next)
-		{
-			/*copy board*/
-			board_tile board_copy[BOARD_SIZE][BOARD_SIZE];
-			for (int i = 0; i <BOARD_SIZE; i++)
-			{
-				for (int j = 0; j < BOARD_SIZE; j++)
-				{
-					board_copy[i][j] = board[i][j];
-				}
-
-			}
-			do_move(board_copy, (*(game_move*)crnt->data));
-			tmp_val = minimax(board_copy, depth - 1, 1, best, color, 0);
-			if (tmp_val < best_val)
-			{
-				best_val = tmp_val;
-				if (top)
-					*best = (game_move*)crnt->data; /*only change move if this is depth 0*/
-			}
-		}
+		a = change_a(a, v, max);	/*update alpha - only for max node*/
+		b = change_b(b, v, max);	/*update beta - only for min node*/
+		if (prune(v, max, a, b))	/*prune sub-tree if possible*/
+			break;
 	}
 	if (top)
 		*best = copy_move(*best);
 	free_moves(possible);
-	return best_val;
-}
-
-
-int new_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int max, int a, int b, game_move** best, char color, int top)
-{
-	int v = max ? INT_MIN : INT_MAX;
-	linked_list possible;
-	possible = generate_moves(board, max ? color : flip_color(color)); /*all possible moves for current player*/
-	if (should_terminate)
-	{
-		free_moves(possible);
-		return -1;
-	}
+	return v;
 
 }
 
+/*checks if current node in minimax tree is a leaf - 
+if we reached minimax depth or some player won*/
 int is_leaf(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, char color)
 {
 	if (depth == 0)
@@ -127,3 +76,57 @@ int is_leaf(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, char color)
 	return 0;
 }
 
+/*creates a copy of origin board*/
+board_tile** copy_board(board_tile origin[BOARD_SIZE][BOARD_SIZE])
+{
+	board_tile copy[BOARD_SIZE][BOARD_SIZE];
+	for (int i = 0; i < BOARD_SIZE; i++)
+	{
+		for (int j = 0; j < BOARD_SIZE; j++)
+		{
+			copy[i][j] = origin[i][j];
+		}
+	}
+	return copy;
+}
+
+int flip_max(int max)
+{
+	return max ? 0 : 1;
+}
+
+/*determines if v should change according to new information*/
+int determine_v(int v, int tmp_v, int max)
+{
+	if (max)
+		return tmp_v > v ? 1 : 0;
+	else
+		return tmp_v < v ? 1 : 0;
+}
+
+/*returns updated vlaue of a*/
+int change_a(int a, int v, int max)
+{
+	if (max)
+		return v < a ? a : v;
+	else
+		return a;
+}
+
+/*returns updated value of b*/
+int change_b(int b, int v, int max)
+{
+	if (max)
+		return b;
+	else
+		return v < b ? v : b;
+}
+
+/*determines if tree can be pruned at this point*/
+int prune(int v, int max, int a, int b)
+{
+	if (max)
+		return b > v ? 0 : 1;
+	else
+		return a < v ? 0 : 1;
+}
