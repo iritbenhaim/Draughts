@@ -7,8 +7,9 @@
 #include "Chess.h"
 #include "Chess_logic.h"
 
-extern int should_terminate;
-int minimax_depth = 1;		/*levels considered in minimax tree*/
+int minimax_depth = 1;		/*levels considered in minimax tree. -1: means we difficulty best – best argument allows 
+							the computer to execute minimax algorithm in different depths, depending on the state of
+							the game. Using this option, the number of evaluated boards should not exceed 10^-6 */
 
 /*wrapper function for the minimax algorithm which determines all default values and runs minimax*/
 int run_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, game_move** best)
@@ -130,3 +131,4 @@ int prune(int v, int max, int a, int b)
 	else
 		return a < v ? 0 : 1;
 }
+

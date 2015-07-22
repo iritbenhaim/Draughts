@@ -1,5 +1,12 @@
+
 #ifndef CHESS_
 #define CHESS_
+
+
+#define DEBUG 0
+#define COMP_ONLY 0
+#define _CRT_SECURE_NO_WARNINGS
+
 
 #include<stdio.h>
 
@@ -42,8 +49,8 @@
 #define ILLEGAL_CALTLING_MOVE "Illegal castling move\n"  
 
 #define TIE "The game ends in a tie\n"
- 
-#define perror_message(func_name) (perror("Error: standard function %s has failed", func_name));
+
+#define perror_message(func_name) (fprintf(stderr, "Error: standard function %s has failed\n", func_name))
 #define print_message(message) (printf("%s", message));
 
 

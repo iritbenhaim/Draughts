@@ -1,5 +1,6 @@
 #include "Linked_list.h"
-#include <stdio.h>
+#include "Chess.h"
+#include <stdlib.h>
 
 extern int should_terminate;
 
