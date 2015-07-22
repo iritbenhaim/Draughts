@@ -1,11 +1,17 @@
 #define DEBUG 0
 
+#include "Chess.h"
+#include "Chess_logic.h"
+#include "Game_flow.h"
+#include "Minimax.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
 #include "Chess.h"
 #include "Chess_logic.h"
+#include <stdlib.h>
 
 int minimax_depth = 1;		/*levels considered in minimax tree. -1: means we difficulty best – best argument allows 
 							the computer to execute minimax algorithm in different depths, depending on the state of
@@ -45,7 +51,8 @@ int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int max, i
 
 	for (int i = 0; i < possible.len; i++, crnt = crnt->next)
 	{
-		board_tile copy[BOARD_SIZE][BOARD_SIZE] = copy_board(board);
+		board_tile copy[BOARD_SIZE][BOARD_SIZE];
+		copy_board(board, copy);
 		do_move(copy, *(game_move*)(crnt->data));
 		tmp_v = minimax_algo(copy, depth - 1, flip_max(max), a, b, best, color, 0);
 		if (determine_v(v, tmp_v, max))		/*change node value and best move if needed*/
@@ -78,9 +85,8 @@ int is_leaf(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, char color)
 }
 
 /*creates a copy of origin board*/
-board_tile** copy_board(board_tile origin[BOARD_SIZE][BOARD_SIZE])
+void copy_board(board_tile origin[BOARD_SIZE][BOARD_SIZE], board_tile copy[BOARD_SIZE][BOARD_SIZE])
 {
-	board_tile copy[BOARD_SIZE][BOARD_SIZE];
 	for (int i = 0; i < BOARD_SIZE; i++)
 	{
 		for (int j = 0; j < BOARD_SIZE; j++)
@@ -88,7 +94,6 @@ board_tile** copy_board(board_tile origin[BOARD_SIZE][BOARD_SIZE])
 			copy[i][j] = origin[i][j];
 		}
 	}
-	return copy;
 }
 
 int flip_max(int max)

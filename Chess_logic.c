@@ -36,7 +36,7 @@ int do_computer_move(char color)
 		perror_message("malloc");
 		return 1;
 	}*/
-	int s = minimax(board, minimax_depth, 1, &chosen_move, color, 1);
+	int s = run_minimax(board, color, &chosen_move);
 	if (s == INT_MIN)
 		return 1;
 	do_move(board, *chosen_move);
