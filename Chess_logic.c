@@ -65,24 +65,22 @@ or if there are more than 20 discs of the same color
 else returns 1*/
 int is_board_init_legal()
 {
-	int count_black = 0;
-	int count_white = 0;
-	int i, j;
-	char color;
-	for (i = 0; i < BOARD_SIZE; i++)
+	int black_king = 0; /*will be 1 when a black king was found*/
+	int white_king = 0;
+	for (int i = 0; i < BOARD_SIZE; i++)
 	{
-		for (j = 0; j < BOARD_SIZE; j++)
+		for (int j = 0; j < BOARD_SIZE; j++)
 		{
-			color = board[i][j].color;
-			if (color == BLACK)
-				++count_black;
-			else if (color == WHITE)
-				++count_white;
+			if (board[i][j].type = WHITE_K)
+			{
+				if (board[i][j].color = WHITE)
+					++white_king;
+				else
+					++black_king;
+			}
 		}
 	}
-	if (!count_black || !count_white || count_black > 20 || count_white > 20)
-		return 0;
-	return 1;
+	return (white_king && black_king);
 }
 
 /*if a player has won return its color
@@ -165,7 +163,7 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 		{
 			if (cur_player_color != board[i][j].color)
 				continue;
-			type = board[i][j].type2;
+			type = board[i][j].type;
 			/*if (type == KING)
 			{
 				generate_king_moves(board[i][j], cur_player_color, &best_moves, &num_eats);
@@ -227,7 +225,7 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 			if (out_of_boarders((tile.char_indexer) + i, tile.int_indexer + direction))
 				continue;
 			board_tile* next = &board[(tile.char_indexer) + i][tile.int_indexer + direction];
-			if (next->type2 == EMPTY)
+			if (next->type == EMPTY)
 			{
 				/*add the move to the best moves list*/
 				list_add(&cur_move->jumps, next);
@@ -337,7 +335,7 @@ void generate_king_moves_old(board_tile tile, char color, linked_list* best_move
 					if (out_of_boarders(tile.char_indexer + lr_direction*(i + 1), tile.int_indexer + ud_direction*(i + 1)))
 						break;
 					board_tile* next = &board[(tile.char_indexer) + lr_direction*(i + 1)][tile.int_indexer + ud_direction*(i + 1)];
-					if (EMPTY != (*next).type2)
+					if (EMPTY != (*next).type)
 						break;
 					/*add cur eat to move*/
 					list_add(&cur_move->jumps, next);
@@ -379,7 +377,7 @@ tile - the tile in which the piece is at*/
 void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats, game_move* cur_move)
 {
 	int old_eats = *num_eats;
-	/*if (!(((cur_move->start).type2 == MAN) && tile.int_indexer == (color == BLACK ? 0 : 9)))*/
+	/*if (!(((cur_move->start).type == MAN) && tile.int_indexer == (color == BLACK ? 0 : 9)))*/
 	{
 		for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
 		{
@@ -478,7 +476,7 @@ int contains_jump(game_move* cur_move, board_tile second, board_tile first)
 {
 	board_tile cur_tile = cur_move->start;
 	node* cur_node = cur_move->jumps.first;
-	/*if ((cur_move->start).type2 == KING)*/
+	/*if ((cur_move->start).type == KING)*/
 	{
 		board_tile next_tile = *((board_tile*)(cur_node->data));
 		int mid_char = cur_tile.char_indexer > next_tile.char_indexer ? next_tile.char_indexer + 2 : next_tile.char_indexer - 2;
@@ -538,7 +536,7 @@ void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile
 	//row_d = start_r < end_r ? 1 : -1; /*check rows direction*/
 	//for (; start_c != end_c; start_c += col_d, start_r += row_d)
 	//{
-	//	m_board[start_c][start_r].type2 = EMPTY; 
+	//	m_board[start_c][start_r].type = EMPTY; 
 	//}
 	//if (is_changed_to_king(pawn, end))
 	//	m_board[start_c][start_r].type = pawn == WHITE_P ? WHITE_K : BLACK_K;
@@ -631,12 +629,13 @@ void print_line(){
 	printf("|\n");
 }
 
+
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 	int i,j;
 	for (i = 0; i < BOARD_SIZE; i++){
 		for (j = 0; j < BOARD_SIZE; j++){
 			if (1 == j || 6 == j) {
-				board[i][j].type2 = WHITE_P;
+				board[i][j].type = WHITE_P;
 				board[i][j].color = j == 1 ? WHITE : BLACK;
 			}
 			else if (j == 0)
@@ -644,27 +643,27 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 			else if (j == BOARD_SIZE-1)
 				board[i][j].color = BLACK;
 			else{
-				board[i][j].type2 = EMPTY;
+				board[i][j].type = EMPTY;
 				board[i][j].color = EMPTY;
 			}
 		}
 	}
-	board[0][0].type2 = WHITE_R;
-	board[1][0].type2 = WHITE_N;
-	board[2][0].type2 = WHITE_B;
-	board[3][0].type2 = WHITE_Q;
-	board[4][0].type2 = WHITE_K;
-	board[5][0].type2 = WHITE_B;
-	board[6][0].type2 = WHITE_N;
-	board[7][0].type2 = WHITE_R;
-	board[0][BOARD_SIZE - 1].type2 = WHITE_R;
-	board[1][BOARD_SIZE - 1].type2 = WHITE_N;
-	board[2][BOARD_SIZE - 1].type2 = WHITE_B;
-	board[3][BOARD_SIZE - 1].type2 = WHITE_Q;
-	board[4][BOARD_SIZE - 1].type2 = WHITE_K;
-	board[5][BOARD_SIZE - 1].type2 = WHITE_B;
-	board[6][BOARD_SIZE - 1].type2 = WHITE_N;
-	board[7][BOARD_SIZE - 1].type2 = WHITE_R;
+	board[0][0].type = WHITE_R;
+	board[1][0].type = WHITE_N;
+	board[2][0].type = WHITE_B;
+	board[3][0].type = WHITE_Q;
+	board[4][0].type = WHITE_K;
+	board[5][0].type = WHITE_B;
+	board[6][0].type = WHITE_N;
+	board[7][0].type = WHITE_R;
+	board[0][BOARD_SIZE - 1].type = WHITE_R;
+	board[1][BOARD_SIZE - 1].type = WHITE_N;
+	board[2][BOARD_SIZE - 1].type = WHITE_B;
+	board[3][BOARD_SIZE - 1].type = WHITE_Q;
+	board[4][BOARD_SIZE - 1].type = WHITE_K;
+	board[5][BOARD_SIZE - 1].type = WHITE_B;
+	board[6][BOARD_SIZE - 1].type = WHITE_N;
+	board[7][BOARD_SIZE - 1].type = WHITE_R;
 
 }
 

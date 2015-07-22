@@ -14,7 +14,7 @@ struct board_tile
 {
 	int char_indexer; /*col_num - first*/
 	int int_indexer; /*row_num - second*/
-	char type2; /*type of the piece in the tile. if no piece, EMPTY */
+	char type; /*type of the piece in the tile. if no piece, EMPTY */
 	char color; /*color of the piece in the tile. if no piece, EMPTY*/
 };
 
@@ -44,6 +44,6 @@ void free_moves(linked_list list);
 char get_tool_type(char color, char type);
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 char flip_color(char color);
-
+int count_piece(color, type);
 
 #endif GAME_FLOW_

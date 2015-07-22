@@ -3,12 +3,14 @@
 #include "Minimax.h"
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 int should_terminate = 0;
 char user_color = WHITE; /*color of the user player*/
 int is_user_turn;
 int player_vs_player = 1; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
+char next_player = WHITE;
 
 int main()
 {
@@ -270,19 +272,41 @@ int settings(char* input)
 	}
 	if (0 == cmp_input_command(input, "difficulty "))
 	{
-		temp = atoi(input + strlen("minimax_depth "));
-		if (temp < 1 || temp > 6)
+		if (player_vs_player = 1)
 		{
-			print_message(WRONG_MINIMAX_DEPTH)
+			print_message(ILLEGAL_COMMAND);
+			return 0;
 		}
-		else
+		input += strlen("difficulty ");
+		if (0 == cmp_input_command(input, "best"))
 		{
-			minimax_depth = temp;
+			minimax_depth = -1;
+			return 0;
 		}
+		
+		if (0 == cmp_input_command(input, "depth "))
+		{
+			temp = atoi(input + strlen("depth "));
+			if (temp < 1 || temp > 4)
+			{
+				print_message(WRONG_MINIMAX_DEPTH)
+			}
+			else
+			{
+				minimax_depth = temp;
+			}
+			return 0;
+		}
+		print_message(ILLEGAL_COMMAND);
 		return 0;
 	}
 	if (0 == cmp_input_command(input, "user_color "))
 	{
+		if (player_vs_player = 1)
+		{
+			print_message(ILLEGAL_COMMAND);
+			return 0;
+		}
 		input += strlen("user_color ");
 		while (input[0] == ' ')
 			++input;
@@ -292,31 +316,51 @@ int settings(char* input)
 			user_color = BLACK;
 		return 0;
 	}
+	if (0 == cmp_input_command(input, "load "))
+	{
+		input += strlen("load ");
+		FILE *setting_file = fopen(input, "rt");
+		if (NULL == setting_file)
+		{
+			print_message(WRONG_FILE_NAME)
+			return 0;
+		}
+		/*TODO - */
+		fclose(setting_file);
+		print_board(board);
+	}	
 	if (0 == cmp_input_command(input, "clear"))
 	{
 		for (i = 0; i < BOARD_SIZE; ++i)
 		{
 			for (j = 0; j < BOARD_SIZE; ++j)
 			{
-				board[i][j].type2 = EMPTY;
+				board[i][j].type = EMPTY;
 				board[i][j].color = EMPTY;
 			}
 		}
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "rm"))
+	if (0 == cmp_input_command(input, "next_player "))
+	{
+		input += strlen("next_player ");
+		if (0 == cmp_input_command(input, "white"))
+			next_player = WHITE;
+		else if (0 == cmp_input_command(input, "black"))
+			next_player = BLACK;
+	}
+	if (0 == cmp_input_command(input, "rm "))
 	{
 		if (0 == get_board_position(input, &i, &j))
 			return 0;
-		board[i][j].type2 = EMPTY;
+		board[i][j].type = EMPTY;
 		board[i][j].color = EMPTY;
 		return 0;
 
 	}
-	if (0 == cmp_input_command(input, "set"))
+	if (0 == cmp_input_command(input, "set "))
 	{
-		char color;
-		char type;
+		char color, type;
 		input_copy = strchr(input, '>') + 2;
 		if (0 == get_board_position(input, &i, &j))
 			return 0;
@@ -331,9 +375,29 @@ int settings(char* input)
 		input_copy += 5;
 		while (input_copy[0] == ' ')
 			++input_copy;
-		type = input_copy[0];
-		board[i][j].type2 = type;
+		if (0 == cmp_input_command(input_copy, "king"))
+			type = WHITE_K;
+		if (0 == cmp_input_command(input_copy, "queen"))
+			type = WHITE_Q;
+		if (0 == cmp_input_command(input_copy, "rook"))
+			type = WHITE_R;
+		if (0 == cmp_input_command(input_copy, "knight"))
+			type = WHITE_N;
+		if (0 == cmp_input_command(input_copy, "bishop"))
+			type = WHITE_B;
+		if (0 == cmp_input_command(input_copy, "pawn"))
+			type = WHITE_P;
+
+		int piece_num = count_piece(color, type);
+		if (( (type == WHITE_K || type == WHITE_Q) && piece_num >= 1) ||
+			(type == WHITE_P && piece_num >= 8) ||
+			( (type == WHITE_R || type == WHITE_N || type == WHITE_B) && piece_num >= 2))
+		{
+			print_message(NO_PIECE);
+			return 0;
+		}
 		board[i][j].color = color;
+		board[i][j].type = type;
 		return 0;
 	}
 	if (0 == cmp_input_command(input, "print"))
@@ -349,6 +413,7 @@ int settings(char* input)
 	}
 	if (0 == cmp_input_command(input, "start"))
 	{
+		/*TODO - when the game starts, if no legal moves, we should move to game end*/
 		if (!is_board_init_legal())
 		{
 			print_message(WROND_BOARD_INITIALIZATION);
@@ -458,46 +523,40 @@ void free_moves(linked_list list)
 	free(prev);
 }
 
-/*returns the char used on board to represent the given type and color of tool*/
-char get_tool_type(char color, char type)
+	/*returns the char used on board to represent the given type and color of tool*/
+	char get_tool_type(char color, char type)
 {
 	if (color == EMPTY)
 		return EMPTY;
 	if (color == WHITE)
 	{
-		if (type == WHITE_P)
-		{
-			return WHITE_P;
-		}
-		return WHITE_K;
+		return type;
 	}
-	if (type == WHITE_P)
-	{
-		return BLACK_P;
-	}
-	return BLACK_K;
+	return toupper(type);
 }
 
-void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
-{
-	int i, j;
-	print_line();
-	for (j = BOARD_SIZE - 1; j >= 0; j--)
-	{
-		printf((j < 9 ? " %d" : "%d"), j + 1);
-		for (i = 0; i < BOARD_SIZE; i++){
-			printf("| %c ", get_tool_type(board[i][j].color, board[i][j].type2));
 
-		}
-		printf("|\n");
+
+	void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
+	{
+		int i, j;
 		print_line();
+		for (j = BOARD_SIZE - 1; j >= 0; j--)
+		{
+			printf((j < 9 ? " %d" : "%d"), j + 1);
+			for (i = 0; i < BOARD_SIZE; i++){
+				printf("| %c ", get_tool_type(board[i][j].color, board[i][j].type));
+
+			}
+			printf("|\n");
+			print_line();
+		}
+		printf("   ");
+		for (j = 0; j < BOARD_SIZE; j++){
+			printf(" %c  ", (char)('a' + j));
+		}
+		printf("\n");
 	}
-	printf("   ");
-	for (j = 0; j < BOARD_SIZE; j++){
-		printf(" %c  ", (char)('a' + j));
-	}
-	printf("\n");
-}
 
 /*returns the opposite color*/
 char flip_color(char color)
@@ -505,3 +564,18 @@ char flip_color(char color)
 	return BLACK == color ? WHITE : BLACK;
 }
 
+
+/*count the number of pieces of given type and color are on the board*/
+int count_piece(color, type)
+{
+	int counter = 0;
+	for (int i = 0; i < BOARD_SIZE; ++i)
+	{
+		for (int j = 0; j < BOARD_SIZE; j++)
+		{
+			if (color == board[i][j].color && type == board[i][j].type)
+				++counter;
+		}
+	}
+	return counter;
+}
