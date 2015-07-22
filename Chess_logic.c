@@ -8,8 +8,6 @@
 #include "Game_flow.h"
 #include "Minimax.h"
 
-
-
 /*returns 1 if the move is legal for the player of color "color"*/
 int is_legal_move(game_move move, char color)
 {
@@ -60,42 +58,6 @@ int do_computer_move(char color)
 	free_list(chosen_move->jumps);
 	free(chosen_move);
 	return 0;
-}
-
-/*prints to the user all his legal moves*/
-void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
-{
-	linked_list moves = generate_moves(board, color);
-	node* crnt_move = moves.first;
-	for (int i = 0; i < moves.len; i++)
-	{
-		print_single_move((*(game_move*)crnt_move->data));
-		crnt_move = crnt_move->next;
-	}
-	free_moves(moves);
-}
-
-/*prints a single move in format "<x,y> to <i,j>[<k,l>…]\n" */
-void print_single_move(game_move move)
-{
-	node crnt_node = *move.jumps.first;
-	board_tile tile;
-	print_tile(move.start);
-	printf(" to ");
-	for (int i = 0; i < move.jumps.len; i++)
-	{
-		tile = *(board_tile*)crnt_node.data;
-		crnt_node = *crnt_node.next;
-		print_tile(tile);
-	}
-	printf("\n");
-}
-
-/*prints a single board tile*/
-void print_tile(board_tile tile)
-{
-	char index = 'a' + tile.char_indexer;
-	printf("<%c,%d>", index, tile.int_indexer + 1);
 }
 
 /*returns 0 if the board is empty or if there are discs of only one color
@@ -154,26 +116,6 @@ char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	return 0;
 }
 
-/*returns the char used on board to represent the given type and color of tool*/
-char get_tool_type(char color, char type)
-{
-	if (color == EMPTY)
-		return EMPTY;
-	if (color == WHITE)
-	{
-		if (type == WHITE_P)
-		{
-			return WHITE_P;
-		}
-		return WHITE_K;
-	}
-	if (type == WHITE_P)
-	{
-		return BLACK_P;
-	}
-	return BLACK_K;
-}
-
 /*gets a string containing <x,y> - a board position.
 fills i and j - the indieces pointed by x, y
 returns 0 if the position is outside the range. else 1*/
@@ -203,14 +145,6 @@ int get_board_position(char* input, int* i, int* j)
 	}
 	return 1;
 
-}
-
-
-
-/*returns the opposite color*/
-char flip_color(char color)
-{
-	return BLACK == color ? WHITE: BLACK;
 }
 
 /*gets a linked list containing all possible moves for a player
@@ -335,7 +269,7 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 /*appends to the best_moves list all the legal king moves form the current tile.
 if a better move was found, best moves will be freed and replaced.
 tile - the tile in which the king is at*/
-void generate_king_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
+void generate_king_moves_old(board_tile tile, char color, linked_list* best_moves, int* num_eats)
 {
 	game_move* cur_move = malloc(sizeof(game_move));
 	if (cur_move == NULL)
@@ -568,52 +502,6 @@ int contains_jump(game_move* cur_move, board_tile second, board_tile first)
 	return 0;
 }
 
-/*checks if two tiles are the same*/
-int same_tile(board_tile first, board_tile second)
-{
-	return (first.char_indexer == second.char_indexer && first.int_indexer == second.int_indexer);
-}
-
-/*copies a game move to new memory*/
-game_move* copy_move(game_move* cur_move)
-{
-	if (cur_move == NULL)
-		return NULL;
-	game_move* copy = malloc(sizeof(game_move));
-	if (copy == NULL)
-	{
-		should_terminate = 1;
-		perror_message("malloc");
-		return NULL;
-	}
-	copy->start = cur_move->start;
-	node* cur = cur_move->jumps.first;
-	copy->jumps = new_list();
-	if (should_terminate)
-	{
-		free(copy);
-		return NULL;
-	}
-	for (int i = 0; i < cur_move->jumps.len; i++)
-	{
-		list_add(&copy->jumps, cur->data);
-		if (should_terminate)
-		{
-			free_list(copy->jumps);
-			free(copy);
-			return NULL;
-		}
-		cur = cur->next;
-	}
-	return copy;
-}
-
-/*checks if given indices out of counds of board*/
-int out_of_boarders(int char_indexer, int int_indexer)
-{
-	return (char_indexer < 0 || char_indexer >= BOARD_SIZE || int_indexer < 0 || int_indexer >= BOARD_SIZE);
-}
-
 /*
 performs a whole move with all steps
 removes all opponent pawns eaten
@@ -743,27 +631,6 @@ void print_line(){
 	printf("|\n");
 }
 
-void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
-{
-	int i,j;
-	print_line();
-	for (j = BOARD_SIZE-1; j >= 0 ; j--)
-	{
-		printf((j < 9 ? " %d" : "%d"), j+1);
-		for (i = 0; i < BOARD_SIZE; i++){
-			printf("| %c ", get_tool_type(board[i][j].color, board[i][j].type2));
-
-		}
-		printf("|\n");
-		print_line();
-	}
-	printf("   ");
-	for (j = 0; j < BOARD_SIZE; j++){
-		printf(" %c  ", (char)('a' + j));
-	}
-	printf("\n");
-}
-
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 	int i,j;
 	for (i = 0; i < BOARD_SIZE; i++){
@@ -801,23 +668,6 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 
 }
 
-
-/*gets a list of game moves, and frees it*/
-void free_moves(linked_list list)
-{
-	node* cur = list.first;
-	node* prev = list.first;
-	while (cur->next != NULL)
-	{
-		cur = cur->next;
-		free_list(((game_move*)prev->data)->jumps);
-		free(prev->data);
-		free(prev);
-		prev = cur;
-	}
-	free(prev);
-}
-
 /*checks if the game move list are the same*/
 int game_move_list_cmp(linked_list list1, linked_list list2)
 {
@@ -853,4 +703,185 @@ int find_move(linked_list possible_moves, game_move move)
 		cur = cur->next;
 	}
 	return 0;
+}
+
+
+
+
+
+
+void generate_king_moves(board_tile tile, linked_list* moves)
+{
+	char color = tile.color;
+	game_move* cur_move = malloc(sizeof(game_move));
+	if (cur_move == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		return;
+	}
+	cur_move->jumps = new_list();
+	if (should_terminate)
+	{
+		free(cur_move);
+		return;
+	}
+	cur_move->start = tile;
+
+	for (int r = -1; r <= 1; r++)
+	{
+		for (int c = -1; c <= 1; c++)
+		{
+			if (out_of_boarders(tile.char_indexer + c, tile.int_indexer + r))
+				continue;
+			if (board[r][c].color == color)
+				continue;
+			if (r == 0 && c == 0)
+				continue;
+			board_tile* next = &board[(tile.char_indexer) + c][tile.int_indexer + r];
+			list_add(&cur_move->jumps, next);
+			if (should_terminate)
+			{
+				free_list(cur_move->jumps);
+				free(cur_move);
+				return;
+			}
+			list_add(moves, cur_move);
+			if (should_terminate)
+			{
+				free_list(cur_move->jumps);
+				free(cur_move);
+				return;
+			}
+			/*malloc the next move*/
+			cur_move = malloc(sizeof(game_move));
+			cur_move->jumps = new_list();
+			cur_move->start = tile;
+			if (should_terminate)
+			{
+				free(cur_move);
+				return;
+			}
+		}
+	}
+	free_list(cur_move->jumps);
+	free(cur_move);
+}
+
+void generate_knight_moves(board_tile tile, linked_list* moves)
+{
+	char color = tile.color;
+	int indxs[4] = { -2, -1, 1, 2 };
+	game_move* cur_move = malloc(sizeof(game_move));
+	if (cur_move == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		return;
+	}
+	cur_move->jumps = new_list();
+	if (should_terminate)
+	{
+		free(cur_move);
+		return;
+	}
+	cur_move->start = tile;
+
+	for (int r = 0; r < 4; r++)
+	{
+		for (int c = 0; c < 4; c++)
+		{
+			if (out_of_boarders(tile.char_indexer + c, tile.int_indexer + r))
+				continue;
+			if (abs(indxs[r]) == abs(indxs[c]))
+				continue;
+			if (board[tile.char_indexer + c][tile.int_indexer + r].color == color)
+				continue;
+			board_tile* next = &board[(tile.char_indexer) + c][tile.int_indexer + r];
+			list_add(&cur_move->jumps, next);
+			if (should_terminate)
+			{
+				free_list(cur_move->jumps);
+				free(cur_move);
+				return;
+			}
+			list_add(moves, cur_move);
+			if (should_terminate)
+			{
+				free_list(cur_move->jumps);
+				free(cur_move);
+				return;
+			}
+			/*malloc the next move*/
+			cur_move = malloc(sizeof(game_move));
+			cur_move->jumps = new_list();
+			cur_move->start = tile;
+			if (should_terminate)
+			{
+				free(cur_move);
+				return;
+			}
+		}
+	}
+	free_list(cur_move->jumps);
+	free(cur_move);
+}
+
+void generate_pawn_moves(board_tile tile, linked_list* moves)
+{
+	char color = tile.color;
+	int r;
+	game_move* cur_move = malloc(sizeof(game_move));
+	if (cur_move == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		return;
+	}
+	cur_move->jumps = new_list();
+	if (should_terminate)
+	{
+		free(cur_move);
+		return;
+	}
+	cur_move->start = tile;
+	if (color == WHITE)
+		r = 1;
+	else
+		r = -1;
+	for (int c = -1; c <= 1; c++)
+	{
+		if (out_of_boarders(tile.char_indexer + c, tile.int_indexer + r))
+			continue;
+		if (board[tile.char_indexer + c][tile.int_indexer + r].color == color)
+			continue;
+		if (board[tile.char_indexer + c][tile.int_indexer + r].color == flip_color(color) && c == 0)
+			continue;
+		if (board[tile.char_indexer + c][tile.int_indexer + r].color == EMPTY && abs(c) == 1)
+			continue;
+		board_tile* next = &board[tile.char_indexer + c][tile.int_indexer + r];
+		list_add(&cur_move->jumps, next);
+		if (should_terminate)
+		{
+			free_list(cur_move->jumps);
+			free(cur_move);
+			return;
+		}
+		list_add(moves, cur_move);
+		if (should_terminate)
+		{
+			free_list(cur_move->jumps);
+			free(cur_move);
+			return;
+		}
+		/*malloc the next move*/
+		cur_move = malloc(sizeof(game_move));
+		cur_move->jumps = new_list();
+		cur_move->start = tile;
+		if (should_terminate)
+		{
+			free(cur_move);
+			return;
+		}
+	}
 }

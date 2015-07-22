@@ -270,7 +270,6 @@ int settings(char* input)
 	}
 	if (0 == cmp_input_command(input, "difficulty "))
 	{
-		if ()
 		temp = atoi(input + strlen("minimax_depth "));
 		if (temp < 1 || temp > 6)
 		{
@@ -360,3 +359,149 @@ int settings(char* input)
 	print_message(ILLEGAL_COMMAND);
 	return 0;
 }
+
+/*prints to the user all his legal moves*/
+void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+{
+	linked_list moves = generate_moves(board, color);
+	node* crnt_move = moves.first;
+	for (int i = 0; i < moves.len; i++)
+	{
+		print_single_move((*(game_move*)crnt_move->data));
+		crnt_move = crnt_move->next;
+	}
+	free_moves(moves);
+}
+
+/*prints a single move in format "<x,y> to <i,j>[<k,l>…]\n" */
+void print_single_move(game_move move)
+{
+	node crnt_node = *move.jumps.first;
+	board_tile tile;
+	print_tile(move.start);
+	printf(" to ");
+	for (int i = 0; i < move.jumps.len; i++)
+	{
+		tile = *(board_tile*)crnt_node.data;
+		crnt_node = *crnt_node.next;
+		print_tile(tile);
+	}
+	printf("\n");
+}
+
+/*prints a single board tile*/
+void print_tile(board_tile tile)
+{
+	char index = 'a' + tile.char_indexer;
+	printf("<%c,%d>", index, tile.int_indexer + 1);
+}
+
+/*checks if two tiles are the same*/
+int same_tile(board_tile first, board_tile second)
+{
+	return (first.char_indexer == second.char_indexer && first.int_indexer == second.int_indexer);
+}
+
+/*checks if given indices out of counds of board*/
+int out_of_boarders(int char_indexer, int int_indexer)
+{
+	return (char_indexer < 0 || char_indexer >= BOARD_SIZE || int_indexer < 0 || int_indexer >= BOARD_SIZE);
+}
+
+/*copies a game move to new memory*/
+game_move* copy_move(game_move* cur_move)
+{
+	if (cur_move == NULL)
+		return NULL;
+	game_move* copy = malloc(sizeof(game_move));
+	if (copy == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		return NULL;
+	}
+	copy->start = cur_move->start;
+	node* cur = cur_move->jumps.first;
+	copy->jumps = new_list();
+	if (should_terminate)
+	{
+		free(copy);
+		return NULL;
+	}
+	for (int i = 0; i < cur_move->jumps.len; i++)
+	{
+		list_add(&copy->jumps, cur->data);
+		if (should_terminate)
+		{
+			free_list(copy->jumps);
+			free(copy);
+			return NULL;
+		}
+		cur = cur->next;
+	}
+	return copy;
+}
+
+/*gets a list of game moves, and frees it*/
+void free_moves(linked_list list)
+{
+	node* cur = list.first;
+	node* prev = list.first;
+	while (cur->next != NULL)
+	{
+		cur = cur->next;
+		free_list(((game_move*)prev->data)->jumps);
+		free(prev->data);
+		free(prev);
+		prev = cur;
+	}
+	free(prev);
+}
+
+/*returns the char used on board to represent the given type and color of tool*/
+char get_tool_type(char color, char type)
+{
+	if (color == EMPTY)
+		return EMPTY;
+	if (color == WHITE)
+	{
+		if (type == WHITE_P)
+		{
+			return WHITE_P;
+		}
+		return WHITE_K;
+	}
+	if (type == WHITE_P)
+	{
+		return BLACK_P;
+	}
+	return BLACK_K;
+}
+
+void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
+{
+	int i, j;
+	print_line();
+	for (j = BOARD_SIZE - 1; j >= 0; j--)
+	{
+		printf((j < 9 ? " %d" : "%d"), j + 1);
+		for (i = 0; i < BOARD_SIZE; i++){
+			printf("| %c ", get_tool_type(board[i][j].color, board[i][j].type2));
+
+		}
+		printf("|\n");
+		print_line();
+	}
+	printf("   ");
+	for (j = 0; j < BOARD_SIZE; j++){
+		printf(" %c  ", (char)('a' + j));
+	}
+	printf("\n");
+}
+
+/*returns the opposite color*/
+char flip_color(char color)
+{
+	return BLACK == color ? WHITE : BLACK;
+}
+
