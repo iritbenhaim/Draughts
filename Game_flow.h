@@ -22,7 +22,8 @@ struct board_tile
 struct game_move
 {
 	board_tile start;
-	linked_list jumps;
+	board_tile end;
+	char promote;
 };
 
 extern board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
@@ -32,7 +33,7 @@ extern int is_user_turn;
 
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
-int user_move(char* input);
+int user_move(char* input, char player_color);
 int settings(char* input);
 void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void print_single_move(game_move move);
@@ -45,5 +46,6 @@ char get_tool_type(char color, char type);
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 char flip_color(char color);
 int count_piece(color, type);
+int check_game_end(char player_color);
 
 #endif GAME_FLOW_

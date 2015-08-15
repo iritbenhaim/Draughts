@@ -66,12 +66,13 @@ int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int max, i
 		if (prune(v, max, a, b))	/*prune sub-tree if possible*/
 			break;
 	}
-	if (top)
-		*best = copy_move(*best);
+	/*if (top)
+		*best = copy_move(*best);*/
 	free_moves(possible);
 	return v;
 
 }
+
 
 /*checks if current node in minimax tree is a leaf - 
 if we reached minimax depth or some player won*/

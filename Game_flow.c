@@ -8,7 +8,7 @@
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 int should_terminate = 0;
 char user_color = WHITE; /*color of the user player*/
-int is_user_turn;
+int is_turn_end;
 int player_vs_player = 1; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
 char next_player = WHITE;
 
@@ -39,20 +39,22 @@ int main()
 			return -1;
 		}
 	}
-	is_user_turn = user_color == WHITE;
+	check_game_end(WHITE);
+	
 	while (1)
 	{/*game play*/
-		if (!COMP_ONLY)
-		{
-			while (is_user_turn)
+		if (player_vs_player == 1 || (player_vs_player == 0 && next_player == user_color))
+		{/*player turn*/
+			is_turn_end = 0;
+			while (!is_turn_end)
 			{
-				/*if (is_user_turn)
-					print_message(ENTER_YOUR_MOVE);*/
+				/*if (is_turn_end)
+				print_message(ENTER_YOUR_MOVE);*/
 				if (read_user_input_line(input, &input_size) == -1)
 				{
 					return -1; /*no resources were allocated yet*/
 				}
-				int is_comp_turn = user_move(input);
+				int is_comp_turn = user_move(input, user_color);
 				if (should_terminate)
 				{
 					free(input);
@@ -67,8 +69,16 @@ int main()
 					free(input);
 					return -1;
 				}
-				is_user_turn = !is_comp_turn;
+				is_turn_end = !is_comp_turn;
 			}
+
+		}
+		else
+		{/*computer turn*/
+
+		}
+		if (!COMP_ONLY)
+		{
 		}
 		/*computer turn*/
 
@@ -84,6 +94,7 @@ int main()
 				}
 			}
 		}
+
 		if (1 == do_computer_move(flip_color(user_color)))
 		{
 			break;
@@ -93,7 +104,7 @@ int main()
 				getchar();
 			}
 		}
-		is_user_turn = 1;
+		is_turn_end = 1;
 		if (DEBUG)
 			print_board(board);
 
@@ -145,23 +156,11 @@ int read_user_input_line(char* input, int* input_size)
 
 /*gets user input, parses it, and run the command in it
 returns 1 if user turn ended. -1 if game ended. else returns 0*/
-int user_move(char* input)
+int user_move(char* input, char player_color)
 {
-
-	if (0 == cmp_input_command(input, "quit"))
-	{
-		should_terminate = 1;
-		return 1;
-	}
-	if (0 == cmp_input_command(input, "get_moves"))
-	{
-		print_moves(board, user_color);
-		return 0;
-	}
 	if (0 == cmp_input_command(input, "move "))
 	{
 		int i, j;
-		int end_game;
 		game_move move;
 		char* input_copy = strchr(input, '>') + 1;
 		if (0 == get_board_position(input, &i, &j))
@@ -172,38 +171,33 @@ int user_move(char* input)
 			print_message(WRONG_POSITION);
 			return 0;
 		}
-
 		move.start = board[i][j];
-		move.jumps = new_list();
-		if (should_terminate)
-			return -1;
-		while (input[0] == ' ')
-			++input;
-		input += strlen("to ");
-		while (input[0] == '<')
+
+
+		input = strchr(input, '<'); /*move to second board place in input*/
+		input_copy = strchr(input, '>') + 1;
+		if (0 == get_board_position(input, &i, &j))
+			return 0;
+		input = input_copy;
+		if (out_of_boarders(i, j))
 		{
-			input_copy = strchr(input, '>') + 1;
-			if (0 == get_board_position(input, &i, &j))
-				return 0;
-			input = input_copy;
-			if (out_of_boarders(i, j))
-			{
-				print_message(WRONG_POSITION);
-				free_list(move.jumps);
-				return 0;
-			}
-			list_add(&move.jumps, &board[i][j]);
-		}
-		if (move.start.color != user_color)
-		{
-			print_message(NO_PIECE);
-			free_list(move.jumps);
+			print_message(WRONG_POSITION);
 			return 0;
 		}
-		int legal = is_legal_move(move, user_color);
+		move.end = board[i][j];
+
+		while (input[0] == ' ')
+			++input;
+		/*TODO - pawn promotion*/
+
+		if (move.start.color != player_color)
+		{
+			print_message(NO_PIECE);
+			return 0;
+		}
+		int legal = is_legal_move(move, player_color);
 		if (should_terminate)
 		{
-			free_list(move.jumps);
 			return -1;
 		}
 		if (legal)
@@ -214,25 +208,39 @@ int user_move(char* input)
 		else
 		{
 			print_message(ILLEGAL_MOVE);
-			free_list(move.jumps);
 			return 0;
 		}
 
-		free_list(move.jumps);
-		end_game = get_winner(board, flip_color(user_color));
-		if (should_terminate)
-			return -1;
-		if (end_game != 0)
-		{
-			char* winner = user_color == WHITE ? "White player wins!\n" : "Black player wins!\n";
-			print_message(winner);
-			return -1;
-		}
-		return 1;
+		return check_game_end(player_color);
+	}
+	if (0 == cmp_input_command(input, "quit"))
+	{
+		should_terminate = 1;
+		return -1;
+	}
+	if (0 == cmp_input_command(input, "get_moves"))
+	{
+		print_moves(board, player_color);
+		return 0;
 	}
 	print_message(ILLEGAL_COMMAND);
 	return 0;
 }
+
+int check_game_end(char player_color)
+{
+	int end_game = get_winner(board, flip_color(player_color));
+	if (should_terminate)
+		return -1;
+	if (end_game != 0)
+	{
+		char* winner = player_color == WHITE ? "White player wins!\n" : "Black player wins!\n";
+		print_message(winner);
+		return -1;
+	}
+	return 1;
+}
+
 
 /*return 0 if input ==  command*/
 int cmp_input_command(char* input, char* cmd)
@@ -325,7 +333,7 @@ int settings(char* input)
 			print_message(WRONG_FILE_NAME)
 			return 0;
 		}
-		/*TODO - */
+		/*TODO - complete load*/
 		fclose(setting_file);
 		print_board(board);
 	}	
@@ -438,9 +446,9 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	free_moves(moves);
 }
 
-/*prints a single move in format "<x,y> to <i,j>[<k,l>…]\n" */
+/*prints a single move in format "<x,y> to <i,j> x\n" */
 void print_single_move(game_move move)
-{
+{/*
 	node crnt_node = *move.jumps.first;
 	board_tile tile;
 	print_tile(move.start);
@@ -451,7 +459,7 @@ void print_single_move(game_move move)
 		crnt_node = *crnt_node.next;
 		print_tile(tile);
 	}
-	printf("\n");
+	printf("\n");*/
 }
 
 /*prints a single board tile*/
@@ -473,39 +481,6 @@ int out_of_boarders(int char_indexer, int int_indexer)
 	return (char_indexer < 0 || char_indexer >= BOARD_SIZE || int_indexer < 0 || int_indexer >= BOARD_SIZE);
 }
 
-/*copies a game move to new memory*/
-game_move* copy_move(game_move* cur_move)
-{
-	if (cur_move == NULL)
-		return NULL;
-	game_move* copy = malloc(sizeof(game_move));
-	if (copy == NULL)
-	{
-		should_terminate = 1;
-		perror_message("malloc");
-		return NULL;
-	}
-	copy->start = cur_move->start;
-	node* cur = cur_move->jumps.first;
-	copy->jumps = new_list();
-	if (should_terminate)
-	{
-		free(copy);
-		return NULL;
-	}
-	for (int i = 0; i < cur_move->jumps.len; i++)
-	{
-		list_add(&copy->jumps, cur->data);
-		if (should_terminate)
-		{
-			free_list(copy->jumps);
-			free(copy);
-			return NULL;
-		}
-		cur = cur->next;
-	}
-	return copy;
-}
 
 /*gets a list of game moves, and frees it*/
 void free_moves(linked_list list)
@@ -515,7 +490,6 @@ void free_moves(linked_list list)
 	while (cur->next != NULL)
 	{
 		cur = cur->next;
-		free_list(((game_move*)prev->data)->jumps);
 		free(prev->data);
 		free(prev);
 		prev = cur;
@@ -524,7 +498,7 @@ void free_moves(linked_list list)
 }
 
 	/*returns the char used on board to represent the given type and color of tool*/
-	char get_tool_type(char color, char type)
+char get_tool_type(char color, char type)
 {
 	if (color == EMPTY)
 		return EMPTY;
@@ -537,7 +511,7 @@ void free_moves(linked_list list)
 
 
 
-	void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
+void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
 	{
 		int i, j;
 		print_line();

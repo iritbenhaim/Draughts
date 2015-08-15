@@ -14,7 +14,6 @@ int is_legal_move(game_move move, char color)
 	linked_list all_moves = generate_moves(board, color);
 	if (should_terminate)
 	{
-		free_list(move.jumps);
 		return 0;
 	}
 	int is_success = find_move(all_moves, move);
@@ -44,18 +43,15 @@ int do_computer_move(char color)
 	end_game = get_winner(board, flip_color(user_color));
 	if (should_terminate)
 	{
-		free_list(chosen_move->jumps);
 		free(chosen_move);
 		return -1;
 	}
 	if (end_game != 0)
 	{
-		free_list(chosen_move->jumps);
 		free(chosen_move);
 		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
 		return 1;
 	}
-	free_list(chosen_move->jumps);
 	free(chosen_move);
 	return 0;
 }
@@ -187,7 +183,7 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 if a better move was found, best moves will be freed and replaced.
 tile - the tile in which the man is at*/
 void generate_man_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats)
-{
+{/*
 	int direction = color == WHITE ? 1 : -1; //black goes downwards.
 	game_move* cur_move = malloc(sizeof(game_move));
 	if (cur_move == NULL)
@@ -196,38 +192,30 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 		perror_message("malloc");
 		return;
 	}
-	cur_move->jumps = new_list();
 	cur_move->start = tile;
-	if (should_terminate)
-	{
-		free(cur_move);
-		return;
-	}
 
 	game_move* cur_move_copy = copy_move(cur_move);
 	if (should_terminate)
 	{
-		free_list(cur_move->jumps);
 		free(cur_move);
 		return;
 	}
 	generate_eater_moves(tile, color, best_moves, num_eats, cur_move_copy);
 	if (should_terminate)
 	{
-		free_list(cur_move->jumps);
 		free(cur_move);
 		return;
 	}
-	if (0 == *num_eats) /*no eats yet*/
+	if (0 == *num_eats) /*no eats yet * /
 	{
-		for (int i = 1; i > -2; i -= 2) /*when i=1, move right. when i=0 move left*/
+		for (int i = 1; i > -2; i -= 2) /*when i=1, move right. when i=0 move left* /
 		{
 			if (out_of_boarders((tile.char_indexer) + i, tile.int_indexer + direction))
 				continue;
 			board_tile* next = &board[(tile.char_indexer) + i][tile.int_indexer + direction];
 			if (next->type == EMPTY)
 			{
-				/*add the move to the best moves list*/
+				/*add the move to the best moves list* /
 				list_add(&cur_move->jumps, next);
 				if (should_terminate)
 				{
@@ -242,7 +230,7 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 					free(cur_move);
 					return;
 				}
-				/*malloc the next move*/
+				/*malloc the next move* /
 				cur_move = malloc(sizeof(game_move));
 				if (cur_move == NULL)
 				{
@@ -261,14 +249,14 @@ void generate_man_moves(board_tile tile, char color, linked_list* best_moves, in
 		}
 	}
 	free_list(cur_move->jumps);
-	free(cur_move);
+	free(cur_move);*/
 }
 
 /*appends to the best_moves list all the legal king moves form the current tile.
 if a better move was found, best moves will be freed and replaced.
 tile - the tile in which the king is at*/
 void generate_king_moves_old(board_tile tile, char color, linked_list* best_moves, int* num_eats)
-{
+{/*
 	game_move* cur_move = malloc(sizeof(game_move));
 	if (cur_move == NULL)
 	{
@@ -284,11 +272,11 @@ void generate_king_moves_old(board_tile tile, char color, linked_list* best_move
 	}
 	cur_move->start = tile;
 
-	for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
+	for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down* /
 	{
-		for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
+		for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left* /
 		{
-			for (int i = 1; !out_of_boarders(tile.char_indexer + lr_direction*i, tile.int_indexer + ud_direction*i); ++i)/*check me!!!*/
+			for (int i = 1; !out_of_boarders(tile.char_indexer + lr_direction*i, tile.int_indexer + ud_direction*i); ++i)/*check me!!!* /
 			{
 				if (out_of_boarders((tile.char_indexer) + lr_direction*i, tile.int_indexer + ud_direction*i))
 					continue;
@@ -299,7 +287,7 @@ void generate_king_moves_old(board_tile tile, char color, linked_list* best_move
 					if (*num_eats != 0)
 						continue;
 					board_tile* next = &board[(tile.char_indexer) + lr_direction*i][tile.int_indexer + ud_direction*i];
-					/*add the move to the best moves list*/
+					/*add the move to the best moves list* /
 					list_add(&cur_move->jumps, next);
 					if (should_terminate)
 					{
@@ -314,7 +302,7 @@ void generate_king_moves_old(board_tile tile, char color, linked_list* best_move
 						free(cur_move);
 						return;
 					}
-					/*malloc the next move*/
+					/*malloc the next move* /
 					cur_move = malloc(sizeof(game_move));
 					if (cur_move == NULL)
 					{
@@ -331,13 +319,13 @@ void generate_king_moves_old(board_tile tile, char color, linked_list* best_move
 					}
 				}
 				else if (tile_color == flip_color(color))
-				{/*try eating the oponnent. then stop this direction*/
+				{/*try eating the oponnent. then stop this direction* /
 					if (out_of_boarders(tile.char_indexer + lr_direction*(i + 1), tile.int_indexer + ud_direction*(i + 1)))
 						break;
 					board_tile* next = &board[(tile.char_indexer) + lr_direction*(i + 1)][tile.int_indexer + ud_direction*(i + 1)];
 					if (EMPTY != (*next).type)
 						break;
-					/*add cur eat to move*/
+					/*add cur eat to move* /
 					list_add(&cur_move->jumps, next);
 					if (should_terminate)
 					{
@@ -361,13 +349,13 @@ void generate_king_moves_old(board_tile tile, char color, linked_list* best_move
 					}
 					break;
 				}
-				else /*the tile contains a man of your own color. stop this direction.*/
+				else /*the tile contains a man of your own color. stop this direction.* /
 					break;
 			}
 		}
 	}
 	free_list(cur_move->jumps);
-	free(cur_move);
+	free(cur_move);*/
 }
 
 /*appends to the best_moves list all the legal eater moves (man or ling eating moves) from the current tile.
@@ -375,13 +363,13 @@ if a better move was found, best moves will be freed and replaced.
 tile - the tile in which the piece is at*/
 
 void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats, game_move* cur_move)
-{
+{/*
 	int old_eats = *num_eats;
-	/*if (!(((cur_move->start).type == MAN) && tile.int_indexer == (color == BLACK ? 0 : 9)))*/
+	/*if (!(((cur_move->start).type == MAN) && tile.int_indexer == (color == BLACK ? 0 : 9)))* /
 	{
-		for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down*/
+		for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down* /
 		{
-			for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left*/
+			for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left* /
 			{
 				int dest_lr = (tile.char_indexer) + lr_direction * 2;
 				int dest_ud = tile.int_indexer + ud_direction * 2;
@@ -392,23 +380,20 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 					continue; //already ate this tile on this move..
 				board_tile* mid = &board[(tile.char_indexer) + lr_direction][tile.int_indexer + ud_direction];
 				char c = (*mid).color;
-				if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))/*the next tile belongs to the oponnents*/
+				if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))/*the next tile belongs to the oponnents* /
 				{
 					game_move* cur_move_copy = copy_move(cur_move);
 					if (should_terminate)
 					{
-						free_list(cur_move->jumps);
 						free(cur_move);
 						return;
 					}
 
-					/*add cur eat to move*/
+					/*add cur eat to move* /
 					list_add(&cur_move_copy->jumps, next);
 					if (should_terminate)
 					{
-						free_list(cur_move->jumps);
 						free(cur_move);
-						free_list(cur_move_copy->jumps);
 						free(cur_move_copy);
 						return;
 					}
@@ -429,7 +414,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 	{
 		if (cur_move->jumps.len == *num_eats)
 		{
-			/*add the current move to the best moves list*/
+			/*add the current move to the best moves list* /
 			list_add(best_moves, cur_move);
 			if (should_terminate)
 			{
@@ -448,7 +433,7 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 				free(cur_move);
 				return;
 			}
-			/*add the current move to the best moves list*/
+			/*add the current move to the best moves list* /
 			list_add(best_moves, cur_move);
 			if (should_terminate)
 			{
@@ -468,15 +453,16 @@ void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, 
 	{
 		free_list(cur_move->jumps);
 		free(cur_move);
-	}
+	}*/
 }
 
 /*returns 1 if cur_move jumps eats the tile between cur and next*/
 int contains_jump(game_move* cur_move, board_tile second, board_tile first)
 {
+	return 0;/*
 	board_tile cur_tile = cur_move->start;
 	node* cur_node = cur_move->jumps.first;
-	/*if ((cur_move->start).type == KING)*/
+	/*if ((cur_move->start).type == KING)* /
 	{
 		board_tile next_tile = *((board_tile*)(cur_node->data));
 		int mid_char = cur_tile.char_indexer > next_tile.char_indexer ? next_tile.char_indexer + 2 : next_tile.char_indexer - 2;
@@ -497,22 +483,23 @@ int contains_jump(game_move* cur_move, board_tile second, board_tile first)
 		cur_node = cur_node->next;
 		cur_tile = next_tile;
 	}
-	return 0;
+	return 0;*/
 }
 
 /*
 performs a whole move with all steps
 removes all opponent pawns eaten
 */
+
 void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
-{
+{/*
 	board_tile current = move.start;
 	node* next_move = move.jumps.first;
 	board_tile next;
 	for (int i = 0; i < move.jumps.len; i++)
 	{
 		next = *((board_tile*)next_move->data);
-		do_part_move(m_board, current, next); /*do each jump separately*/
+		do_part_move(m_board, current, next); /*do each jump separately* /
 		current = next;
 		next_move = next_move->next;
 	}
@@ -692,7 +679,7 @@ int game_move_list_cmp(linked_list list1, linked_list list2)
 
 /*searches for the move in possible moves list. return 1 if found. else 0*/
 int find_move(linked_list possible_moves, game_move move)
-{
+{/*
 	node* cur = possible_moves.first;
 	for (int i = 0; i < possible_moves.len; i++)
 	{
@@ -701,7 +688,7 @@ int find_move(linked_list possible_moves, game_move move)
 			return 1;
 		cur = cur->next;
 	}
-	return 0;
+	return 0;*/
 }
 
 
@@ -719,12 +706,6 @@ void generate_king_moves(board_tile tile, linked_list* moves)
 		perror_message("malloc");
 		return;
 	}
-	cur_move->jumps = new_list();
-	if (should_terminate)
-	{
-		free(cur_move);
-		return;
-	}
 	cur_move->start = tile;
 
 	for (int r = -1; r <= 1; r++)
@@ -737,33 +718,25 @@ void generate_king_moves(board_tile tile, linked_list* moves)
 				continue;
 			if (r == 0 && c == 0)
 				continue;
-			board_tile* next = &board[(tile.char_indexer) + c][tile.int_indexer + r];
-			list_add(&cur_move->jumps, next);
-			if (should_terminate)
-			{
-				free_list(cur_move->jumps);
-				free(cur_move);
-				return;
-			}
+			board_tile next = board[(tile.char_indexer) + c][tile.int_indexer + r];
+			cur_move->end = next;
 			list_add(moves, cur_move);
 			if (should_terminate)
 			{
-				free_list(cur_move->jumps);
 				free(cur_move);
 				return;
 			}
 			/*malloc the next move*/
 			cur_move = malloc(sizeof(game_move));
-			cur_move->jumps = new_list();
-			cur_move->start = tile;
-			if (should_terminate)
+			if (cur_move == NULL)
 			{
-				free(cur_move);
+				should_terminate = 1;
+				perror_message("malloc");
 				return;
 			}
+			cur_move->start = tile;
 		}
 	}
-	free_list(cur_move->jumps);
 	free(cur_move);
 }
 
@@ -778,12 +751,6 @@ void generate_knight_moves(board_tile tile, linked_list* moves)
 		perror_message("malloc");
 		return;
 	}
-	cur_move->jumps = new_list();
-	if (should_terminate)
-	{
-		free(cur_move);
-		return;
-	}
 	cur_move->start = tile;
 
 	for (int r = 0; r < 4; r++)
@@ -796,38 +763,32 @@ void generate_knight_moves(board_tile tile, linked_list* moves)
 				continue;
 			if (board[tile.char_indexer + c][tile.int_indexer + r].color == color)
 				continue;
-			board_tile* next = &board[(tile.char_indexer) + c][tile.int_indexer + r];
-			list_add(&cur_move->jumps, next);
-			if (should_terminate)
-			{
-				free_list(cur_move->jumps);
-				free(cur_move);
-				return;
-			}
+			board_tile next = board[(tile.char_indexer) + c][tile.int_indexer + r];
+			cur_move->end = next;
+
 			list_add(moves, cur_move);
 			if (should_terminate)
 			{
-				free_list(cur_move->jumps);
 				free(cur_move);
 				return;
 			}
 			/*malloc the next move*/
 			cur_move = malloc(sizeof(game_move));
-			cur_move->jumps = new_list();
-			cur_move->start = tile;
-			if (should_terminate)
+			if (cur_move == NULL)
 			{
-				free(cur_move);
+				should_terminate = 1;
+				perror_message("malloc");
 				return;
 			}
+			cur_move->start = tile;
 		}
 	}
-	free_list(cur_move->jumps);
 	free(cur_move);
 }
 
 void generate_pawn_moves(board_tile tile, linked_list* moves)
 {
+	/*TODO - pawn promotion*/
 	char color = tile.color;
 	int r;
 	game_move* cur_move = malloc(sizeof(game_move));
@@ -835,12 +796,6 @@ void generate_pawn_moves(board_tile tile, linked_list* moves)
 	{
 		should_terminate = 1;
 		perror_message("malloc");
-		return;
-	}
-	cur_move->jumps = new_list();
-	if (should_terminate)
-	{
-		free(cur_move);
 		return;
 	}
 	cur_move->start = tile;
@@ -858,29 +813,23 @@ void generate_pawn_moves(board_tile tile, linked_list* moves)
 			continue;
 		if (board[tile.char_indexer + c][tile.int_indexer + r].color == EMPTY && abs(c) == 1)
 			continue;
-		board_tile* next = &board[tile.char_indexer + c][tile.int_indexer + r];
-		list_add(&cur_move->jumps, next);
-		if (should_terminate)
-		{
-			free_list(cur_move->jumps);
-			free(cur_move);
-			return;
-		}
+		board_tile next = board[tile.char_indexer + c][tile.int_indexer + r];
+		cur_move->end = next;
+
 		list_add(moves, cur_move);
 		if (should_terminate)
 		{
-			free_list(cur_move->jumps);
 			free(cur_move);
 			return;
 		}
 		/*malloc the next move*/
 		cur_move = malloc(sizeof(game_move));
-		cur_move->jumps = new_list();
-		cur_move->start = tile;
-		if (should_terminate)
+		if (cur_move == NULL)
 		{
-			free(cur_move);
+			should_terminate = 1;
+			perror_message("malloc");
 			return;
 		}
+		cur_move->start = tile;
 	}
 }
