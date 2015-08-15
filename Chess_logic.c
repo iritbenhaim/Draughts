@@ -695,7 +695,7 @@ int find_move(linked_list possible_moves, game_move move)
 
 
 
-
+/*return legal moves for a king*/
 void generate_king_moves(board_tile tile, linked_list* moves)
 {
 	char color = tile.color;
@@ -740,6 +740,7 @@ void generate_king_moves(board_tile tile, linked_list* moves)
 	free(cur_move);
 }
 
+/*returns legal moves for a knight out of 8 possible*/
 void generate_knight_moves(board_tile tile, linked_list* moves)
 {
 	char color = tile.color;
@@ -786,6 +787,7 @@ void generate_knight_moves(board_tile tile, linked_list* moves)
 	free(cur_move);
 }
 
+/*returns a single move forward*/
 void generate_pawn_moves(board_tile tile, linked_list* moves)
 {
 	/*TODO - pawn promotion*/
@@ -832,4 +834,135 @@ void generate_pawn_moves(board_tile tile, linked_list* moves)
 		}
 		cur_move->start = tile;
 	}
+}
+
+/*queen moves combines possible moves for rook and bishop*/
+void generate_queen_moves(board_tile tile, linked_list* moves)
+{
+	generate_rook_moves(tile, moves);
+	generate_bishop_moves(tile, moves);
+}
+
+/*returns all legal bishop moves along the diagonals*/
+void generate_bishop_moves(board_tile tile, linked_list* moves)
+{
+	get_direct_bishop_moves(tile, moves, 1, 1);
+	get_direct_bishop_moves(tile, moves, 1, 0);
+	get_direct_bishop_moves(tile, moves, 0, 1);
+	get_direct_bishop_moves(tile, moves, 0, 0);
+}
+
+/*return all legal rook moves along row and column*/
+void generate_rook_moves(board_tile tile, linked_list* moves)
+{
+	get_direct_rook_moves(tile, moves, 1, 1);
+	get_direct_rook_moves(tile, moves, 0, 1);
+	get_direct_rook_moves(tile, moves, 1, 0);
+	get_direct_rook_moves(tile, moves, 0, 0);
+}
+
+void generate_castling_move(board_tile tile,)
+
+/*this function adds rook moves for a specific direction of four directions:
+  up, down, left, right - reflected in col and neg variables*/
+void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg)
+{
+	if (should_terminate)
+		return;
+	char color = tile.color;
+	int r = tile.int_indexer;
+	int c = tile.char_indexer;
+	game_move* cur_move = malloc(sizeof(game_move));
+	if (cur_move == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		return;
+	}
+	cur_move->start = tile;
+	for (int i = 1; i < BOARD_SIZE; i++)
+	{
+		if (neg) /*advance indexes according to directionality*/
+		{
+			c = c - 1 ? col : c;
+			r = r - 1 ? !col : r;
+		}
+		else
+		{
+			c = c + 1 ? col : c;
+			r = r + 1 ? !col : r;
+		}
+		if (out_of_boarders(c, r))
+			break;
+		if (board[c][r].color == color)
+			break;
+		board_tile next = board[c][r];
+		cur_move->end = next;
+		list_add(moves, cur_move);
+		if (should_terminate)
+		{
+			free(cur_move);
+			return;
+		}
+		if (next.color == flip_color(color)) /*eat move - no more moves to this direction*/
+			break;
+		/*malloc the next move*/
+		cur_move = malloc(sizeof(game_move));
+		if (cur_move == NULL)
+		{
+			should_terminate = 1;
+			perror_message("malloc");
+			return;
+		}
+		cur_move->start = tile;
+	}
+	free(cur_move);
+}
+
+/*this function adds bishop moves for a specific firection of four directions
+  reflected in lft and up variables*/
+void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int up)
+{
+	if (should_terminate)
+		return;
+	char color = tile.color;
+	int r = tile.int_indexer;
+	int c = tile.char_indexer;
+	game_move* cur_move = malloc(sizeof(game_move));
+	if (cur_move == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		return;
+	}
+	cur_move->start = tile;
+	for (int i = 1; i < BOARD_SIZE; i++)
+	{
+		c = c + 1 ? !lft : c - 1; /*advance indexes according to directionality*/
+		r = r + 1 ? up : r - 1;
+		if (out_of_boarders(c, r))
+			break;
+		if (board[c][r].color == color)
+			break;
+		board_tile next = board[c][r];
+		cur_move->end = next;
+		list_add(moves, cur_move);
+		if (should_terminate)
+		{
+			free(cur_move);
+			return;
+		}
+		if (next.color == flip_color(color)) /*eat move - no more moves to this direction*/
+			break;
+		/*malloc the next move*/
+		cur_move = malloc(sizeof(game_move));
+		if (cur_move == NULL)
+		{
+			should_terminate = 1;
+			perror_message("malloc");
+			return;
+		}
+		cur_move->start = tile;
+	}
+	free(cur_move);
 }
