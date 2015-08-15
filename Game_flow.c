@@ -44,23 +44,22 @@ int main()
 	while (1)
 	{/*game play*/
 		if (player_vs_player == 1 || (player_vs_player == 0 && next_player == user_color))
-		{/*player turn*/
+		{/*user turn*/
 			is_turn_end = 0;
+			printf("%s player - enter your move:\n", next_player);
 			while (!is_turn_end)
 			{
-				/*if (is_turn_end)
-				print_message(ENTER_YOUR_MOVE);*/
 				if (read_user_input_line(input, &input_size) == -1)
 				{
 					return -1; /*no resources were allocated yet*/
 				}
-				int is_comp_turn = user_move(input, user_color);
+				int is_turn_end = user_move(input, user_color);
 				if (should_terminate)
 				{
 					free(input);
 					return -1;
 				}
-				if (is_comp_turn == -1)
+				if (is_turn_end == -1)
 				{
 					if (DEBUG)
 					{
@@ -69,45 +68,21 @@ int main()
 					free(input);
 					return -1;
 				}
-				is_turn_end = !is_comp_turn;
 			}
 
 		}
 		else
 		{/*computer turn*/
-
-		}
-		if (!COMP_ONLY)
-		{
-		}
-		/*computer turn*/
-
-		if (COMP_ONLY)
-		{
-			if (1 == do_computer_move((user_color)))
-			{
-				break;
-
+			if (1 == do_computer_move(next_player))
+			{/*game ended*/
 				if (DEBUG)
 				{
 					getchar();
 				}
 			}
-		}
-
-		if (1 == do_computer_move(flip_color(user_color)))
-		{
 			break;
-
-			if (DEBUG)
-			{
-				getchar();
-			}
 		}
-		is_turn_end = 1;
-		if (DEBUG)
-			print_board(board);
-
+		next_player = flip_color(next_player);
 	}
 	free(input);
 	if (DEBUG)
@@ -186,15 +161,15 @@ int user_move(char* input, char player_color)
 		}
 		move.end = board[i][j];
 
-		while (input[0] == ' ')
-			++input;
-		/*TODO - pawn promotion*/
-
 		if (move.start.color != player_color)
 		{
 			print_message(NO_PIECE);
 			return 0;
 		}
+		while (input[0] == ' ')
+			++input;
+		/*TODO - pawn promotion*/
+
 		int legal = is_legal_move(move, player_color);
 		if (should_terminate)
 		{
