@@ -1,10 +1,11 @@
 #include "Game_flow.h"
+#include "Gui.h"
 #include "Chess_logic.h"
 #include "Minimax.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "SDL.h"
+#include <SDL.h>
 
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 int should_terminate = 0;
@@ -13,8 +14,9 @@ int is_turn_end;
 int player_vs_player = 1; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
 char next_player = WHITE;
 
-int main()
+int main(int argc, char* argv[])
 {
+	test(argc, argv);
 	//Start SDL
 	SDL_Init(SDL_INIT_EVERYTHING);
 	int input_size = 1024;

@@ -8,6 +8,7 @@
 
 int contains_jump(game_move* cur_move, board_tile second, board_tile first);
 int is_legal_move(game_move move, char color);
+void print_line();
 void generate_pawn_moves(board_tile tile, linked_list* moves);
 void generate_king_moves(board_tile tile, linked_list* moves);
 void generate_knight_moves(board_tile tile, linked_list* moves);
