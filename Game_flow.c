@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "SDL.h"
 
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 int should_terminate = 0;
@@ -14,12 +15,16 @@ char next_player = WHITE;
 
 int main()
 {
+	//Start SDL
+	SDL_Init(SDL_INIT_EVERYTHING);
 	int input_size = 1024;
 	char* input = malloc(input_size);
 	if (input == NULL)
 	{
 		should_terminate = 1;
 		perror_message("malloc");
+		//Quit SDL
+		SDL_Quit();
 		return -1;
 	}
 	init_board(board);
@@ -29,12 +34,16 @@ int main()
 		print_message(ENTER_SETTINGS);
 		if (read_user_input_line(input, &input_size) == -1)
 		{
+			//Quit SDL
+			SDL_Quit();
 			return -1; /*no resources were allocated yet*/
 		}
 		if (settings(input))
 			break;
 		if (should_terminate)
 		{
+			//Quit SDL
+			SDL_Quit();
 			free(input);
 			return -1;
 		}
@@ -51,11 +60,15 @@ int main()
 			{
 				if (read_user_input_line(input, &input_size) == -1)
 				{
+					//Quit SDL
+					SDL_Quit();
 					return -1; /*no resources were allocated yet*/
 				}
 				int is_turn_end = user_move(input, user_color);
 				if (should_terminate)
 				{
+					//Quit SDL
+					SDL_Quit();
 					free(input);
 					return -1;
 				}
@@ -65,6 +78,8 @@ int main()
 					{
 						getchar();
 					}
+					//Quit SDL
+					SDL_Quit();
 					free(input);
 					return -1;
 				}
@@ -89,6 +104,8 @@ int main()
 	{
 		getchar();
 	}
+	//Quit SDL
+	SDL_Quit();
 	return 0;
 }
 

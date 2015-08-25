@@ -15,6 +15,7 @@ void generate_queen_moves(board_tile tile, linked_list* moves);
 void generate_bishop_moves(board_tile tile, linked_list* moves);
 void generate_rook_moves(board_tile tile, linked_list* moves);
 void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg);
+void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int up);
 int game_move_list_cmp(linked_list list1, linked_list list2);
 int find_move(linked_list possible_moves, game_move move);
 linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color);

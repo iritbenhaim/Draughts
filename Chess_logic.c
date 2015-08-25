@@ -861,7 +861,7 @@ void generate_rook_moves(board_tile tile, linked_list* moves)
 	get_direct_rook_moves(tile, moves, 0, 0);
 }
 
-void generate_castling_move(board_tile tile,)
+/*void generate_castling_move(board_tile tile,)*/
 
 /*this function adds rook moves for a specific direction of four directions:
   up, down, left, right - reflected in col and neg variables*/
