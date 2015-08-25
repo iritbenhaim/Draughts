@@ -30,5 +30,6 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move);
 int up_direction(int start_c, int end_c, int is_white);
 int is_changed_to_king(char pawn, board_tile loc);
 char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
+void print_line();
 
 #endif GAME_LOGIC_

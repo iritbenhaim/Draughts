@@ -17,8 +17,10 @@ char next_player = WHITE;
 int main(int argc, char* argv[])
 {
 	test(argc, argv);
-	//Start SDL
-	SDL_Init(SDL_INIT_EVERYTHING);
+	if (argc > 0)
+	{
+		SDL_Init(SDL_INIT_EVERYTHING);
+	}
 	int input_size = 1024;
 	char* input = malloc(input_size);
 	if (input == NULL)
