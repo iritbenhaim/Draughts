@@ -37,6 +37,7 @@ int user_move(char* input, char player_color);
 int settings(char* input);
 void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void print_single_move(game_move move);
+void print_line();
 void print_tile(board_tile tile);
 int same_tile(board_tile first, board_tile second);
 int out_of_boarders(int first_indexer, int second_indexer);
@@ -47,5 +48,7 @@ void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 char flip_color(char color);
 int count_piece(color, type);
 int check_game_end(char player_color);
+char *get_xml_game();
+void concat(char *orig, size_t *orig_size, char *addition);
 
 #endif GAME_FLOW_

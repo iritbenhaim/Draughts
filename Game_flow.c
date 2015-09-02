@@ -6,6 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <SDL.h>
+#include <stdio.h>
 
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 int should_terminate = 0;
@@ -209,18 +210,157 @@ int user_move(char* input, char player_color)
 
 		return check_game_end(player_color);
 	}
-	if (0 == cmp_input_command(input, "quit"))
-	{
-		should_terminate = 1;
-		return -1;
-	}
 	if (0 == cmp_input_command(input, "get_moves"))
 	{
 		print_moves(board, player_color);
 		return 0;
 	}
+	if (0 == cmp_input_command(input, "save "))
+	{
+		char *xml_info = get_xml_game();
+		if (should_terminate)
+			return -1;
+
+		char *file_name = input + strlen("save ");
+		FILE *xml_file = fopen(file_name, "w");
+		if (NULL == xml_file)
+		{
+			print_message(WRONG_FILE_NAME);
+			return 0;
+		}
+		int count = fwrite(xml_info, sizeof(char), strlen(xml_file), xml_file);
+		if (count != strlen(xml_info))
+		{
+			should_terminate = 1;
+			perror_message("fwrite");
+			return -1;
+		}
+		fclose(xml_file);
+		return 0;
+	}
+	if (0 == cmp_input_command(input, "quit"))
+	{
+		should_terminate = 1;
+		return -1;
+	}
 	print_message(ILLEGAL_COMMAND);
 	return 0;
+}
+
+
+char *get_xml_game()
+{
+	int xml_buf_size = 1024;
+	char *xml_data = malloc(xml_buf_size);
+	if (xml_data == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		return NULL;
+	}
+	xml_data[0] = '\0'; /*null terminate*/
+	concat(xml_data, &xml_buf_size, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<game>\n\t<next_turn>");
+	if (should_terminate)
+	{
+		free(xml_data);
+		return NULL;
+	}
+
+	char *next = next_player == WHITE ? "white" : "black";
+	concat(xml_data, &xml_buf_size, next);
+	if (should_terminate)
+	{
+		free(xml_data);
+		return NULL;
+	}
+
+	concat(xml_data, &xml_buf_size, "</next_turn>>\n\t<game_mode>");
+	if (should_terminate)
+	{
+		free(xml_data);
+		return NULL;
+	}
+
+	char game_mode[10];
+	_itoa(player_vs_player, game_mode, 10);
+	concat(xml_data, &xml_buf_size, game_mode);
+	if (should_terminate)
+	{
+		free(xml_data);
+		return NULL;
+	}
+
+	concat(xml_data, &xml_buf_size, "</game_ mode>\n\t<difficulty>");
+	if (should_terminate)
+	{
+		free(xml_data);
+		return NULL;
+	}
+	if (2 == player_vs_player)
+	{
+		if (-1 == minimax_depth)
+		{
+			concat(xml_data, &xml_buf_size, "best");
+		}
+		else
+		{
+			char diff[10];
+			_itoa(minimax_depth, diff, 10);
+			concat(xml_data, &xml_buf_size, diff);
+		}
+		if (should_terminate)
+		{
+			free(xml_data);
+			return NULL;
+		}
+
+		concat(xml_data, &xml_buf_size, "</difficulty>\n\t<user_color>");
+		if (should_terminate)
+		{
+			free(xml_data);
+			return NULL;
+		}
+		char *user = user_color == WHITE ? "white" : "black";
+		concat(xml_data, &xml_buf_size, user);
+		if (should_terminate)
+		{
+			free(xml_data);
+			return NULL;
+		}
+		concat(xml_data, &xml_buf_size, "</user_color>\n\t<board>");
+		if (should_terminate)
+		{
+			free(xml_data);
+			return NULL;
+		}
+		
+	}
+
+	concat(xml_data, &xml_buf_size, "</game>");
+	if (should_terminate)
+	{
+		free(xml_data);
+		return NULL;
+	}
+	free(xml_data);
+}
+
+/*concatinates to strings with reallocating if needed*/
+void concat(char *orig, size_t *orig_size, char *addition)
+{
+
+	if (strlen(orig) + strlen(addition) >= *orig_size - 1)
+	{
+		*orig_size *= 2;
+		orig = realloc(orig, *orig_size);
+		if (orig == NULL)
+		{
+			should_terminate = 1;
+			perror_message("realloc");
+			return;
+		}
+	}
+	strcat(orig, addition);
 }
 
 int check_game_end(char player_color)
@@ -457,6 +597,16 @@ void print_single_move(game_move move)
 	}
 	printf("\n");*/
 }
+
+void print_line(){
+	int i;
+	printf("  |");
+	for (i = 1; i < BOARD_SIZE * 4; i++){
+		printf("-");
+	}
+	printf("|\n");
+}
+
 
 /*prints a single board tile*/
 void print_tile(board_tile tile)

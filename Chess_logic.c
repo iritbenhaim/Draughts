@@ -118,14 +118,14 @@ int get_board_position(char* input, int* i, int* j)
 	int temp;
 	int start = strchr(input, '<') - input;
 	int end = strchr(input, ',') - input;
-	if (end - start != 2 || input[start + 1] < 'a' || input[start + 1] > 'j')
+	if (end - start != 2 || input[start + 1] < 'a' || input[start + 1] > 'a' + BOARD_SIZE)
 	{
 		print_message(WRONG_POSITION);
 		return 0;
 	}
 	*strchr(input, '>') = '\0';
 	temp = atoi(input + end + 1);
-	if (temp < 1 || temp > 10)
+	if (temp < 1 || temp > BOARD_SIZE)
 	{
 		print_message(WRONG_POSITION);
 		return 0;
@@ -607,15 +607,6 @@ int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	}
 }
 
-void print_line(){
-	int i;
-	printf("  |");
-	for (i = 1; i < BOARD_SIZE*4; i++){
-		printf("-");
-	}
-	printf("|\n");
-}
-
 
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 	int i,j;
@@ -689,6 +680,7 @@ int find_move(linked_list possible_moves, game_move move)
 		cur = cur->next;
 	}
 	return 0;*/
+	return 0;
 }
 
 
