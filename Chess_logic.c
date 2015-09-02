@@ -8,6 +8,13 @@
 #include "Game_flow.h"
 #include "Minimax.h"
 
+int L_B_ROOK_MOVE = 0;
+int R_B_ROOK_MOVE = 0;
+int L_W_ROOK_MOVE = 0;
+int R_W_ROOK_MOVE = 0;
+int B_KING_MOVE = 0;
+int W_KING_MOVE = 0;
+
 /*returns 1 if the move is legal for the player of color "color"*/
 int is_legal_move(game_move move, char color)
 {
@@ -140,15 +147,6 @@ int get_board_position(char* input, int* i, int* j)
 	return 1;
 
 }
-
-/*gets a linked list containing all possible moves for a player
-cur_player_color - the color of the current player*/
-linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color)
-{
-	int i, j;
-	linked_list best_moves;
-	int num_eats = 0;
-	char type;
 
 	best_moves = new_list();
 	if (should_terminate)
@@ -396,7 +394,6 @@ int contains_jump(game_move* cur_move, board_tile second, board_tile first)
 performs a whole move with all steps
 removes all opponent pawns eaten
 */
-
 void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 {/*
 	board_tile current = move.start;
@@ -582,6 +579,50 @@ int find_move(linked_list possible_moves, game_move move)
 
 
 
+/*gets a linked list containing all possible moves for a player
+cur_player_color - the color of the current player*/
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color)
+{
+	int i, j;
+	linked_list moves;
+	int num_eats = 0;
+	char type;
+
+	moves = new_list();
+	if (should_terminate)
+		return moves;
+	for (i = 0; i < BOARD_SIZE; ++i)
+	{
+		for (j = 0; j < BOARD_SIZE; j++)
+		{
+			if (cur_player_color != board[i][j].color)
+				continue;
+			type = board[i][j].type;
+			switch (type)
+			{
+			case 'm':
+				generate_pawn_moves(board[i][j], &moves);
+				break;
+			case 'k':
+				generate_king_moves(board[i][j], &moves);
+				break;
+			case 'b':
+				generate_bishop_moves(board[i][j], &moves);
+				break;
+			case 'n':
+				generate_knight_moves(board[i][j], &moves);
+				break;
+			case 'r':
+				generate_rook_moves(board[i][j], &moves);
+				break;
+			case 'q':
+				generate_queen_moves(board[i][j], &moves);
+				break;
+			}
+		}
+	}
+	return moves;
+}
 
 /*return legal moves for a king*/
 void generate_king_moves(board_tile tile, linked_list* moves)
@@ -853,4 +894,74 @@ void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int u
 		cur_move->start = tile;
 	}
 	free(cur_move);
+}
+
+/*determines if certain tile on board is in attack*/
+int is_tile_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], int x, int y, char color)
+{
+	linked_list enemy_moves;
+	int check = 0;
+	enemy_moves = generate_moves(board, flip_color(color));
+	node* move = enemy_moves.first->data;
+	for (int i = 0; i < enemy_moves.len; i++)
+	{
+		board_tile end = (*(game_move*)move->data).end;
+		if (end.char_indexer == x && end.int_indexer == y)
+		{
+			check = 1;
+			break;
+		}
+		move = move->next;
+	}
+	free_moves(enemy_moves);
+	return check;
+}
+
+
+void generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* moves, char color)
+{
+	if (color == WHITE)
+	{
+		if (W_KING_MOVE)
+			return;
+		if (!L_W_ROOK_MOVE)
+			generate_direct_castling_move(board, board[W_K_X][W_K_Y], board[W_L_R_X][W_L_R_Y]);
+		if (!R_W_ROOK_MOVE)
+			generate_direct_castling_move(board, board[W_K_X][W_K_Y], board[W_R_R_X][W_R_R_Y]);
+	}
+	if (color == BLACK)
+	{
+		if (B_KING_MOVE)
+			return;
+		if (!L_B_ROOK_MOVE)
+			generate_direct_castling_move(board, board[B_K_X][B_K_Y], board[B_L_R_X][B_L_R_Y]);
+		if (!R_B_ROOK_MOVE)
+			generate_direct_castling_move(board, board[B_K_X][B_K_Y], board[B_R_R_X][B_R_R_Y]);
+	}
+}
+
+int generate_direct_castling_move(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile king, board_tile rook)
+{
+	int k_start[] = { king.char_indexer, king.int_indexer };
+	if (is_tile_in_check(board, k_start[0], k_start[1], king.color))
+		return 0;
+	if (rook.char_indexer < king.char_indexer)
+	{
+		int k_end[] = {king.char_indexer - 2 , king.int_indexer};
+		int r_end[] = {king.char_indexer - 1 , king.int_indexer};
+		if (is_tile_in_check(board, k_end[0], k_end[1], king.color))
+			return 0;
+		if (is_tile_in_check(board, r_end[0], r_end[1], king.color))
+			return 0;
+	}
+	else
+	{
+		int k_end[] = { king.char_indexer + 2, king.int_indexer };
+		int r_end[] = { king.char_indexer + 1, king.int_indexer };
+		if (is_tile_in_check(board, k_end[0], k_end[1], king.color))
+			return 0;
+		if (is_tile_in_check(board, r_end[0], r_end[1], king.color))
+			return 0;
+	}
+	return 1;
 }

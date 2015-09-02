@@ -26,6 +26,20 @@
 #define BLACK_Q 'Q'
 #define BLACK_K 'K'
 
+#define W_K_X 4
+#define W_K_Y 0
+#define W_L_R_X 0
+#define W_L_R_Y 0
+#define W_R_R_X 9
+#define W_R_R_Y 0
+#define B_K_X 4
+#define B_K_Y 9
+#define B_L_R_X 0
+#define B_L_R_Y 9
+#define B_R_R_X 9
+#define B_R_R_Y 9
+
+
 
 #define EMPTY ' '
 

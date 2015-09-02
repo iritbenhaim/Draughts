@@ -17,7 +17,7 @@ char next_player = WHITE;
 
 int main(int argc, char* argv[])
 {
-	test(argc, argv);
+	//main_window();
 	if (argc > 0)
 	{
 		SDL_Init(SDL_INIT_EVERYTHING);
