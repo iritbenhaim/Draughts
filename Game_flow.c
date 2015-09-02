@@ -225,16 +225,19 @@ int user_move(char* input, char player_color)
 		FILE *xml_file = fopen(file_name, "w");
 		if (NULL == xml_file)
 		{
+			free(xml_info);
 			print_message(WRONG_FILE_NAME);
 			return 0;
 		}
-		int count = fwrite(xml_info, sizeof(char), strlen(xml_file), xml_file);
+		int count = fwrite(xml_info, sizeof(char), strlen(xml_info), xml_file);
 		if (count != strlen(xml_info))
 		{
+			free(xml_info);
 			should_terminate = 1;
 			perror_message("fwrite");
 			return -1;
 		}
+		free(xml_info);
 		fclose(xml_file);
 		return 0;
 	}
@@ -247,7 +250,7 @@ int user_move(char* input, char player_color)
 	return 0;
 }
 
-
+/*makes a string containing all the xml data based in the xml format*/
 char *get_xml_game()
 {
 	int xml_buf_size = 1024;
@@ -266,7 +269,7 @@ char *get_xml_game()
 		return NULL;
 	}
 
-	char *next = next_player == WHITE ? "white" : "black";
+	char *next = next_player == WHITE ? "White" : "Black";
 	concat(xml_data, &xml_buf_size, next);
 	if (should_terminate)
 	{
@@ -320,36 +323,63 @@ char *get_xml_game()
 			free(xml_data);
 			return NULL;
 		}
-		char *user = user_color == WHITE ? "white" : "black";
+		char *user = user_color == WHITE ? "White" : "Black";
 		concat(xml_data, &xml_buf_size, user);
 		if (should_terminate)
 		{
 			free(xml_data);
 			return NULL;
 		}
-		concat(xml_data, &xml_buf_size, "</user_color>\n\t<board>");
+		concat(xml_data, &xml_buf_size, "</user_color>\n\t<board>\n");
 		if (should_terminate)
 		{
 			free(xml_data);
 			return NULL;
 		}
-		
+		for (size_t i = BOARD_SIZE; i > 0; i--)
+		{ /*append the board itself*/
+			char row[128];
+			row[0] = '\0';
+			strcat(row, "\t\t<row_");
+			char line_num[8];
+			_itoa(i, line_num, 10);
+			strcat(row, line_num);
+			strcat(row, ">");
+			size_t cur_len = strlen(row);
+			row[cur_len + BOARD_SIZE] = '\0';
+			for (size_t j = 0; j < BOARD_SIZE; j++)
+			{
+				char c = get_tool_type(board[j][i].color, board[j][i].type);
+				if (c == EMPTY)
+					c = '_';
+				row[cur_len + j] = c;
+			}
+			strcat(row, "</row_");
+			strcat(row, line_num);
+			strcat(row, ">\n");
+			concat(xml_data, &xml_buf_size, row);
+			if (should_terminate)
+			{
+				free(xml_data);
+				return NULL;
+			}
+		}
 	}
 
-	concat(xml_data, &xml_buf_size, "</game>");
+	concat(xml_data, &xml_buf_size, "\t<\board>\n</game>");
 	if (should_terminate)
 	{
 		free(xml_data);
 		return NULL;
 	}
-	free(xml_data);
+	return xml_data;
 }
 
 /*concatinates to strings with reallocating if needed*/
 void concat(char *orig, size_t *orig_size, char *addition)
 {
 
-	if (strlen(orig) + strlen(addition) >= *orig_size - 1)
+	while (strlen(orig) + strlen(addition) >= *orig_size - 1)
 	{
 		*orig_size *= 2;
 		orig = realloc(orig, *orig_size);
@@ -378,7 +408,7 @@ int check_game_end(char player_color)
 }
 
 
-/*return 0 if input ==  command*/
+/*return 0 if input starts with*/
 int cmp_input_command(char* input, char* cmd)
 {
 	if (strlen(input) >= strlen(cmd))
@@ -469,8 +499,23 @@ int settings(char* input)
 			print_message(WRONG_FILE_NAME)
 			return 0;
 		}
-		/*TODO - complete load*/
+		fseek(setting_file, 0, SEEK_END);
+		int file_len = ftell(setting_file);
+		char *file_data = malloc(file_len);
+		if (file_data == NULL)
+		{
+			should_terminate = 1;
+			perror_message("malloc");
+			fclose(setting_file);
+			return 0;
+		}
 		fclose(setting_file);
+		load_config(file_data);
+		free(file_data);
+		if (should_terminate)
+		{
+			return 0;
+		}
 		print_board(board);
 	}	
 	if (0 == cmp_input_command(input, "clear"))
@@ -569,6 +614,60 @@ int settings(char* input)
 	return 0;
 }
 
+/*loads all data in a configuration file*/
+void load_config(char *file_data)
+{
+	char *cur_config;
+	cur_config = strstr(file_data, "<next_turn>") + strlen("<next_turn>");
+	if (0 == cmp_input_command(cur_config, "White"))
+		next_player = WHITE;
+	else
+		next_player = BLACK;
+	cur_config = strstr(file_data, "<game_mode>") + strlen("<game_mode>");
+	player_vs_player = cur_config[0] + '0';
+	if (player_vs_player == 2)
+	{
+		cur_config = strstr(file_data, "<difficulty>") + strlen("<difficulty>");
+		if (0 == cmp_input_command(cur_config, "best"))
+			minimax_depth = -1;
+		else
+			minimax_depth = cur_config[0] + '0';
+		cur_config = strstr(file_data, "<user_color>") + strlen("<user_color>");
+		if (0 == cmp_input_command(cur_config, "White"))
+			user_color = WHITE;
+		else
+			user_color = BLACK;
+	}
+	/*get board*/
+
+	for (size_t i = BOARD_SIZE; i > 0; i--)
+	{ /*parse row*/
+		file_data = strstr(file_data, "<row_") + strlen("<row_C>");
+		for (size_t j = 0; j < BOARD_SIZE; j++)
+		{/*parse a char on board*/
+			char c = file_data[j];
+			board[j][i].color = get_color(c);
+			if (c == '_')
+				board[j][i].type = EMPTY;
+			else
+				board[j][i].type = tolower(c);
+		}
+	}
+	
+
+}
+
+/*gets a tile color
+input - char c: the char used on board to represent the given type and color of tool*/
+char get_color(char c)
+{
+	if ((c == EMPTY) || (c == '_'))
+		return EMPTY;
+	if (isupper(c))
+		return BLACK;
+	return WHITE;
+}
+
 /*prints to the user all his legal moves*/
 void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
@@ -643,7 +742,7 @@ void free_moves(linked_list list)
 	free(prev);
 }
 
-	/*returns the char used on board to represent the given type and color of tool*/
+/*returns the char used on board to represent the given type and color of tool*/
 char get_tool_type(char color, char type)
 {
 	if (color == EMPTY)

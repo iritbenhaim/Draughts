@@ -49,6 +49,8 @@ char flip_color(char color);
 int count_piece(color, type);
 int check_game_end(char player_color);
 char *get_xml_game();
+char get_color(char c);
+void load_config(char *file_data);
 void concat(char *orig, size_t *orig_size, char *addition);
 
 #endif GAME_FLOW_

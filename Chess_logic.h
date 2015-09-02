@@ -17,7 +17,7 @@ void generate_bishop_moves(board_tile tile, linked_list* moves);
 void generate_rook_moves(board_tile tile, linked_list* moves);
 void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg);
 void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int up);
-int game_move_list_cmp(linked_list list1, linked_list list2);
+int list_cmp(linked_list list1, linked_list list2);
 int find_move(linked_list possible_moves, game_move move);
 linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color);
 int is_board_init_legal();
@@ -28,7 +28,6 @@ void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile
 int do_computer_move(char color);
 void do_move(board_tile m_board[][BOARD_SIZE], game_move move);
 int up_direction(int start_c, int end_c, int is_white);
-int is_changed_to_king(char pawn, board_tile loc);
 char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void print_line();
 

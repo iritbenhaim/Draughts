@@ -362,100 +362,6 @@ void generate_king_moves_old(board_tile tile, char color, linked_list* best_move
 if a better move was found, best moves will be freed and replaced.
 tile - the tile in which the piece is at*/
 
-void generate_eater_moves(board_tile tile, char color, linked_list* best_moves, int* num_eats, game_move* cur_move)
-{/*
-	int old_eats = *num_eats;
-	/*if (!(((cur_move->start).type == MAN) && tile.int_indexer == (color == BLACK ? 0 : 9)))* /
-	{
-		for (int ud_direction = 1; ud_direction > -2; ud_direction -= 2) /*when ud_direction=1, move up. when ud_direction=-1 move down* /
-		{
-			for (int lr_direction = 1; lr_direction > -2; lr_direction -= 2) /*when lr_direction=1, move right. when lr_direction=-1 move left* /
-			{
-				int dest_lr = (tile.char_indexer) + lr_direction * 2;
-				int dest_ud = tile.int_indexer + ud_direction * 2;
-				if (out_of_boarders(dest_lr, dest_ud))
-					continue;
-				board_tile* next = &board[dest_lr][dest_ud];
-				if (contains_jump(cur_move, *next, tile) || (*next).color != EMPTY)
-					continue; //already ate this tile on this move..
-				board_tile* mid = &board[(tile.char_indexer) + lr_direction][tile.int_indexer + ud_direction];
-				char c = (*mid).color;
-				if ((c == BLACK && color == WHITE) || (c == WHITE && color == BLACK))/*the next tile belongs to the oponnents* /
-				{
-					game_move* cur_move_copy = copy_move(cur_move);
-					if (should_terminate)
-					{
-						free(cur_move);
-						return;
-					}
-
-					/*add cur eat to move* /
-					list_add(&cur_move_copy->jumps, next);
-					if (should_terminate)
-					{
-						free(cur_move);
-						free(cur_move_copy);
-						return;
-					}
-					generate_eater_moves(*next, color, best_moves, num_eats, cur_move_copy);
-					if (should_terminate)
-					{
-						free_list(cur_move->jumps);
-						free(cur_move);
-						free_list(cur_move_copy->jumps);
-						free(cur_move_copy);
-						return;
-					}
-				}
-			}
-		}
-	}
-	if (old_eats == *num_eats && cur_move->jumps.len != 0)
-	{
-		if (cur_move->jumps.len == *num_eats)
-		{
-			/*add the current move to the best moves list* /
-			list_add(best_moves, cur_move);
-			if (should_terminate)
-			{
-				free_list(cur_move->jumps);
-				free(cur_move);
-				return;
-			}
-		}
-		else if (cur_move->jumps.len > *num_eats)
-		{
-			free_moves(*best_moves);
-			*best_moves = new_list();
-			if (should_terminate)
-			{
-				free_list(cur_move->jumps);
-				free(cur_move);
-				return;
-			}
-			/*add the current move to the best moves list* /
-			list_add(best_moves, cur_move);
-			if (should_terminate)
-			{
-				free_list(cur_move->jumps);
-				free(cur_move);
-				return;
-			}
-			*num_eats = cur_move->jumps.len;
-		}
-		else
-		{
-			free_list(cur_move->jumps);
-			free(cur_move);
-		}
-	}
-	else
-	{
-		free_list(cur_move->jumps);
-		free(cur_move);
-	}*/
-}
-
 /*returns 1 if cur_move jumps eats the tile between cur and next*/
 int contains_jump(game_move* cur_move, board_tile second, board_tile first)
 {
@@ -529,16 +435,6 @@ void do_part_move(board_tile m_board[][BOARD_SIZE], board_tile start, board_tile
 	//	m_board[start_c][start_r].type = pawn == WHITE_P ? WHITE_K : BLACK_K;
 	//else
 	//	m_board[start_c][start_r].type = pawn;
-}
-
-/*checks if current move changed man to king*/
-int is_changed_to_king(char pawn, board_tile loc)
-{
-	if (pawn == BLACK_P)
-		return loc.int_indexer == 0 ? 1 : 0;
-	if (pawn == WHITE_P)
-		return loc.int_indexer == 9 ? 1 : 0;
-	return 0;
 }
 
 /*
@@ -645,8 +541,8 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 
 }
 
-/*checks if the game move list are the same*/
-int game_move_list_cmp(linked_list list1, linked_list list2)
+/*checks if the lists are the same*/
+int list_cmp(linked_list list1, linked_list list2)
 {
 	if (list1.len != list2.len)
 		return 0;
