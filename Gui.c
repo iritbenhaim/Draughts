@@ -9,7 +9,7 @@
 
 #define WIN_W 300
 #define WIN_H 390
-#define IMG_W 240
+#define IMG_W 260
 #define IMG_H 296
 
 struct Button 
@@ -56,7 +56,7 @@ void DrawScreen(SDL_Surface* screen, int h)
 }
 
 
-int test(int argc, char* argv[])
+int test()
 {
 	SDL_Surface *screen;
 	SDL_Event event;
@@ -104,12 +104,40 @@ int main_window()
 {
 	SDL_Event e;
 	SDL_Rect rect = { 10, 10, 50, 50 };
-	SDL_Rect new_game = { 40, 120, 220, 60 };
-	SDL_Rect load_game = { 40, 210, 220, 60 };
-	SDL_Rect quit_game = { 40, 300, 220, 60 };
+	SDL_Rect new_game = { 20, 120, 260, 54 };
+	SDL_Rect load_game = { 20, 210, 260, 54 };
+	SDL_Rect quit_game = { 20, 300, 260, 54 };
+	SDL_Rect game_prog = { 10, 35, 280, 54 };
+	SDL_Rect game_prog_rect = { 0, 0, 280, 54 };
 	SDL_Rect imgrect = { 0, 0, IMG_W, IMG_H };
-	SDL_Surface *img = SDL_LoadBMP("test.bmp");
+
+	SDL_Surface *new_img = SDL_LoadBMP("new_game.bmp");
+	if (new_img == NULL) {
+		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+		return 1;
+	}
+	SDL_Surface *load_img = SDL_LoadBMP("load_game.bmp");
+	if (load_img == NULL) {
+		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+		return 1;
+	}
+	SDL_Surface *quit_img = SDL_LoadBMP("quit.bmp");
+	if (quit_img == NULL) {
+		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+		return 1;
+	}
+	SDL_Surface *program_img = SDL_LoadBMP("game_prog.bmp");
+	if (program_img == NULL) {
+		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+		return 1;
+	}
+
 	SDL_Surface *w = SDL_SetVideoMode(WIN_W, WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	if (w == NULL) {
+		printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
+		return 1;
+	}
+
 	int quit = 0;
 
 	/* Initialize SDL and make sure it quits*/
@@ -119,57 +147,50 @@ int main_window()
 	}
 	atexit(SDL_Quit);
 
-	/* Create window surface*/
 
-	if (w == NULL) {
-		printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
-		return 1;
+
+	/* Clear window to BLACK*/
+	if (SDL_FillRect(w, 0, 0) != 0) {
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError()); //todo - quit
 	}
 
-	/* Define the rects we need*/
-
-
-	/* Load test spritesheet image*/
-
-	if (img == NULL) {
-		printf("ERROR: failed to load image: %s\n", SDL_GetError());
-		return 1;
+	/* White rectangle buttons */
+	if (SDL_FillRect(w, &new_game, SDL_MapRGB(w->format, 255, 255, 255)) != 0) {
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());//todo - quit
+	}
+	if (SDL_FillRect(w, &load_game, SDL_MapRGB(w->format, 255, 255, 255)) != 0) {
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());//todo - quit
+	}
+	if (SDL_FillRect(w, &quit_game, SDL_MapRGB(w->format, 255, 255, 255)) != 0) {
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());//todo - quit
 	}
 
-	/* Set colorkey to BLUE*/
-	if (SDL_SetColorKey(img, SDL_SRCCOLORKEY, SDL_MapRGB(img->format, 0, 0, 255)) != 0) {
-		printf("ERROR: failed to set color key: %s\n", SDL_GetError());
-		SDL_FreeSurface(img);
-		return 1;
-	}
 
+	/* Draw image sprites*/
+	if (SDL_BlitSurface(load_img, &imgrect, w, &load_game) != 0) {
+		SDL_FreeSurface(load_img);
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());//todo - quit
+	}
+	if (SDL_BlitSurface(new_img, &imgrect, w, &new_game) != 0) {
+		SDL_FreeSurface(new_img);
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());//todo - quit
+	}
+	if (SDL_BlitSurface(quit_img, &imgrect, w, &quit_game) != 0) {
+		SDL_FreeSurface(quit_img);
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());//todo - quit
+	}
+	if (SDL_BlitSurface(program_img, &game_prog_rect, w, &game_prog) != 0) {
+		SDL_FreeSurface(quit_img);
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());//todo - quit
+	}
 
 	while (!quit) {
-		/* Clear window to BLACK*/
-		if (SDL_FillRect(w, 0, 0) != 0) {
-			printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-			break;
-		}
 
-		/* Green rectangle button*/
-		if (SDL_FillRect(w, &new_game, SDL_MapRGB(w->format, 0, 255, 0)) != 0) {
-			printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-			break;
-		}
 
-		/* Green rectangle button*/
-		if (SDL_FillRect(w, &load_game, SDL_MapRGB(w->format, 255, 0, 0)) != 0) {
-			printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-			break;
-		}
 
-		/* Green rectangle button*/
-		if (SDL_FillRect(w, &quit_game, SDL_MapRGB(w->format, 0, 0, 255)) != 0) {
-			printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-			break;
-		}
+		
 
-		/* Advance to next sprite*/
+		/* Advance to next sprite* /
 		imgrect.x += imgrect.w;
 		if (imgrect.x >= img->w) {
 			imgrect.x = 0;
@@ -177,7 +198,7 @@ int main_window()
 			if (imgrect.y >= img->h) imgrect.y = 0;
 		}
 
-		/* We finished drawing*/
+		/* We finished drawing */
 		if (SDL_Flip(w) != 0) {
 			printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
 			break;
@@ -194,8 +215,12 @@ int main_window()
 				if (e.key.keysym.sym == SDLK_ESCAPE) quit = 1;
 				break;
 			case (SDL_MOUSEBUTTONUP) :
-				if ((e.button.x > rect.x) && (e.button.x < rect.x + rect.w) && (e.button.y > rect.y) && (e.button.y < rect.y + rect.h))
+				if (is_in_rect(e.button.x, e.button.y, quit_game))
 					quit = 1;
+				if (is_in_rect(e.button.x, e.button.y, new_game))
+					test();
+				if (is_in_rect(e.button.x, e.button.y, load_game))
+					test();
 				break;
 			default:
 				break;
@@ -206,9 +231,15 @@ int main_window()
 		SDL_Delay(1000);
 	}
 
-	SDL_FreeSurface(img);
+	/*SDL_FreeSurface(img);*/
 	return 0;
 }
 
 
-
+/*return 1 if given x,y coordinates are in the rect. else return 0*/
+int is_in_rect(int x, int y, SDL_Rect rect)
+{
+	if ((x > rect.x) && (x < rect.x + rect.w) && (y > rect.y) && (y < rect.y + rect.h))
+		return 1;
+	return 0;
+}

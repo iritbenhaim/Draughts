@@ -14,13 +14,30 @@ char user_color = WHITE; /*color of the user player*/
 int is_turn_end;
 int player_vs_player = 1; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
 char next_player = WHITE;
+int gui = 0; /*0 for command line. 1 for gui*/
 
 int main(int argc, char* argv[])
 {
 	//main_window();
-	if (argc > 0)
+	if (argc > 2)
 	{
-		SDL_Init(SDL_INIT_EVERYTHING);
+		print_message("to many command argumants. usage: Chess.exe <gui_type>");
+		return -1;
+	}
+	else if (argc == 2 || (DEBUG && DEBUG_GUI))
+	{
+		if ((DEBUG && DEBUG_GUI) || strcmp(argv[1], "gui") == 0)
+		{
+			SDL_Init(SDL_INIT_EVERYTHING);
+			gui = 1;
+			main_window();
+			SDL_Quit();
+		}
+		else if (strcmp(argv[1], "console") != 0)
+		{
+			print_message("arg1 bad format. usage: Chess.exe <gui_type>");
+			return -1;
+		}
 	}
 	int input_size = 1024;
 	char* input = malloc(input_size);
@@ -53,14 +70,15 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 	}
-	check_game_end(WHITE);
 	
-	while (1)
+	
+	while (check_game_end(WHITE) != -1)
 	{/*game play*/
 		if (player_vs_player == 1 || (player_vs_player == 0 && next_player == user_color))
 		{/*user turn*/
 			is_turn_end = 0;
-			printf("%s player - enter your move:\n", next_player);
+			char* text = next_player == WHITE ? "white player - enter your move:\n" : "black player - enter your move:\n";
+			printf(text);
 			while (!is_turn_end)
 			{
 				if (read_user_input_line(input, &input_size) == -1)
@@ -277,7 +295,7 @@ char *get_xml_game()
 		return NULL;
 	}
 
-	concat(xml_data, &xml_buf_size, "</next_turn>>\n\t<game_mode>");
+	concat(xml_data, &xml_buf_size, "</next_turn>\n\t<game_mode>");
 	if (should_terminate)
 	{
 		free(xml_data);

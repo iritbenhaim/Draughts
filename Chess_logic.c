@@ -29,7 +29,7 @@ int is_legal_move(game_move move, char color)
 	return is_success;
 }
 
-/*return 1 if game ended*/
+/*executes 1 computer turn. return 1 if game ended*/
 int do_computer_move(char color)
 {
 	int end_game;
@@ -74,9 +74,9 @@ int is_board_init_legal()
 	{
 		for (int j = 0; j < BOARD_SIZE; j++)
 		{
-			if (board[i][j].type = WHITE_K)
+			if (board[i][j].type == WHITE_K)
 			{
-				if (board[i][j].color = WHITE)
+				if (board[i][j].color == WHITE)
 					++white_king;
 				else
 					++black_king;
@@ -146,35 +146,6 @@ int get_board_position(char* input, int* i, int* j)
 	}
 	return 1;
 
-}
-
-	best_moves = new_list();
-	if (should_terminate)
-		return best_moves;
-	for (i = 0; i < BOARD_SIZE; ++i)
-	{
-		for (j = 0; j < BOARD_SIZE; j++)
-		{
-			if (cur_player_color != board[i][j].color)
-				continue;
-			type = board[i][j].type;
-			/*if (type == KING)
-			{
-				generate_king_moves(board[i][j], cur_player_color, &best_moves, &num_eats);
-				if (should_terminate)
-					break;
-			}
-			else if (type == MAN)
-			{
-				generate_man_moves(board[i][j], cur_player_color, &best_moves, &num_eats);
-				if (should_terminate)
-					break;
-			}
-			else
-				continue;*/
-		}
-	}
-	return best_moves;
 }
 
 /*appends to the best_moves list all the legal man moves form the current tile.
@@ -500,7 +471,7 @@ int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	}
 }
 
-
+/*initializes the board as a normal chess game start*/
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 	int i,j;
 	for (i = 0; i < BOARD_SIZE; i++){

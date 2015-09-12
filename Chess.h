@@ -3,7 +3,8 @@
 #define CHESS_
 
 
-#define DEBUG 0
+#define DEBUG 1
+#define DEBUG_GUI 1
 #define COMP_ONLY 0
 #define _CRT_SECURE_NO_WARNINGS
 
