@@ -2,23 +2,7 @@
 #include <stdio.h>
 #include <SDL.h>
 
-#define WIDTH 640
-#define HEIGHT 480
-#define BPP 4
-#define DEPTH 32
 
-#define WIN_W 300
-#define WIN_H 390
-#define IMG_W 260
-#define IMG_H 296
-
-struct Button 
-{
-	int x;
-	int y;
-	int w;
-	int h;
-};
 
 void setpixel(SDL_Surface *screen, int x, int y, Uint8 r, Uint8 g, Uint8 b)
 {
@@ -96,6 +80,35 @@ int test()
 	return 0;
 }
 
+int load_game_wind()
+{
+	int num_lines = 1 + ((NUM_SAVE_SLOTS - 1) / BTNS_PER_LINE);
+	SDL_Surface *w = SDL_SetVideoMode(BTNS_PER_LINE * (LOAD_BTN_W + 20) + 20,
+		num_lines * (LOAD_BTN_H + 20) + 100, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+
+	/* Clear window to BLACK*/
+	if (SDL_FillRect(w, 0, 0) != 0) {
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError()); //todo - quit
+	}
+
+	SDL_Rect imgrect = { 0, 0, LOAD_BTN_W, LOAD_BTN_H};
+
+	for (int slot_num = 0; slot_num < NUM_SAVE_SLOTS; slot_num++)
+	{
+		SDL_Rect r = { 20 + (slot_num % BTNS_PER_LINE)*(LOAD_BTN_W + 20), 
+			90 + (LOAD_BTN_H + 20) * (slot_num / BTNS_PER_LINE), LOAD_BTN_W, LOAD_BTN_H };
+		SDL_Surface *new_img = SDL_LoadBMP(EMPTY_IMG);
+		if (new_img == NULL) {
+			printf("ERROR: failed to load image: %s\n", SDL_GetError());
+			return 1;
+		}
+		if (SDL_BlitSurface(new_img, &imgrect, w, &r) != 0) {
+			SDL_FreeSurface(new_img);
+			printf("ERROR: failed to blit image: %s\n", SDL_GetError());//todo - quit
+		}
+	}
+	return 0;
+}
 
 
 
@@ -103,36 +116,34 @@ int test()
 int main_window()
 {
 	SDL_Event e;
-	SDL_Rect rect = { 10, 10, 50, 50 };
-	SDL_Rect new_game = { 20, 120, 260, 54 };
-	SDL_Rect load_game = { 20, 210, 260, 54 };
-	SDL_Rect quit_game = { 20, 300, 260, 54 };
-	SDL_Rect game_prog = { 10, 35, 280, 54 };
-	SDL_Rect game_prog_rect = { 0, 0, 280, 54 };
-	SDL_Rect imgrect = { 0, 0, IMG_W, IMG_H };
-
-	SDL_Surface *new_img = SDL_LoadBMP("new_game.bmp");
+	SDL_Rect game_prog = { 10, 35, 280, MAIN_IMG_H };
+	SDL_Rect new_game = { 20, 120, MAIN_IMG_W, MAIN_IMG_H };
+	SDL_Rect load_game = { 20, 210, MAIN_IMG_W, MAIN_IMG_H };
+	SDL_Rect quit_game = { 20, 300, MAIN_IMG_W, MAIN_IMG_H };
+	SDL_Rect game_prog_rect = { 0, 0, 280, MAIN_IMG_H };
+	SDL_Rect imgrect = { 0, 0, MAIN_IMG_W, MAIN_IMG_H };
+	SDL_Surface *new_img = SDL_LoadBMP(NEW_GAME);
 	if (new_img == NULL) {
 		printf("ERROR: failed to load image: %s\n", SDL_GetError());
 		return 1;
 	}
-	SDL_Surface *load_img = SDL_LoadBMP("load_game.bmp");
+	SDL_Surface *load_img = SDL_LoadBMP(LOAD_GAME);
 	if (load_img == NULL) {
 		printf("ERROR: failed to load image: %s\n", SDL_GetError());
 		return 1;
 	}
-	SDL_Surface *quit_img = SDL_LoadBMP("quit.bmp");
+	SDL_Surface *quit_img = SDL_LoadBMP(QUIT);
 	if (quit_img == NULL) {
 		printf("ERROR: failed to load image: %s\n", SDL_GetError());
 		return 1;
 	}
-	SDL_Surface *program_img = SDL_LoadBMP("game_prog.bmp");
+	SDL_Surface *program_img = SDL_LoadBMP(GAME_PROG);
 	if (program_img == NULL) {
 		printf("ERROR: failed to load image: %s\n", SDL_GetError());
 		return 1;
 	}
 
-	SDL_Surface *w = SDL_SetVideoMode(WIN_W, WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	SDL_Surface *w = SDL_SetVideoMode(MAIN_WIN_W, MAIN_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
 	if (w == NULL) {
 		printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
 		return 1;
@@ -145,9 +156,6 @@ int main_window()
 		printf("ERROR: unable to init SDL: %s\n", SDL_GetError());
 		return 1;
 	}
-	atexit(SDL_Quit);
-
-
 
 	/* Clear window to BLACK*/
 	if (SDL_FillRect(w, 0, 0) != 0) {
@@ -180,7 +188,7 @@ int main_window()
 		printf("ERROR: failed to blit image: %s\n", SDL_GetError());//todo - quit
 	}
 	if (SDL_BlitSurface(program_img, &game_prog_rect, w, &game_prog) != 0) {
-		SDL_FreeSurface(quit_img);
+		SDL_FreeSurface(program_img);
 		printf("ERROR: failed to blit image: %s\n", SDL_GetError());//todo - quit
 	}
 
@@ -220,7 +228,7 @@ int main_window()
 				if (is_in_rect(e.button.x, e.button.y, new_game))
 					test();
 				if (is_in_rect(e.button.x, e.button.y, load_game))
-					test();
+					load_game_wind();
 				break;
 			default:
 				break;
@@ -228,7 +236,7 @@ int main_window()
 		}
 
 		/* Wait a little before redrawing*/
-		SDL_Delay(1000);
+		SDL_Delay(100);
 	}
 
 	/*SDL_FreeSurface(img);*/
