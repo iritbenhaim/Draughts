@@ -30,7 +30,6 @@ extern board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 extern int should_terminate;
 extern char user_color; /*color of the user player*/
 extern int is_user_turn;
-extern int promotion; /*should be reset to 0 every start of turn*/
 
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
@@ -42,7 +41,6 @@ void print_line();
 void print_tile(board_tile tile);
 int same_tile(board_tile first, board_tile second);
 int out_of_boarders(int first_indexer, int second_indexer);
-game_move* copy_move(game_move* cur_move);
 void free_moves(linked_list list);
 char get_tool_type(char color, char type);
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
