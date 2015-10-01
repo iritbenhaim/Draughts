@@ -1,5 +1,3 @@
-#define DEBUG 0
-
 #include "Chess.h"
 #include "Chess_logic.h"
 #include "Game_flow.h"

@@ -18,6 +18,7 @@ int gui = 0; /*0 for command line. 1 for gui*/
 
 int main(int argc, char* argv[])
 {
+	init_board(board);
 	//main_window();
 	if (argc > 2)
 	{
@@ -49,7 +50,6 @@ int main(int argc, char* argv[])
 		SDL_Quit();
 		return -1;
 	}
-	init_board(board);
 	print_board(board);
 	while (1)
 	{ /*game settings*/

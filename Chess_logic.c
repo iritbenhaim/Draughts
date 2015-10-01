@@ -753,7 +753,7 @@ game_move* copy_move(game_move* cur_move)
 	{
 		should_terminate = 1;
 		perror_message("malloc");
-		return;
+		return copy;
 	}
 	copy->start = cur_move->start;
 	copy->end = cur_move->end;

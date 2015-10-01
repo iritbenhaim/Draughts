@@ -6,10 +6,9 @@
 #define DEBUG 1
 #define DEBUG_GUI 1
 #define COMP_ONLY 0
-#define _CRT_SECURE_NO_WARNINGS
 
 
-#include<stdio.h>
+#include <stdio.h>
 
 #define WHITE	'w'
 #define WHITE_P 'm'
@@ -20,12 +19,6 @@
 #define WHITE_K 'k'
 
 #define BLACK	'B'
-#define BLACK_P 'M'
-#define BLACK_B 'B'
-#define BLACK_N 'N'
-#define BLACK_R 'R'
-#define BLACK_Q 'Q'
-#define BLACK_K 'K'
 
 #define W_K_X 4
 #define W_K_Y 0
