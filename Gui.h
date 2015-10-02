@@ -9,11 +9,17 @@
 #define GAME_PROG	"images\\game_prog.bmp"
 #define QUIT		"images\\quit.bmp"
 #define LOAD_GAME	"images\\load_game.bmp"
+#define SAVE_GAME	"images\\save_game.bmp"
+#define MAIN_MENU	"images\\main_menu.bmp"
+#define SHOW_MOVES	"images\\show_moves.bmp"
+#define BEST_MOVE	"images\\best_move.bmp"
 #define NEW_GAME	"images\\new_game.bmp"
 #define EMPTY_IMG	"images\\empty.bmp"
 #define USED_IMG	"images\\used.bmp"
 #define CANCEL_IMG	"images\\cancel.bmp"
 #define SYMBOLS		"images\\Chess_symbols.bmp"
+
+
 
 /*main window*/
 #define MAIN_WIN_W 300
@@ -25,6 +31,8 @@
 #define GAME_WIN_W 800
 #define GAME_WIN_H 600
 #define SQUERE_S 61
+#define GAME_IMG_W 270
+#define GAME_IMG_H 54
 
 /*load window*/
 #define LOAD_BTN_W 140
@@ -44,4 +52,5 @@ int is_in_rect(int x, int y, SDL_Rect rect);
 int load_game_wind(); 
 int is_save_slot_free(int slot_num);
 void load_game_from_slot(int slot_num);
-void draw_current_board(SDL_Surface *symbols_img, SDL_Surface *w);
+void draw_current_board(SDL_Surface *w);
+void draw_image(SDL_Rect img_rect, SDL_Rect img_place, char* img_path, SDL_Surface* w, int should_fill);

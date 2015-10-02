@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 	{
 		if ((DEBUG && DEBUG_GUI) || strcmp(argv[1], "gui") == 0)
 		{
-			SDL_Init(SDL_INIT_EVERYTHING);
+			SDL_Init(SDL_INIT_VIDEO);
 			gui = 1;
 			main_window();
 			SDL_Quit();

@@ -10,7 +10,9 @@ int game_window()
 {
 	SDL_Event e;
 	int quit = 0;
-
+	SDL_Rect imgrect = { 0, 0, GAME_IMG_W, GAME_IMG_H };
+	SDL_WM_SetCaption("Game Play", "Game Play");
+	int buttons_x = (int)(SQUERE_S * (0.25 + BOARD_SIZE) + 5);
 	SDL_Surface *w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
 	if (w == NULL) {
 		should_terminate = 1;
@@ -25,23 +27,60 @@ int game_window()
 		return 1;
 	}
 
-	SDL_Surface *symbols_img = SDL_LoadBMP(SYMBOLS);
-	if (symbols_img == NULL) {
-		should_terminate = 1;
-		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+	/*draw initial board*/
+	draw_current_board(w);
+	if (should_terminate)
+	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
 
-	draw_current_board(symbols_img, w);
+	/*draw buttons*/
+	SDL_Rect quit_game = { buttons_x, GAME_WIN_H - GAME_IMG_H - 10, GAME_IMG_W, GAME_IMG_H };
+	draw_image(quit_game, imgrect, QUIT, w, 1);
+	if (should_terminate)
+	{
+		SDL_FreeSurface(w);
+		return 1;
+	}
 
+	SDL_Rect main_menu = { buttons_x, 30, GAME_IMG_W, GAME_IMG_H };
+	draw_image(main_menu, imgrect, MAIN_MENU, w, 1);
+	if (should_terminate)
+	{
+		SDL_FreeSurface(w);
+		return 1;
+	}
 
+	SDL_Rect save_game = { buttons_x, (int)(30 + GAME_IMG_H * 1.5), GAME_IMG_W, GAME_IMG_H };
+	draw_image(save_game, imgrect, SAVE_GAME, w, 1);
+	if (should_terminate)
+	{
+		SDL_FreeSurface(w);
+		return 1;
+	}
+
+	SDL_Rect show_moves = { buttons_x, 30 + GAME_IMG_H * 3, GAME_IMG_W, GAME_IMG_H };
+	draw_image(show_moves, imgrect, SHOW_MOVES, w, 1);
+	if (should_terminate)
+	{
+		SDL_FreeSurface(w);
+		return 1;
+	}
+
+	SDL_Rect best_move = { buttons_x, (int)(30 + GAME_IMG_H * 4.5), GAME_IMG_W, GAME_IMG_H };
+	draw_image(best_move, imgrect, BEST_MOVE, w, 1);
+	if (should_terminate)
+	{
+		SDL_FreeSurface(w);
+		return 1;
+	}
+	
 	/* We finished drawing */
 	if (SDL_Flip(w) != 0) {
 		should_terminate = 1;
 		printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
 		SDL_FreeSurface(w);
-		SDL_FreeSurface(symbols_img);
 		return 1;
 	}
 
@@ -70,24 +109,32 @@ int game_window()
 
 	return 0;
 }
-void draw_current_board(SDL_Surface *symbols_img, SDL_Surface *w)
+void draw_current_board(SDL_Surface *w)
 {
+	SDL_Surface *symbols_img = SDL_LoadBMP(SYMBOLS);
+	if (symbols_img == NULL) {
+		should_terminate = 1;
+		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+		return;
+	}
 	/*paint board*/
 	for (int i = 0; i < BOARD_SIZE; ++i)
 	{
 		for (int j = 0; j < BOARD_SIZE; ++j)
 		{
+			/*one tile*/
 			int color = (i + j) % 2 == 0 ? SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
-			SDL_Rect rect = { SQUERE_S * (1 + i), SQUERE_S*(1 + j), SQUERE_S, SQUERE_S };
+			SDL_Rect rect = { (int)(SQUERE_S * (0.25 + i)), SQUERE_S*(1 + j), SQUERE_S, SQUERE_S };
 			if (SDL_FillRect(w, &rect, color) != 0) {
 				should_terminate = 1;
 				printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-				SDL_FreeSurface(w);
+				SDL_FreeSurface(symbols_img);
 				return;
 			}
 
 		}
 	}
+	/*paint tools images*/
 	Uint32 green = SDL_MapRGB(symbols_img->format, 0, 255, 0);
 	SDL_SetColorKey(symbols_img, SDL_SRCCOLORKEY, green);
 	for (int i = 0; i < BOARD_SIZE; ++i)
@@ -95,12 +142,11 @@ void draw_current_board(SDL_Surface *symbols_img, SDL_Surface *w)
 		for (int j = 0; j < BOARD_SIZE; ++j)
 		{
 			SDL_Rect *tool_rect = get_tool_rect(board[i][j]);
-			SDL_Rect rect = { SQUERE_S * (1 + i), SQUERE_S*(1 + j), SQUERE_S, SQUERE_S };
+			SDL_Rect rect = { (int)(SQUERE_S * (0.25 + i)), SQUERE_S * (1 + j), SQUERE_S, SQUERE_S };
 			if (should_terminate)
 			{
 				should_terminate = 1;
 				SDL_FreeSurface(symbols_img);
-				SDL_FreeSurface(w);
 				return;
 			}
 			if (tool_rect != NULL)
@@ -110,7 +156,6 @@ void draw_current_board(SDL_Surface *symbols_img, SDL_Surface *w)
 					should_terminate = 1;
 					printf("ERROR: failed to blit image: %s\n", SDL_GetError());
 					SDL_FreeSurface(symbols_img);
-					SDL_FreeSurface(w);
 					free(tool_rect);
 					return;
 				}
@@ -118,6 +163,7 @@ void draw_current_board(SDL_Surface *symbols_img, SDL_Surface *w)
 			}
 		}
 	}
+	SDL_FreeSurface(symbols_img);
 }
 /*returns a rect in the SYMBOLS image matching the given tool
 returns null if given tool is EMPTY*/
@@ -174,9 +220,10 @@ int load_game_wind()
 	int num_lines = 1 + ((NUM_SAVE_SLOTS) / BTNS_PER_LINE); 
 	SDL_Rect imgrect = { 0, 0, LOAD_BTN_W, LOAD_BTN_H };
 
+	SDL_WM_SetCaption("Load Game", "Load Game");
 	/*surface for load window*/
 	SDL_Surface *w = SDL_SetVideoMode(BTNS_PER_LINE * (LOAD_BTN_W + 20) + 20,
-		num_lines * (LOAD_BTN_H + 20) + 100, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+		num_lines * (LOAD_BTN_H + 20) + 50, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
 	if (w == NULL) {
 		should_terminate = 1;
 		printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
@@ -190,56 +237,33 @@ int load_game_wind()
 		SDL_FreeSurface(w);
 		return 1;
 	}
-	SDL_Surface *slot_images[NUM_SAVE_SLOTS];
+
 	/*draw all buttons*/
 	for (int slot_num = 0; slot_num < NUM_SAVE_SLOTS; slot_num++)
 	{
 		SDL_Rect r = { 20 + (slot_num % BTNS_PER_LINE)*(LOAD_BTN_W + 20), 
-			90 + (LOAD_BTN_H + 20) * (slot_num / BTNS_PER_LINE), LOAD_BTN_W, LOAD_BTN_H };
+			40 + (LOAD_BTN_H + 20) * (slot_num / BTNS_PER_LINE), LOAD_BTN_W, LOAD_BTN_H };
 
 		/*show EMPTY button if the current slot is free. otherwise show USED button*/
-		slot_images[slot_num] = is_save_slot_free(slot_num) ? SDL_LoadBMP(EMPTY_IMG) : SDL_LoadBMP(USED_IMG);
-		if (slot_images[slot_num] == NULL) {
-			should_terminate = 1;
-			printf("ERROR: failed to load image: %s\n", SDL_GetError());
-			SDL_FreeSurface(w);
-			for (int i = 0; i < slot_num; ++i)
-				SDL_FreeSurface(slot_images[i]);
-			return 1;
-		}
+		char * image = is_save_slot_free(slot_num) ? EMPTY_IMG : USED_IMG;
 
-		if (SDL_BlitSurface(slot_images[slot_num], &imgrect, w, &r) != 0) {
-			should_terminate = 1;
-			printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		draw_image(r, imgrect, image, w, 0);
+		if (should_terminate)
+		{
 			SDL_FreeSurface(w);
-			for (int i = 0; i <= slot_num; ++i)
-				SDL_FreeSurface(slot_images[i]);
 			return 1;
 		}
 	}
 
 
 	SDL_Rect cancel_rect = { 40 + (BTNS_PER_LINE - 1)*(LOAD_BTN_W + 20),
-		105 + (LOAD_BTN_H + 20) * (num_lines - 1), LOAD_BTN_W, LOAD_BTN_H };
+		55 + (LOAD_BTN_H + 20) * (num_lines - 1), LOAD_BTN_W, LOAD_BTN_H };
 
 	/*add cancel button*/
-	SDL_Surface *cancel_img =  SDL_LoadBMP(CANCEL_IMG);
-	if (cancel_img == NULL) {
-		should_terminate = 1;
-		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+	draw_image(cancel_rect, imgrect, CANCEL_IMG, w, 0);
+	if (should_terminate)
+	{
 		SDL_FreeSurface(w);
-		for (int i = 0; i <= NUM_SAVE_SLOTS; ++i)
-			SDL_FreeSurface(slot_images[i]);
-		return 1;
-	}
-
-	if (SDL_BlitSurface(cancel_img, &imgrect, w, &cancel_rect) != 0) {
-		should_terminate = 1;
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(w);
-		SDL_FreeSurface(cancel_img);
-		for (int i = 0; i <= NUM_SAVE_SLOTS; ++i)
-			SDL_FreeSurface(slot_images[i]);
 		return 1;
 	}
 
@@ -249,9 +273,6 @@ int load_game_wind()
 		should_terminate = 1;
 		printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
 		SDL_FreeSurface(w);
-		SDL_FreeSurface(cancel_img);
-		for (int i = 0; i <= NUM_SAVE_SLOTS; ++i)
-			SDL_FreeSurface(slot_images[i]);
 		return 1;
 	}
 
@@ -293,9 +314,6 @@ int load_game_wind()
 		}
 	}
 	SDL_FreeSurface(w);
-	SDL_FreeSurface(cancel_img);
-	for (int i = 0; i < NUM_SAVE_SLOTS; ++i)
-		SDL_FreeSurface(slot_images[i]);
 	return 0;
 }
 
@@ -368,59 +386,12 @@ int main_window()
 	SDL_Rect quit_game = { 20, 300, MAIN_IMG_W, MAIN_IMG_H };
 	SDL_Rect game_prog_rect = { 0, 0, 280, MAIN_IMG_H };
 	SDL_Rect imgrect = { 0, 0, MAIN_IMG_W, MAIN_IMG_H };
-	SDL_Surface *new_img = SDL_LoadBMP(NEW_GAME);
-	if (new_img == NULL) {
-		should_terminate = 1;
-		printf("ERROR: failed to load image: %s\n", SDL_GetError());
-		return 1;
-	}
-	SDL_Surface *load_img = SDL_LoadBMP(LOAD_GAME);
-	if (load_img == NULL) {
-		should_terminate = 1;
-		printf("ERROR: failed to load image: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		return 1;
-	}
-	SDL_Surface *quit_img = SDL_LoadBMP(QUIT);
-	if (quit_img == NULL) {
-		should_terminate = 1;
-		printf("ERROR: failed to load image: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		return 1;
-	}
-	SDL_Surface *program_img = SDL_LoadBMP(GAME_PROG);
-	if (program_img == NULL) {
-		should_terminate = 1;
-		printf("ERROR: failed to load image: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		return 1;
-	}
 
+	SDL_WM_SetCaption("Main", "Main");
 	SDL_Surface *w = SDL_SetVideoMode(MAIN_WIN_W, MAIN_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
 	if (w == NULL) {
 		should_terminate = 1;
 		printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
-		return 1;
-	}
-
-	int quit = 0;
-
-	/* Initialize SDL and make sure it quits*/
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		should_terminate = 1;
-		printf("ERROR: unable to init SDL: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
-		SDL_FreeSurface(w);
 		return 1;
 	}
 
@@ -428,104 +399,51 @@ int main_window()
 	if (SDL_FillRect(w, 0, 0) != 0) {
 		should_terminate = 1;
 		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
-		SDL_FreeSurface(w);
-		return 1;
-	}
-
-	/* White rectangle buttons */
-	if (SDL_FillRect(w, &new_game, SDL_MapRGB(w->format, 255, 255, 255)) != 0) {
-		should_terminate = 1;
-		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
-		SDL_FreeSurface(w);
-		return 1;
-	}
-	if (SDL_FillRect(w, &load_game, SDL_MapRGB(w->format, 255, 255, 255)) != 0) {
-		should_terminate = 1;
-		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
-		SDL_FreeSurface(w);
-		return 1;
-	}
-	if (SDL_FillRect(w, &quit_game, SDL_MapRGB(w->format, 255, 255, 255)) != 0) {
-		should_terminate = 1;
-		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
 		SDL_FreeSurface(w);
 		return 1;
 	}
 
 
-	/* Draw image sprites*/
-	if (SDL_BlitSurface(load_img, &imgrect, w, &load_game) != 0) {
-		should_terminate = 1;
-		SDL_FreeSurface(load_img);
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
+	draw_image(new_game, imgrect, NEW_GAME, w, 1);
+	if (should_terminate)
+	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
-	if (SDL_BlitSurface(new_img, &imgrect, w, &new_game) != 0) {
-		should_terminate = 1;
-		SDL_FreeSurface(new_img);
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
+
+	draw_image(load_game, imgrect, LOAD_GAME, w, 1);
+	if (should_terminate)
+	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
-	if (SDL_BlitSurface(quit_img, &imgrect, w, &quit_game) != 0) {
-		should_terminate = 1;
-		SDL_FreeSurface(quit_img);
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
+
+	draw_image(quit_game, imgrect, QUIT, w, 1);
+	if (should_terminate)
+	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
-	if (SDL_BlitSurface(program_img, &game_prog_rect, w, &game_prog) != 0) {
-		should_terminate = 1;
-		SDL_FreeSurface(program_img);
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
+
+
+	draw_image(game_prog, game_prog_rect, GAME_PROG, w, 0);
+	if (should_terminate)
+	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
+
+
 
 	/* We finished drawing */
 	if (SDL_Flip(w) != 0) {
 		should_terminate = 1;
 		printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
-		SDL_FreeSurface(new_img);
-		SDL_FreeSurface(load_img);
-		SDL_FreeSurface(quit_img);
-		SDL_FreeSurface(program_img);
 		SDL_FreeSurface(w);
 		return 1;
 	}
+
+	int quit = 0;
 	while (!quit) {
 
 		/* Poll for keyboard & mouse events*/
@@ -560,14 +478,42 @@ int main_window()
 		SDL_Delay(100);
 	}
 
-	SDL_FreeSurface(new_img);
-	SDL_FreeSurface(load_img);
-	SDL_FreeSurface(quit_img);
-	SDL_FreeSurface(program_img);
 	SDL_FreeSurface(w);
 	return 0;
 }
 
+/*draws the img_rect rectangel of the image in the path img_path.
+the img will be drawn on the surface w in the rect img_place
+should fill - if TRUE, this func will fill the whole rect with white before drawing the image*/
+void draw_image(SDL_Rect img_rect, SDL_Rect img_place, char* img_path, SDL_Surface* w, int should_fill)
+{
+	if (should_fill)
+	{
+		/* Whiten rectangle */
+		if (SDL_FillRect(w, &img_rect, SDL_MapRGB(w->format, 255, 255, 255)) != 0) {
+			should_terminate = 1;
+			printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+			return;
+		}
+	}
+
+	/*load image*/
+	SDL_Surface *img = SDL_LoadBMP(img_path);
+	if (img == NULL) {
+		should_terminate = 1;
+		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+		return;
+	}
+
+	int blit_response = SDL_BlitSurface(img, &img_place, w, &img_rect);
+	SDL_FreeSurface(img);
+	/* Draw image sprites*/
+	if (blit_response != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		return;
+	}
+}
 
 /*return 1 if given x,y coordinates are in the rect. else return 0*/
 int is_in_rect(int x, int y, SDL_Rect rect)
