@@ -50,6 +50,7 @@ int check_game_end(char player_color);
 char *get_xml_game();
 char get_color(char c);
 void load_config(char *file_data);
+int save_config(char * config_file_name);
 void concat(char *orig, size_t *orig_size, char *addition);
 
 #endif GAME_FLOW_

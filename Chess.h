@@ -39,7 +39,7 @@
 
 #define BOARD_SIZE 8
 
-// board initialization
+/* board initialization*/
 #define ENTER_SETTINGS "Enter game settings:\n" 
 #define WRONG_GAME_MODE "Wrong game mode\n"
 #define TWO_PLAYERS_GAME_MODE "Running game in 2 players mode\n"
