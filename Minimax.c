@@ -16,59 +16,54 @@ int minimax_depth = 1;		/*levels considered in minimax tree. -1: means difficult
 							the game. Using this option, the number of evaluated boards should not exceed 10^-6 */
 
 /*wrapper function for the minimax algorithm which determines all default values and runs minimax*/
-int run_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, game_move** best)
+int run_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible, int depth, char color, game_move** best)
 {
-	int a, b, depth, top, max;
+	int a, b, top, max;
 	a = INT_MIN;
 	b = INT_MAX;
-	depth = minimax_depth;
 	top = 1;
 	max = 1;
-	return minimax_algo(board, depth, max, a, b, best, color, top);
+	return minimax_algo(board, possible, depth, max, a, b, best, color, top);
 }
 
 /*running minimax algorithm with alpha-beta pruning*/
-int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, int max, int a, int b, game_move** best, char color, int top)
+int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible, 
+	int depth, int max, int a, int b, game_move** best, char color, int top)
 {
 	int v = max ? INT_MIN : INT_MAX;
 	int tmp_v;
-	linked_list possible;
 
 	if (is_leaf(board, depth, color))	/*reached max depth or a winning/losig board*/
 	{
 		return score(board, color);
 	}
 
-	possible = generate_moves(board, max ? color : flip_color(color)); /*all possible moves for current player*/
+	*possible = generate_moves(board, max ? color : flip_color(color)); /*all possible moves for current player*/
 	if (should_terminate)
-	{
-		free_moves(possible);
 		return -1;
-	}
-	node* crnt = possible.first;
+	node* crnt = possible->first;
 
-	for (int i = 0; i < possible.len; i++, crnt = crnt->next)
+	for (int i = 0; i < possible->len; i++, crnt = crnt->next)
 	{
 		board_tile copy[BOARD_SIZE][BOARD_SIZE];
 		copy_board(board, copy);
 		do_move(copy, *(game_move*)(crnt->data));
-		tmp_v = minimax_algo(copy, depth - 1, flip_max(max), a, b, best, color, 0);
+		linked_list next_level;
+		tmp_v = minimax_algo(copy, &next_level, depth - 1, flip_max(max), a, b, best, color, 0);
+		free_moves(next_level);
 		if (determine_v(v, tmp_v, max))		/*change node value and best move if needed*/
 		{
 			v = tmp_v;
 			if (top)
 				*best = (game_move*)(crnt->data);
 		}
+		((game_move*)(crnt->data))->score = v;
 		a = change_a(a, v, max);	/*update alpha - only for max node*/
 		b = change_b(b, v, max);	/*update beta - only for min node*/
 		if (prune(v, max, a, b))	/*prune sub-tree if possible*/
 			break;
 	}
-	/*if (top)
-		*best = copy_move(*best);*/
-	free_moves(possible);
 	return v;
-
 }
 
 

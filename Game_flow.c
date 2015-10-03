@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_DEPRECATE
 #include "Game_flow.h"
 #include "Gui.h"
 #include "Chess_logic.h"
@@ -420,7 +421,7 @@ int check_game_end(char player_color)
 		return 0;
 	if (end_game != 0)
 	{
-		char* winner = player_color == WHITE ? "White player wins!\n" : "Black player wins!\n";
+		char* winner = end_game == WHITE ? "White player wins!\n" : "Black player wins!\n";
 		print_message(winner);
 		return 1;
 	}
@@ -446,15 +447,15 @@ int settings(char* input)
 {
 	int temp, i, j;
 	char* input_copy;
-	if (0 == cmp_input_command(input, "game_mode "))
+	if (0 == cmp_input_command(input, "game_mode ")) /*determines if two or single player game*/
 	{
 		input += strlen("game_mode ");
-		if ("1\n" == input)
+		if (strcmp(input, "1") == 0)
 		{
 			print_message(TWO_PLAYERS_GAME_MODE);
 			player_vs_player = 1;
 		}
-		else if ("2\n" == input)
+		else if (strcmp(input, "2") == 0)
 		{
 			print_message(PLAYER_VS_AI_GAME_MODE);
 			player_vs_player = 2;
@@ -464,14 +465,14 @@ int settings(char* input)
 		else
 			print_message(WRONG_GAME_MODE);
 	}
-	if (0 == cmp_input_command(input, "difficulty "))
+	if (0 == cmp_input_command(input, "difficulty ")) /*no. of steps for minimax*/
 	{
 		if (player_vs_player = 1)
 		{
 			print_message(ILLEGAL_COMMAND);
 			return 0;
 		}
-		input += strlen("difficulty ");
+		input += strlen("difficulty "); 
 		if (0 == cmp_input_command(input, "best"))
 		{
 			minimax_depth = -1;
@@ -494,7 +495,7 @@ int settings(char* input)
 		print_message(ILLEGAL_COMMAND);
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "user_color "))
+	if (0 == cmp_input_command(input, "user_color ")) /*user color in single player game*/
 	{
 		if (player_vs_player = 1)
 		{
@@ -510,7 +511,7 @@ int settings(char* input)
 			user_color = BLACK;
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "load "))
+	if (0 == cmp_input_command(input, "load ")) /*load saved game settings*/
 	{
 		input += strlen("load ");
 		load_config(input);
@@ -518,7 +519,7 @@ int settings(char* input)
 			return 0;
 		print_board(board);
 	}	
-	if (0 == cmp_input_command(input, "clear"))
+	if (0 == cmp_input_command(input, "clear")) /*clear the board*/
 	{
 		for (i = 0; i < BOARD_SIZE; ++i)
 		{
@@ -530,7 +531,7 @@ int settings(char* input)
 		}
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "next_player "))
+	if (0 == cmp_input_command(input, "next_player ")) /*first player color*/
 	{
 		input += strlen("next_player ");
 		if (0 == cmp_input_command(input, "white"))
@@ -538,7 +539,7 @@ int settings(char* input)
 		else if (0 == cmp_input_command(input, "black"))
 			next_player = BLACK;
 	}
-	if (0 == cmp_input_command(input, "rm "))
+	if (0 == cmp_input_command(input, "rm ")) /*remove piece from location*/
 	{
 		if (0 == get_board_position(input, &i, &j))
 			return 0;
@@ -547,7 +548,7 @@ int settings(char* input)
 		return 0;
 
 	}
-	if (0 == cmp_input_command(input, "set "))
+	if (0 == cmp_input_command(input, "set ")) /*place piece on location*/
 	{
 		char color, type;
 		input_copy = strchr(input, '>') + 2;
@@ -589,18 +590,18 @@ int settings(char* input)
 		board[i][j].type = type;
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "print"))
+	if (0 == cmp_input_command(input, "print")) /*print game board*/
 	{
 		print_board(board);
 		return 0;
 
 	}
-	if (0 == cmp_input_command(input, "quit"))
+	if (0 == cmp_input_command(input, "quit")) /*exit the program*/
 	{
 		should_terminate = 1;
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "start"))
+	if (0 == cmp_input_command(input, "start")) /*start the game*/
 	{
 		/*TODO - when the game starts, if no legal moves, we should move to game end*/
 		if (!is_board_init_legal())
@@ -699,6 +700,11 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 		crnt_move = crnt_move->next;
 	}
 	free_moves(moves);
+}
+
+void print_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+{
+	linked_list moves = generate_moves(board, color);
 }
 
 /*prints a single move in format "<x,y> to <i,j> x\n" */
