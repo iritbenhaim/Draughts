@@ -119,8 +119,6 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-
-
 /*reads a line of input from the user. and returns it in "input"*/
 int read_user_input_line(char* input, int* input_size)
 {
@@ -240,6 +238,44 @@ int user_move(char* input, char player_color)
 		//todo
 	}
 	print_message(ILLEGAL_COMMAND);
+	return 0;
+}
+
+/*executes 1 computer turn. return 1 if game ended*/
+int do_computer_move(char color)
+{
+	int end_game;
+	game_move* chosen_move = NULL;/* = malloc(sizeof(game_move));
+								  if (chosen_move == NULL)
+								  {
+								  should_terminate = 1;
+								  perror_message("malloc");
+								  return 1;
+								  }*/
+	linked_list moves;
+	int s = run_minimax(board, &moves, minimax_depth, color, &chosen_move);
+	if (s == INT_MIN)
+		return 1;
+	do_move(board, *chosen_move);
+	print_message("Computer: move ");
+	print_single_move(*chosen_move);
+	print_board(board);
+	end_game = get_winner(board, flip_color(user_color));
+	if (should_terminate)
+	{
+		free(chosen_move);
+		free_moves(moves);
+		return -1;
+	}
+	if (end_game != 0)
+	{
+		free(chosen_move);
+		free_moves(moves);
+		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
+		return 1;
+	}
+	free(chosen_move);
+	free_moves(moves);
 	return 0;
 }
 
@@ -416,7 +452,7 @@ void concat(char *orig, size_t *orig_size, char *addition)
 /*returns 1 if game ended. otherwise returns 0*/
 int check_game_end(char player_color)
 {
-	int end_game = get_winner(board, flip_color(player_color));
+	int end_game = get_winner(board, flip_color(player_color)); /*check if there is a winner*/
 	if (should_terminate)
 		return 0;
 	if (end_game != 0)
@@ -428,7 +464,6 @@ int check_game_end(char player_color)
 	return 0;
 }
 
-
 /*return 0 if input starts with*/
 int cmp_input_command(char* input, char* cmd)
 {
@@ -438,7 +473,6 @@ int cmp_input_command(char* input, char* cmd)
 	}
 	return -1;
 }
-
 
 
 /*runs the game settings phase of the game on a given command.
@@ -702,26 +736,15 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	free_moves(moves);
 }
 
+/*finds the moves with highest score and prints them*/
 void print_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth)
 {
-	linked_list moves;
-	linked_list best_moves = new_list();
-	game_move* best;
+	linked_list best_moves = get_best_moves(board, color, depth);
 	node* crnt;
-	int v = run_minimax(board, &moves, depth, color, &best);
-	crnt = moves.first;
-	for (int i = 0; i < moves.len; i++, crnt = crnt->next)
-	{
-		if (((game_move*)(crnt->data))->score == v)
-			list_add(&best_moves, (game_move*)(crnt->data));
-	}
 	crnt = best_moves.first;
-	for (int i = 0; i < moves.len; i++, crnt = crnt->next)
-		print_single_move(*((game_move*)(crnt->data)));
-
-	free_moves(moves);
+	for (int i = 0; i < best_moves.len; i++, crnt = crnt->next)
+		print_single_move(*((game_move*)(crnt->data))); /*print each move*/
 	free_moves(best_moves);
-	free(best);
 }
 
 /*prints a single move in format "<x,y> to <i,j> x\n" */
@@ -749,18 +772,11 @@ void print_line(){
 	printf("|\n");
 }
 
-
 /*prints a single board tile*/
 void print_tile(board_tile tile)
 {
 	char index = 'a' + tile.char_indexer;
 	printf("<%c,%d>", index, tile.int_indexer + 1);
-}
-
-/*checks if two tiles are the same*/
-int same_tile(board_tile first, board_tile second)
-{
-	return (first.char_indexer == second.char_indexer && first.int_indexer == second.int_indexer);
 }
 
 /*checks if given indices out of counds of board*/
@@ -798,7 +814,6 @@ char get_tool_type(char color, char type)
 }
 
 
-
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
 	{
 		int i, j;
@@ -826,7 +841,6 @@ char flip_color(char color)
 	return BLACK == color ? WHITE : BLACK;
 }
 
-
 /*count the number of pieces of given type and color are on the board*/
 int count_piece(color, type)
 {
@@ -840,4 +854,32 @@ int count_piece(color, type)
 		}
 	}
 	return counter;
+}
+
+/*returns 1 if a and b are the same move, else 0*/
+int move_cmp(game_move a, game_move b)
+{
+	if (!tile_cmp(a.start, b.start))
+		return 0;
+	if (!tile_cmp(a.end, b.end))
+		return 0;
+	if ((a.end.int_indexer == BOARD_SIZE - 1 && a.end.color == WHITE) ||
+		(a.end.int_indexer == 0 && a.end.color == BLACK))
+		if (a.promote != b.promote)
+			return 0;
+	return 1;
+}
+
+/*return 1 if a and b are the same tile, else 0*/
+int tile_cmp(board_tile a, board_tile b)
+{
+	if (a.char_indexer != b.char_indexer)
+		return 0;
+	if (a.int_indexer != b.int_indexer)
+		return 0;
+	if (a.color != b.color)
+		return 0;
+	if (a.type != b.type)
+		return 0;
+	return 1;
 }

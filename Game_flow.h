@@ -35,26 +35,36 @@ extern int player_vs_player; /*1 - player vs player mode. 2 - player vs comp. 0 
 extern char next_player;
 extern int gui; /*0 for command line. 1 for gui*/
 
-int read_user_input_line(char* input, int* input_size);
-int cmp_input_command(char* input, char* cmd);
-int user_move(char* input, char player_color);
-int settings(char* input);
+/*memory issues*/
+void free_moves(linked_list list);
+
+/*print and read functions*/
+void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void print_single_move(game_move move);
 void print_line();
 void print_tile(board_tile tile);
-int same_tile(board_tile first, board_tile second);
-int out_of_boarders(int first_indexer, int second_indexer);
-void free_moves(linked_list list);
-char get_tool_type(char color, char type);
-void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
-char flip_color(char color);
-int count_piece(color, type);
+int read_user_input_line(char* input, int* input_size);
+int cmp_input_command(char* input, char* cmd);
+
+/*game flow*/
 int check_game_end(char player_color);
 char *get_xml_game();
-char get_color(char c);
 void load_config(char *file_data);
 int save_config(char * config_file_name);
+int user_move(char* input, char player_color);
+int settings(char* input);
+int do_computer_move(char color);
+
+
+/*help functions*/
 void concat(char *orig, size_t *orig_size, char *addition);
+char flip_color(char color);
+int count_piece(color, type);
+char get_color(char c);
+int tile_cmp(board_tile a, board_tile b);
+int move_cmp(game_move a, game_move b);
+int out_of_boarders(int first_indexer, int second_indexer);
+char get_tool_type(char color, char type);
 
 #endif GAME_FLOW_

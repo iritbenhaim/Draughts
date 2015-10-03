@@ -23,48 +23,10 @@ int is_legal_move(game_move move, char color)
 	{
 		return 0;
 	}
-	int is_success = find_move(all_moves, move);
+	int is_success = find_move(all_moves, &move);
 
 	free_moves(all_moves);
 	return is_success;
-}
-
-/*executes 1 computer turn. return 1 if game ended*/
-int do_computer_move(char color)
-{
-	int end_game;
-	game_move* chosen_move = NULL;/* = malloc(sizeof(game_move));
-	if (chosen_move == NULL)
-	{
-		should_terminate = 1;
-		perror_message("malloc");
-		return 1;
-	}*/
-	linked_list moves;
-	int s = run_minimax(board, &moves, minimax_depth, color, &chosen_move);
-	if (s == INT_MIN)
-		return 1;
-	do_move(board, *chosen_move);
-	print_message("Computer: move ");
-	print_single_move(*chosen_move);
-	print_board(board);
-	end_game = get_winner(board, flip_color(user_color));
-	if (should_terminate)
-	{
-		free(chosen_move);
-		free_moves(moves);
-		return -1;
-	}
-	if (end_game != 0)
-	{
-		free(chosen_move);
-		free_moves(moves);
-		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
-		return 1;
-	}
-	free(chosen_move);
-	free_moves(moves);
-	return 0;
 }
 
 /*returns 0 if the board is empty or if there are discs of only one color
@@ -155,10 +117,22 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 	m_board[move.end.char_indexer][move.end.int_indexer].color = color;
 	m_board[move.end.char_indexer][move.end.int_indexer].type = type;
 	m_board[move.start.char_indexer][move.start.int_indexer].type = EMPTY;
-	if ((move.end.int_indexer == BOARD_SIZE - 1 && color == WHITE) || (move.end.int_indexer == 0 && color == BLACK))
+	if (promotion(move.end))
 		m_board[move.end.char_indexer][move.end.int_indexer].type = move.promote;
 	if (DEBUG)
 		print_board(m_board);
+}
+
+/*return 1 if tile needs promotion, 0 otherwise*/
+int promotion(board_tile tile)
+{
+	if (tile.type != WHITE_P)
+		return 0;
+	if (tile.int_indexer == BOARD_SIZE - 1 && tile.color == WHITE)
+		return 1;
+	if (tile.int_indexer == 0 && tile.color == BLACK)
+		return 1;
+	return 0;
 }
 
 /*performs a castling move*/
@@ -295,28 +269,6 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 
 }
 
-/*checks if the lists are the same*/
-int list_cmp(linked_list list1, linked_list list2)
-{
-	if (list1.len != list2.len)
-		return 0;
-	if (list1.len == 0)
-		return 1;
-	node* cur1 = list1.first;
-	node* cur2 = list2.first;
-	do
-	{
-		board_tile b1 = *(board_tile*)(cur1->data);
-		board_tile b2 = *(board_tile*)(cur2->data);
-		if (b1.char_indexer != b2.char_indexer || b1.int_indexer != b2.int_indexer)
-			return 0;
-		cur1 = cur1->next;
-		cur2 = cur2->next;
-	} while (cur1->next != NULL);
-	return 1;
-
-}
-
 /*returns 1 if a and b are the same move, else 0*/
 int move_cmp(game_move a, game_move b)
 {
@@ -331,32 +283,53 @@ int move_cmp(game_move a, game_move b)
 	return 1;
 }
 
-/*return 1 if a and b are the same tile, else 0*/
-int tile_cmp(board_tile a, board_tile b)
-{
-	if (a.char_indexer != b.char_indexer)
-		return 0;
-	if (a.int_indexer != b.int_indexer)
-		return 0;
-	if (a.color != b.color)
-		return 0;
-	if (a.type != b.type)
-		return 0;
-	return 1;
-}
-
-/*searches for the move in possible moves list. return 1 if found. else 0*/
-int find_move(linked_list possible_moves, game_move move)
+/*searches for the move in possible moves list. return 1 if found. else 0
+  the function also updates the score for the move if found*/
+int find_move(linked_list possible_moves, game_move* move)
 {
 	node* crnt = possible_moves.first;
 	for (int i = 0; i < possible_moves.len; i++)
 	{
 		game_move legit_move = *((game_move*)crnt->data);
-		if (move_cmp(move, legit_move))
+		if (move_cmp(*move, legit_move))
+		{
+			move->score = legit_move.score;
 			return 1;
+		}
 		crnt = crnt->next;
 	}
 	return 0;
+}
+
+/*this function finds the score for the move and returns it, 
+  if its not a legal move it returns 0*/
+int get_move_score(board_tile board[BOARD_SIZE][BOARD_SIZE], game_move move, int depth)
+{
+	linked_list moves;
+	game_move* best;
+	run_minimax(board, &moves, depth, move.start.color, &best); /*run minimax to find score for moves*/
+	if (!find_move(moves, &move))
+		return 0; /*move not legal*/
+	return move.score; /*updated score*/
+}
+
+/*returns a list with all moves with highest score according to minimax algorithm*/
+linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth)
+{
+	linked_list moves;
+	linked_list best_moves = new_list();
+	game_move* best;
+	node* crnt;
+	int v = run_minimax(board, &moves, depth, color, &best); /*run minimax to find highest score*/
+	crnt = moves.first;
+	for (int i = 0; i < moves.len; i++, crnt = crnt->next)
+	{
+		if (((game_move*)(crnt->data))->score == v)	/*find all moves with v - highest score*/
+			list_add(&best_moves, (game_move*)(crnt->data));
+	}
+	free_moves(moves);
+	free(best);
+	return best_moves;
 }
 
 /*returns a linked list containing all possible moves for a player
@@ -565,7 +538,7 @@ void generate_pawn_moves(board_tile tile, linked_list* moves)
 		cur_move->promote = EMPTY;
 		
 		/*check if white pawn reached upper line or black pawn reached lower line*/
-		if ((next.int_indexer == BOARD_SIZE - 1 && color == WHITE) || (next.int_indexer == 0 && color == BLACK))
+		if (promotion(next))
 			generate_promotion_moves(moves, cur_move);
 
 		else
