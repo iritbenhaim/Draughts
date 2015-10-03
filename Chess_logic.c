@@ -40,7 +40,8 @@ int do_computer_move(char color)
 		perror_message("malloc");
 		return 1;
 	}*/
-	int s = run_minimax(board, color, &chosen_move);
+	linked_list moves;
+	int s = run_minimax(board, &moves, minimax_depth, color, &chosen_move);
 	if (s == INT_MIN)
 		return 1;
 	do_move(board, *chosen_move);
@@ -51,15 +52,18 @@ int do_computer_move(char color)
 	if (should_terminate)
 	{
 		free(chosen_move);
+		free_moves(moves);
 		return -1;
 	}
 	if (end_game != 0)
 	{
 		free(chosen_move);
+		free_moves(moves);
 		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
 		return 1;
 	}
 	free(chosen_move);
+	free_moves(moves);
 	return 0;
 }
 
@@ -92,17 +96,17 @@ char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
 	linked_list possible_moves;
 	int board_score = score(board, color);
-	if (board_score == 100)
-		return color;
-	if (board_score == -100)
-		return flip_color(color);
+	if (board_score == 1000)
+		return color;	/*current player wins*/
+	if (board_score == -1000)
+		return flip_color(color);	/*other player wins*/
 	possible_moves = generate_moves(board, color);
 	if (should_terminate)
 		return -1;
 	if (possible_moves.len == 0)
 	{
 		free_moves(possible_moves);
-		return flip_color(color);
+		return flip_color(color);	/*current player has no moves - other player wins*/
 	}
 	free_moves(possible_moves);
 	possible_moves = generate_moves(board, flip_color(color));
@@ -111,7 +115,7 @@ char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	if (possible_moves.len == 0)
 	{
 		free_moves(possible_moves);
-		return color;
+		return color;	/*other player has no moves - current player wins*/
 	}
 	free_moves(possible_moves);
 	return 0;
@@ -207,44 +211,54 @@ int up_direction(int start_c, int end_c, int is_white)
 
 
 /*returns a score for the current board
-  win -> 100
-  lose -> -100
+  win -> 1000
+  lose -> -1000
   */
 int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
 	int black = 0;
 	int white = 0;
-	/*char tile;*/
-	for (int i = 0; i < 10; i++)
+	int score;
+	char tile;
+	char col;
+	for (int i = 0; i < BOARD_SIZE; i++)
 	{
-		for (int j = 0; j < 10; j++)
+		for (int j = 0; j < BOARD_SIZE; j++)
 		{
-			if (board[i][j].color == EMPTY)
+			tile = board[i][j].type;
+			col = board[i][j].color;
+			if (tile == EMPTY)
 				continue;
-			/*if (tile == BLACK_K)
-				black += 3;
-			if (tile == BLACK_P)
-				black++;
 			if (tile == WHITE_K)
-				white += 3;
+				score = 400;
+			if (tile == WHITE_Q)
+				score = 9;
+			if ((tile == WHITE_N) || (tile == WHITE_B))
+				score = 3;
+			if (tile == WHITE_R)
+				score = 5;
 			if (tile == WHITE_P)
-				white++;*/
+				score = 1;
+			if (col == WHITE)
+				white += score;
+			else
+				black += score;
 		}
 	}
 	if (color == BLACK)
 	{
 		if (white == 0)
-			return 100;
+			return 1000;
 		if (black == 0)
-			return -100;
+			return -1000;
 		return black - white;
 	}
 	else
 	{
 		if (white == 0)
-			return -100;
+			return -1000;
 		if (black == 0)
-			return 100;
+			return 1000;
 		return white - black;
 	}
 }
@@ -341,33 +355,40 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 	{
 		for (j = 0; j < BOARD_SIZE; j++)
 		{
-			if (cur_player_color != board[i][j].color)
+			if (cur_player_color != board[i][j].color) /*other player piece*/
 				continue;
 			type = board[i][j].type;
-			switch (type)
-			{
-			case 'm':
-				generate_pawn_moves(board[i][j], &moves);
-				break;
-			case 'k':
-				generate_king_moves(board[i][j], &moves);
-				break;
-			case 'b':
-				generate_bishop_moves(board[i][j], &moves);
-				break;
-			case 'n':
-				generate_knight_moves(board[i][j], &moves);
-				break;
-			case 'r':
-				generate_rook_moves(board[i][j], &moves);
-				break;
-			case 'q':
-				generate_queen_moves(board[i][j], &moves);
-				break;
-			}
+			generate_piece_moves(board[i][j], &moves); /*get all moves for this piece*/
 		}
 	}
 	return moves;
+}
+
+/*checks the type of a single piece and generates moves accordingly*/
+void generate_piece_moves(board_tile tile, linked_list* moves)
+{
+	char type = tile.type;
+	switch (type)
+	{
+	case WHITE_P:
+		generate_pawn_moves(tile, &moves);
+		break;
+	case WHITE_K:
+		generate_king_moves(tile, &moves);
+		break;
+	case WHITE_B:
+		generate_bishop_moves(tile, &moves);
+		break;
+	case WHITE_N:
+		generate_knight_moves(tile, &moves);
+		break;
+	case WHITE_R:
+		generate_rook_moves(tile, &moves);
+		break;
+	case WHITE_Q:
+		generate_queen_moves(tile, &moves);
+		break;
+	}
 }
 
 /*returns a list containing all possible rooks that can be used in a castling move for a player

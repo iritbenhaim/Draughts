@@ -24,6 +24,7 @@ struct game_move
 	board_tile start;
 	board_tile end;
 	char promote;
+	int score;
 };
 
 extern board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/

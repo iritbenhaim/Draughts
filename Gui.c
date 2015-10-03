@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_DEPRECATE
 #include "Gui.h"
 #include "Game_flow.h"
 #include <stdio.h>

@@ -8,6 +8,7 @@
 
 /*generate moves*/
 linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color);
+void generate_piece_moves(board_tile tile, linked_list* moves);
 linked_list generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void generate_pawn_moves(board_tile tile, linked_list* moves);
 void generate_king_moves(board_tile tile, linked_list* moves);
