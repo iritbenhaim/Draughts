@@ -31,7 +31,7 @@
 #define GAME_WIN_W 800
 #define GAME_WIN_H 600
 #define SQUERE_S 61
-#define GAME_IMG_W 270
+#define GAME_IMG_W 275
 #define GAME_IMG_H 54
 
 /*load window*/
@@ -49,8 +49,10 @@ SDL_Rect *get_tool_rect(struct board_tile tool);
 int  game_window();
 int main_window();
 int is_in_rect(int x, int y, SDL_Rect rect);
-int load_game_wind(); 
+int load_save_game_wind(int is_save);
 int is_save_slot_free(int slot_num);
-void load_game_from_slot(int slot_num);
+int save_load_game_from_slot(int slot_num, int is_save);
 void draw_current_board(SDL_Surface *w);
 void draw_image(SDL_Rect img_rect, SDL_Rect img_place, char* img_path, SDL_Surface* w, int should_fill);
+void paint_rect_edges(SDL_Rect rect, SDL_Surface *w, int color);
+

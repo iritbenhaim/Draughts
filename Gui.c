@@ -7,6 +7,7 @@
 
 
 
+/*draw the game window of the game*/
 int game_window()
 {
 	SDL_Event e;
@@ -44,7 +45,6 @@ int game_window()
 		SDL_FreeSurface(w);
 		return 1;
 	}
-
 	SDL_Rect main_menu = { buttons_x, 30, GAME_IMG_W, GAME_IMG_H };
 	draw_image(main_menu, imgrect, MAIN_MENU, w, 1);
 	if (should_terminate)
@@ -52,7 +52,6 @@ int game_window()
 		SDL_FreeSurface(w);
 		return 1;
 	}
-
 	SDL_Rect save_game = { buttons_x, (int)(30 + GAME_IMG_H * 1.5), GAME_IMG_W, GAME_IMG_H };
 	draw_image(save_game, imgrect, SAVE_GAME, w, 1);
 	if (should_terminate)
@@ -60,7 +59,6 @@ int game_window()
 		SDL_FreeSurface(w);
 		return 1;
 	}
-
 	SDL_Rect show_moves = { buttons_x, 30 + GAME_IMG_H * 3, GAME_IMG_W, GAME_IMG_H };
 	draw_image(show_moves, imgrect, SHOW_MOVES, w, 1);
 	if (should_terminate)
@@ -68,7 +66,6 @@ int game_window()
 		SDL_FreeSurface(w);
 		return 1;
 	}
-
 	SDL_Rect best_move = { buttons_x, (int)(30 + GAME_IMG_H * 4.5), GAME_IMG_W, GAME_IMG_H };
 	draw_image(best_move, imgrect, BEST_MOVE, w, 1);
 	if (should_terminate)
@@ -89,7 +86,7 @@ int game_window()
 
 		/* Poll for keyboard & mouse events*/
 
-		while (SDL_PollEvent(&e) != 0) {
+		while (!quit && SDL_PollEvent(&e) != 0) {
 			switch (e.type) {
 			case (SDL_QUIT) :
 				quit = 1;
@@ -98,18 +95,35 @@ int game_window()
 				if (e.key.keysym.sym == SDLK_ESCAPE) quit = 1;
 				break;
 			case (SDL_MOUSEBUTTONUP) :
+				if (is_in_rect(e.button.x, e.button.y, quit_game))
+					quit = 1;
+				else if (is_in_rect(e.button.x, e.button.y, main_menu))
+				{
+					SDL_FreeSurface(w);
+					main_window();
+					quit = 1;
+				}
+				else if (is_in_rect(e.button.x, e.button.y, save_game))
+				{
+					load_save_game_wind(0);
+					if (should_terminate)
+					{
+						SDL_FreeSurface(w);
+						return 1;
+					}
+
+				}
 				break;
 			default:
 				break;
 			}
 		}
-
-		/* Wait a little before redrawing*/
-		SDL_Delay(100);
 	}
-
+	SDL_FreeSurface(w);
 	return 0;
 }
+
+/*draws the current board as saved in the "board" variable to the surface w*/
 void draw_current_board(SDL_Surface *w)
 {
 	SDL_Surface *symbols_img = SDL_LoadBMP(SYMBOLS);
@@ -143,7 +157,6 @@ void draw_current_board(SDL_Surface *w)
 		for (int j = 0; j < BOARD_SIZE; ++j)
 		{
 			SDL_Rect *tool_rect = get_tool_rect(board[i][j]);
-			SDL_Rect rect = { (int)(SQUERE_S * (0.25 + i)), SQUERE_S * (1 + j), SQUERE_S, SQUERE_S };
 			if (should_terminate)
 			{
 				should_terminate = 1;
@@ -152,20 +165,23 @@ void draw_current_board(SDL_Surface *w)
 			}
 			if (tool_rect != NULL)
 			{
+				SDL_Rect rect = { (int)(SQUERE_S * (0.25 + i)), SQUERE_S * (1 + j), SQUERE_S, SQUERE_S };
+				int blit_response = SDL_BlitSurface(symbols_img, tool_rect, w, &rect);
+				free(tool_rect);
 				/* Draw image sprites*/
-				if (SDL_BlitSurface(symbols_img, tool_rect, w, &rect) != 0) {
+				if (blit_response != 0) {
 					should_terminate = 1;
 					printf("ERROR: failed to blit image: %s\n", SDL_GetError());
 					SDL_FreeSurface(symbols_img);
-					free(tool_rect);
 					return;
 				}
-				free(tool_rect);
 			}
+
 		}
 	}
 	SDL_FreeSurface(symbols_img);
 }
+
 /*returns a rect in the SYMBOLS image matching the given tool
 returns null if given tool is EMPTY*/
 SDL_Rect *get_tool_rect(board_tile tool)
@@ -211,8 +227,8 @@ SDL_Rect *get_tool_rect(board_tile tool)
 	return out;
 }
 
-/*draw the load window*/
-int load_game_wind()
+/*draw the load and save windows*/
+int load_save_game_wind(int is_save)
 {
 	SDL_Event e;
 	int quit = 0;
@@ -220,9 +236,17 @@ int load_game_wind()
 	/*number of button lines - we save one spot for the cancel button*/
 	int num_lines = 1 + ((NUM_SAVE_SLOTS) / BTNS_PER_LINE); 
 	SDL_Rect imgrect = { 0, 0, LOAD_BTN_W, LOAD_BTN_H };
+	if (is_save)
+	{
+		SDL_WM_SetCaption("Save Game", "Save Game");
 
-	SDL_WM_SetCaption("Load Game", "Load Game");
-	/*surface for load window*/
+	}
+	else
+	{
+		SDL_WM_SetCaption("Load Game", "Load Game");
+	}
+
+	/*surface for load\save window*/
 	SDL_Surface *w = SDL_SetVideoMode(BTNS_PER_LINE * (LOAD_BTN_W + 20) + 20,
 		num_lines * (LOAD_BTN_H + 20) + 50, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
 	if (w == NULL) {
@@ -279,7 +303,7 @@ int load_game_wind()
 
 	/*buttons events*/
 	while (!quit) {
-		while (SDL_PollEvent(&e) != 0) {
+		while (!quit && SDL_PollEvent(&e) != 0) {
 			switch (e.type) {
 			case (SDL_QUIT) :
 				quit = 1;
@@ -291,19 +315,18 @@ int load_game_wind()
 			case (SDL_MOUSEBUTTONUP) :
 				for (int slot_num = 0; slot_num < NUM_SAVE_SLOTS; slot_num++)
 				{
+					/*pressed a slot button*/
 					SDL_Rect r = { 20 + (slot_num % BTNS_PER_LINE)*(LOAD_BTN_W + 20),
 						90 + (LOAD_BTN_H + 20) * (slot_num / BTNS_PER_LINE), LOAD_BTN_W, LOAD_BTN_H };
 					if (is_in_rect(e.button.x, e.button.y, r))
 					{
-						if (!is_save_slot_free(slot_num))
-						{
-							load_game_from_slot(slot_num);
-							quit = 1;
-						}
+						quit = save_load_game_from_slot(slot_num, is_save);
+						quit = 1;
 					}
 				}
 				if (is_in_rect(e.button.x, e.button.y, cancel_rect))
 				{
+					SDL_FreeSurface(w);
 					main_window();
 					quit = 1;
 				}
@@ -312,6 +335,7 @@ int load_game_wind()
 			default:
 				break;
 			}
+
 		}
 	}
 	SDL_FreeSurface(w);
@@ -347,33 +371,34 @@ int is_save_slot_free(int slot_num)
 		return 1;
 }
 
-/*load the game's configuration from the config file matching the given slot number*/
-void load_game_from_slot(int slot_num)
+/*if is_save=0, loads the game's configuration from the config file matching the given slot number
+otherwise saves the game's current game to that file
+returns 1 if game was saved\loaded*/
+int save_load_game_from_slot(int slot_num, int is_save)
 {
 	char fname[2048]; /*the name of the config file*/
-	if (is_save_slot_free(slot_num))
+	if (!is_save && is_save_slot_free(slot_num))
 	{
-		/*pressed a "free" button. do nothing*/
-		return;
+		/*pressed an "empty" button while trying to load. do nothing*/
+		return 0;
 	}
-	/*get the config file data*/
+	if (is_save && !is_save_slot_free(slot_num))
+	{
+		/*pressed a "used" button while trying to save. do nothing*/
+		return 0;
+	}
 	get_fname_from_slot_num(slot_num, fname);
-	FILE * f = fopen(fname, "rb");
-	fseek(f, 0, SEEK_END);
-	int file_len = ftell(f);
-	char *file_data = malloc(file_len);
-	fclose(f);
-	if (file_data == NULL)
+	if (!is_save)
 	{
-		should_terminate = 1;
-		perror_message("malloc");
-		return;
+		load_config(fname);
 	}
-	/*use the data to load the configuration*/
-	load_config(file_data);
-	free(file_data);
+	else
+	{
+		save_config(fname);
+	}
 	if (should_terminate)
-		return;
+		return 0;
+	return 1;
 
 }
 
@@ -405,36 +430,31 @@ int main_window()
 	}
 
 
+	/*draw buttons*/
 	draw_image(new_game, imgrect, NEW_GAME, w, 1);
 	if (should_terminate)
 	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
-
 	draw_image(load_game, imgrect, LOAD_GAME, w, 1);
 	if (should_terminate)
 	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
-
 	draw_image(quit_game, imgrect, QUIT, w, 1);
 	if (should_terminate)
 	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
-
-
 	draw_image(game_prog, game_prog_rect, GAME_PROG, w, 0);
 	if (should_terminate)
 	{
 		SDL_FreeSurface(w);
 		return 1;
 	}
-
-
 
 	/* We finished drawing */
 	if (SDL_Flip(w) != 0) {
@@ -446,10 +466,8 @@ int main_window()
 
 	int quit = 0;
 	while (!quit) {
-
 		/* Poll for keyboard & mouse events*/
-
-		while (SDL_PollEvent(&e) != 0) {
+		while (!quit && SDL_PollEvent(&e) != 0) {
 			switch (e.type) {
 			case (SDL_QUIT) :
 				quit = 1;
@@ -462,11 +480,14 @@ int main_window()
 					quit = 1;
 				if (is_in_rect(e.button.x, e.button.y, new_game))
 				{
+					SDL_FreeSurface(w);
 					game_window();
+					quit = 1;
 				}
 				if (is_in_rect(e.button.x, e.button.y, load_game))
 				{
-					load_game_wind();
+					SDL_FreeSurface(w);
+					load_save_game_wind(0);
 					quit = 1;
 				}
 				break;
@@ -475,8 +496,6 @@ int main_window()
 			}
 		}
 
-		/* Wait a little before redrawing*/
-		SDL_Delay(100);
 	}
 
 	SDL_FreeSurface(w);
@@ -522,4 +541,34 @@ int is_in_rect(int x, int y, SDL_Rect rect)
 	if ((x > rect.x) && (x < rect.x + rect.w) && (y > rect.y) && (y < rect.y + rect.h))
 		return 1;
 	return 0;
+}
+
+/*patins the edges of rect in the surface w to the color color*/
+void paint_rect_edges(SDL_Rect rect, SDL_Surface *w, int color)
+{
+	SDL_Rect edge1 = { rect.x, rect.y, 3, rect.h };
+	if (SDL_FillRect(w, &edge1, color) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+		return;
+	}
+	
+	SDL_Rect edge2 = { rect.x, rect.y, rect.w, 3 };
+	if (SDL_FillRect(w, &edge2, color) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+		return;
+	}
+	SDL_Rect edge3 = { rect.x + rect.w - 3, rect.y, 3, rect.h };
+	if (SDL_FillRect(w, &edge3, color) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+		return;
+	}
+	SDL_Rect edge4 = { rect.x, rect.y + rect.h - 3, rect.w, 3 };
+	if (SDL_FillRect(w, &edge4, color) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+		return;
+	}
 }

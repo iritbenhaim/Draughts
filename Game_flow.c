@@ -20,8 +20,7 @@ int gui = 0; /*0 for command line. 1 for gui*/
 int main(int argc, char* argv[])
 {
 	init_board(board);
-	//main_window();
-
+	/*main_window();*/
 	if (argc > 2)
 	{
 		print_message("to many command argumants. usage: Chess.exe <gui_type>");
@@ -48,8 +47,6 @@ int main(int argc, char* argv[])
 	{
 		should_terminate = 1;
 		perror_message("malloc");
-		//Quit SDL
-		SDL_Quit();
 		return -1;
 	}
 	print_board(board);
@@ -58,16 +55,12 @@ int main(int argc, char* argv[])
 		print_message(ENTER_SETTINGS);
 		if (read_user_input_line(input, &input_size) == -1)
 		{
-			//Quit SDL
-			SDL_Quit();
 			return -1; /*no resources were allocated yet*/
 		}
 		if (settings(input))
 			break;
 		if (should_terminate)
 		{
-			//Quit SDL
-			SDL_Quit();
 			free(input);
 			return -1;
 		}
@@ -85,15 +78,11 @@ int main(int argc, char* argv[])
 			{
 				if (read_user_input_line(input, &input_size) == -1)
 				{
-					//Quit SDL
-					SDL_Quit();
 					return -1; /*no resources were allocated yet*/
 				}
 				int is_turn_end = user_move(input, user_color);
 				if (should_terminate)
 				{
-					//Quit SDL
-					SDL_Quit();
 					free(input);
 					return -1;
 				}
@@ -103,8 +92,6 @@ int main(int argc, char* argv[])
 					{
 						getchar();
 					}
-					//Quit SDL
-					SDL_Quit();
 					free(input);
 					return -1;
 				}
@@ -129,8 +116,6 @@ int main(int argc, char* argv[])
 	{
 		getchar();
 	}
-	//Quit SDL
-	SDL_Quit();
 	return 0;
 }
 
@@ -237,29 +222,9 @@ int user_move(char* input, char player_color)
 	}
 	if (0 == cmp_input_command(input, "save "))
 	{
-		char *xml_info = get_xml_game();
-		if (should_terminate)
-			return -1;
-
 		char *file_name = input + strlen("save ");
-		FILE *xml_file = fopen(file_name, "w");
-		if (NULL == xml_file)
-		{
-			free(xml_info);
-			print_message(WRONG_FILE_NAME);
-			return 0;
-		}
-		int count = fwrite(xml_info, sizeof(char), strlen(xml_info), xml_file);
-		if (count != strlen(xml_info))
-		{
-			free(xml_info);
-			should_terminate = 1;
-			perror_message("fwrite");
-			return -1;
-		}
-		free(xml_info);
-		fclose(xml_file);
-		return 0;
+
+		return save_config(file_name);
 	}
 	if (0 == cmp_input_command(input, "quit"))
 	{
@@ -267,6 +232,33 @@ int user_move(char* input, char player_color)
 		return -1;
 	}
 	print_message(ILLEGAL_COMMAND);
+	return 0;
+}
+
+/*saves current game to the file given in config_file_name*/
+int save_config(char * config_file_name)
+{
+	char *xml_info = get_xml_game();
+	if (should_terminate)
+		return -1;
+
+	FILE *xml_file = fopen(config_file_name, "wt");
+	if (NULL == xml_file)
+	{
+		free(xml_info);
+		print_message(WRONG_FILE_NAME);
+		return 0;
+	}
+	int count = fwrite(xml_info, sizeof(char), strlen(xml_info), xml_file);
+	if (count != strlen(xml_info))
+	{
+		free(xml_info);
+		should_terminate = 1;
+		perror_message("fwrite");
+		return -1;
+	}
+	free(xml_info);
+	fclose(xml_file);
 	return 0;
 }
 
@@ -514,29 +506,9 @@ int settings(char* input)
 	if (0 == cmp_input_command(input, "load ")) /*load saved game settings*/
 	{
 		input += strlen("load ");
-		FILE *setting_file = fopen(input, "rt");
-		if (NULL == setting_file)
-		{
-			print_message(WRONG_FILE_NAME)
-			return 0;
-		}
-		fseek(setting_file, 0, SEEK_END);
-		int file_len = ftell(setting_file);
-		char *file_data = malloc(file_len);
-		if (file_data == NULL)
-		{
-			should_terminate = 1;
-			perror_message("malloc");
-			fclose(setting_file);
-			return 0;
-		}
-		fclose(setting_file);
-		load_config(file_data);
-		free(file_data);
+		load_config(input);
 		if (should_terminate)
-		{
 			return 0;
-		}
 		print_board(board);
 	}	
 	if (0 == cmp_input_command(input, "clear")) /*clear the board*/
@@ -636,8 +608,27 @@ int settings(char* input)
 }
 
 /*loads all data in a configuration file*/
-void load_config(char *file_data)
+void load_config(char *file_name)
 {
+	FILE *setting_file = fopen(file_name, "rt");
+	if (NULL == setting_file)
+	{
+		print_message(WRONG_FILE_NAME)
+			return;
+	}
+	fseek(setting_file, 0, SEEK_END);
+	int file_len = ftell(setting_file);
+	char *file_data = malloc(file_len);
+	if (file_data == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		fclose(setting_file);
+		return;
+	}
+	fread(file_data, 1, file_len, setting_file);
+	fclose(setting_file);
+
 	char *cur_config;
 	cur_config = strstr(file_data, "<next_turn>") + strlen("<next_turn>");
 	if (0 == cmp_input_command(cur_config, "White"))
@@ -674,7 +665,8 @@ void load_config(char *file_data)
 				board[j][i].type = tolower(c);
 		}
 	}
-	
+
+	free(file_data);
 
 }
 
