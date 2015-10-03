@@ -315,7 +315,6 @@ int list_cmp(linked_list list1, linked_list list2)
 	} while (cur1->next != NULL);
 	return 1;
 
-
 }
 
 /*returns 1 if a and b are the same move, else 0*/

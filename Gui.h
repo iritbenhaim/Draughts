@@ -45,7 +45,7 @@
 #define DEPTH 32
 
 
-SDL_Rect *get_tool_rect(struct board_tile tool);
+void get_tool_rect(struct board_tile tool, SDL_Rect *out_rect);
 int  game_window();
 int main_window();
 int is_in_rect(int x, int y, SDL_Rect rect);
@@ -55,8 +55,9 @@ int save_load_game_from_slot(int slot_num, int is_save);
 void draw_current_board(SDL_Surface *w);
 void draw_image(SDL_Rect img_rect, SDL_Rect img_place, char* img_path, SDL_Surface* w, int should_fill);
 void paint_rect_edges(SDL_Rect rect, SDL_Surface *w, int color);
-void handle_board_press(SDL_Event e, SDL_Surface *w);
+int handle_board_press(SDL_Event e, SDL_Surface *w);
 void get_board_rect(int colnum, int rownum, SDL_Rect *out_rect);
 int get_tile_col(int x);
 int get_tile_row(int y);
+char do_pawn_promotion(SDL_Surface *w);
 

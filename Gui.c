@@ -180,12 +180,13 @@ int game_window()
 	return 0;
 }
 
-/*handles an event of click in the chess board area*/
-void handle_board_press(SDL_Event e,SDL_Surface *w)
+/*handles an event of click in the chess board area
+returns 0 if game ended*/
+int handle_board_press(SDL_Event e,SDL_Surface *w)
 {
 	SDL_Rect board_rect = { (int)(SQUERE_S*0.25), SQUERE_S, SQUERE_S *BOARD_SIZE, SQUERE_S*BOARD_SIZE};
 	if (!is_in_rect(e.button.x, e.button.y, board_rect))
-		return; /*not inside the board*/
+		return 1; /*not inside the board*/
 
 	int selected_col = get_tile_col(e.button.x);
 	int selected_row = get_tile_row(e.button.y);
@@ -193,23 +194,37 @@ void handle_board_press(SDL_Event e,SDL_Surface *w)
 	if (selected_tile.color != next_player)
 	{/*tile does not contain a piece in current player color*/
 		if (num_tiles_marked == 0)
-			return; 
+			return 1; 
 		game_move move;
 		move.start = board[get_tile_col(current_board_tiles_marked[0].x)][get_tile_row(current_board_tiles_marked[0].y)];
 		move.end = board[selected_col][selected_row];
-
+		move.promote = WHITE_Q; /*defult promotion to pass is_legal check*/
 		int legal = is_legal_move(move, next_player);
-		if (should_terminate)
+		if (should_terminate || !legal)
 		{
-			return -1;
+			return 0;
 		}
-		if (legal)
-		{
-			do_move(board, move);
+		if (move.end.type == WHITE_P && ((move.end.int_indexer == BOARD_SIZE - 1 && next_player == WHITE)
+			|| (move.end.int_indexer == 0 && next_player == BLACK)))
+		{	
+			move.promote = do_pawn_promotion(w);
+			if (should_terminate)
+			{
+				return 1;
+			}
+		}
+		do_move(board, move);
+		flip_color(next_player);
+		draw_current_board(w);
+		if (should_terminate)
+			return 0;
+		if (SDL_Flip(w) != 0) {
+			should_terminate = 1;
+			printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+			return 0;
 		}
 
 		return check_game_end(next_player);
-		/*TODO */
 	}
 
 	/*unmark all previously marked tiles on the board*/
@@ -221,17 +236,135 @@ void handle_board_press(SDL_Event e,SDL_Surface *w)
 	}
 	num_tiles_marked = 1;
 	get_board_rect(selected_col, selected_row, &current_board_tiles_marked[0]);
+	/*mark selected tile*/
 	paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 0, 0, 255));
 	if (show_moves_on)
 	{
-		//TODO - generate moves and color
+		/*mark all tiles possible for current move*/
+		linked_list l = new_list();
+		generate_piece_moves(board[selected_col][selected_row],&l);
+		node* n = l.first;
+		for (int i=0; i < l.len ; i++, n=n->next)
+		{
+			board_tile cur_move_end = ((game_move*)n->data)->end;
+			get_board_rect(cur_move_end.char_indexer, cur_move_end.int_indexer, &current_board_tiles_marked[num_tiles_marked]);
+			paint_rect_edges(current_board_tiles_marked[num_tiles_marked], w, SDL_MapRGB(w->format, 255, 0, 0));
+			num_tiles_marked++;
+		}
 	}
 
 	if (SDL_Flip(w) != 0) {
 		should_terminate = 1;
 		printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
-		return;
+		return 0;
 	}
+	return 0;
+}
+
+/*handles pawn promotion.
+returns the char indicating the chosen piece type to promote to.
+returns EMPTY on error*/
+char do_pawn_promotion(SDL_Surface *w)
+{
+	SDL_Event e;
+	int quit = 0;
+
+	SDL_Surface *symbols_img = SDL_LoadBMP(SYMBOLS);
+	if (symbols_img == NULL) {
+		should_terminate = 1;
+		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+		return EMPTY;
+	}
+
+	/*paint tools images*/
+	Uint32 green = SDL_MapRGB(symbols_img->format, 0, 255, 0);
+	SDL_SetColorKey(symbols_img, SDL_SRCCOLORKEY, green);
+
+	int y_coordinate = next_player == WHITE ? GAME_WIN_H - SQUERE_S - 1 : 0;
+	SDL_Rect queen_place = { SQUERE_S * 3, y_coordinate, SQUERE_S, SQUERE_S };
+	SDL_Rect rook_place = { SQUERE_S * 4, y_coordinate, SQUERE_S, SQUERE_S };
+	SDL_Rect bishop_place = { SQUERE_S * 5, y_coordinate, SQUERE_S, SQUERE_S };
+	SDL_Rect knight_place = { SQUERE_S * 6, y_coordinate, SQUERE_S, SQUERE_S };
+
+	board_tile tile;
+	tile.color = next_player;
+
+	/*paint the options for promotion*/
+	tile.type = WHITE_Q;
+	SDL_Rect tool_rect;
+	get_tool_rect(tile, &tool_rect);
+	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &queen_place) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		SDL_FreeSurface(symbols_img);
+		return EMPTY;
+	}
+	tile.type = WHITE_R;
+	get_tool_rect(tile, &tool_rect);
+	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &rook_place) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		SDL_FreeSurface(symbols_img);
+		return EMPTY;
+	}
+	tile.type = WHITE_B;
+	get_tool_rect(tile, &tool_rect);
+	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &bishop_place) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		SDL_FreeSurface(symbols_img);
+		return EMPTY;
+	}
+	tile.type = WHITE_N;
+	get_tool_rect(tile, &tool_rect);
+	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &knight_place) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		SDL_FreeSurface(symbols_img);
+		return EMPTY;
+	}
+	SDL_FreeSurface(symbols_img);
+
+	char choice = EMPTY;
+	/*buttons events*/
+	while (!quit)
+	{
+		while (!quit && SDL_PollEvent(&e) != 0)
+		{
+			switch (e.type) 
+			{
+			case (SDL_QUIT) :
+				quit = 1;
+				break;
+			case (SDL_KEYUP) :
+				if (e.key.keysym.sym == SDLK_ESCAPE)
+					quit = 1;
+				break;
+			case (SDL_MOUSEBUTTONUP) :
+				if (is_in_rect(e.button.x, e.button.y, queen_place))
+				{
+					choice = WHITE_Q;
+					quit = 1;
+				}
+				if (is_in_rect(e.button.x, e.button.y, rook_place))
+				{
+					choice = WHITE_R;
+					quit = 1;
+				}
+				if (is_in_rect(e.button.x, e.button.y, bishop_place))
+				{
+					choice = WHITE_B;
+					quit = 1;
+				}
+				if (is_in_rect(e.button.x, e.button.y, knight_place))
+				{
+					choice = WHITE_N;
+					quit = 1;
+				}
+			}
+		}
+	}
+	return choice;
 }
 
 /*returns the clonum of an x coordinate on the board*/
@@ -243,14 +376,14 @@ int get_tile_col(int x)
 /*returns the rownum of a y coordinate on the board*/
 int get_tile_row(int y)
 {
-	return ((y - SQUERE_S) / SQUERE_S);
+	return BOARD_SIZE - 1 - ((y - SQUERE_S) / SQUERE_S);
 }
 
 /*gets the rect on the board matching colnum and rownum*/
 void get_board_rect(int colnum, int rownum, SDL_Rect *out_rect)
 {
 	out_rect->x = (int)(SQUERE_S * (0.25 + colnum));
-	out_rect->y = SQUERE_S*(1 + rownum);
+	out_rect->y = SQUERE_S*(BOARD_SIZE - rownum);
 	out_rect->w = SQUERE_S;
 	out_rect->h = SQUERE_S;
 }
@@ -269,10 +402,12 @@ void draw_current_board(SDL_Surface *w)
 	{
 		for (int j = 0; j < BOARD_SIZE; ++j)
 		{
-			/*one tile*/
+			/*paint one tile*/
 			int color = (i + j) % 2 == 0 ? SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
-			SDL_Rect rect = { (int)(SQUERE_S * (0.25 + i)), SQUERE_S*(1 + j), SQUERE_S, SQUERE_S };
-			if (SDL_FillRect(w, &rect, color) != 0) {
+			SDL_Rect rect;
+			get_board_rect(i, j, &rect);
+			if (SDL_FillRect(w, &rect, color) != 0)
+			{
 				should_terminate = 1;
 				printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
 				SDL_FreeSurface(symbols_img);
@@ -288,42 +423,37 @@ void draw_current_board(SDL_Surface *w)
 	{
 		for (int j = 0; j < BOARD_SIZE; ++j)
 		{
-			SDL_Rect *tool_rect = get_tool_rect(board[i][j]);
-			if (should_terminate)
+			if (board[i][j].color == EMPTY)
+				continue;
+			SDL_Rect tool_rect;
+			get_tool_rect(board[i][j], &tool_rect);
+
+			SDL_Rect rect;
+			get_board_rect(i, j, &rect);
+			/* Draw image sprites*/
+			if (SDL_BlitSurface(symbols_img, &tool_rect, w, &rect) != 0)
 			{
 				should_terminate = 1;
+				printf("ERROR: failed to blit image: %s\n", SDL_GetError());
 				SDL_FreeSurface(symbols_img);
 				return;
 			}
-			if (tool_rect != NULL)
-			{
-				SDL_Rect rect = { (int)(SQUERE_S * (0.25 + i)), SQUERE_S * (1 + j), SQUERE_S, SQUERE_S };
-				int blit_response = SDL_BlitSurface(symbols_img, tool_rect, w, &rect);
-				free(tool_rect);
-				/* Draw image sprites*/
-				if (blit_response != 0) {
-					should_terminate = 1;
-					printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-					SDL_FreeSurface(symbols_img);
-					return;
-				}
-			}
-
+			
 		}
 	}
 	SDL_FreeSurface(symbols_img);
 }
 
-/*returns a rect in the SYMBOLS image matching the given tool
+/*gets a rect in the SYMBOLS image matching the given tool
 returns null if given tool is EMPTY*/
-SDL_Rect *get_tool_rect(board_tile tool)
+void get_tool_rect(board_tile tool, SDL_Rect *out_rect)
 {
 	int rect_y = 0;
 	int rect_x = 10;
 	switch (tool.color)
 	{
 	case EMPTY:
-		return NULL;
+		return;
 	case BLACK:
 		rect_y += SQUERE_S;
 		break;
@@ -346,17 +476,11 @@ SDL_Rect *get_tool_rect(board_tile tool)
 		rect_x += SQUERE_S * 5;
 		break;
 	}
-	SDL_Rect *out = malloc(sizeof(SDL_Rect));
-	if (NULL == out)
-	{
-		perror_message("malloc");
-		should_terminate = 1;
-	}
-	out->h = SQUERE_S;
-	out->w = SQUERE_S;
-	out->x = rect_x;
-	out->y = rect_y;
-	return out;
+	out_rect->h = SQUERE_S;
+	out_rect->w = SQUERE_S;
+	out_rect->x = rect_x;
+	out_rect->y = rect_y;
+	return;
 }
 
 /*draw the load and save windows
@@ -689,6 +813,7 @@ void draw_image(SDL_Rect img_rect, SDL_Rect img_place, char* img_path, SDL_Surfa
 		return;
 	}
 }
+
 
 /*return 1 if given x,y coordinates are in the rect. else return 0*/
 int is_in_rect(int x, int y, SDL_Rect rect)
