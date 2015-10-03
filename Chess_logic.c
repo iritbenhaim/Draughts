@@ -109,15 +109,6 @@ char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 		return flip_color(color);	/*current player has no moves - other player wins*/
 	}
 	free_moves(possible_moves);
-	possible_moves = generate_moves(board, flip_color(color));
-	if (should_terminate)
-		return -1;
-	if (possible_moves.len == 0)
-	{
-		free_moves(possible_moves);
-		return color;	/*other player has no moves - current player wins*/
-	}
-	free_moves(possible_moves);
 	return 0;
 }
 
@@ -164,7 +155,7 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 	m_board[move.end.char_indexer][move.end.int_indexer].color = color;
 	m_board[move.end.char_indexer][move.end.int_indexer].type = type;
 	m_board[move.start.char_indexer][move.start.int_indexer].type = EMPTY;
-	if (move.promote != EMPTY)
+	if ((move.end.int_indexer == BOARD_SIZE - 1 && color == WHITE) || (move.end.int_indexer == 0 && color == BLACK))
 		m_board[move.end.char_indexer][move.end.int_indexer].type = move.promote;
 	if (DEBUG)
 		print_board(m_board);
@@ -276,10 +267,13 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 				board[i][j].color = WHITE;
 			else if (j == BOARD_SIZE-1)
 				board[i][j].color = BLACK;
-			else{
+			else
+			{
 				board[i][j].type = EMPTY;
 				board[i][j].color = EMPTY;
 			}
+			board[i][j].char_indexer = i;
+			board[i][j].int_indexer = j;
 		}
 	}
 	board[0][0].type = WHITE_R;
@@ -324,18 +318,45 @@ int list_cmp(linked_list list1, linked_list list2)
 
 }
 
+/*returns 1 if a and b are the same move, else 0*/
+int move_cmp(game_move a, game_move b)
+{
+	if (!tile_cmp(a.start, b.start))
+		return 0;
+	if (!tile_cmp(a.end, b.end))
+		return 0;
+	if ((a.end.int_indexer == BOARD_SIZE - 1 && a.end.color == WHITE) ||
+		(a.end.int_indexer == 0 && a.end.color == BLACK))
+		if (a.promote != b.promote)
+			return 0;
+	return 1;
+}
+
+/*return 1 if a and b are the same tile, else 0*/
+int tile_cmp(board_tile a, board_tile b)
+{
+	if (a.char_indexer != b.char_indexer)
+		return 0;
+	if (a.int_indexer != b.int_indexer)
+		return 0;
+	if (a.color != b.color)
+		return 0;
+	if (a.type != b.type)
+		return 0;
+	return 1;
+}
+
 /*searches for the move in possible moves list. return 1 if found. else 0*/
 int find_move(linked_list possible_moves, game_move move)
-{/*
-	node* cur = possible_moves.first;
+{
+	node* crnt = possible_moves.first;
 	for (int i = 0; i < possible_moves.len; i++)
 	{
-		game_move cur_move = *((game_move*)cur->data);
-		if (game_move_list_cmp(cur_move.jumps, move.jumps))
+		game_move legit_move = *((game_move*)crnt->data);
+		if (move_cmp(move, legit_move))
 			return 1;
-		cur = cur->next;
+		crnt = crnt->next;
 	}
-	return 0;*/
 	return 0;
 }
 
@@ -345,7 +366,6 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 {
 	int i, j;
 	linked_list moves;
-	int num_eats = 0;
 	char type;
 
 	moves = new_list();
@@ -371,22 +391,22 @@ void generate_piece_moves(board_tile tile, linked_list* moves)
 	switch (type)
 	{
 	case WHITE_P:
-		generate_pawn_moves(tile, &moves);
+		generate_pawn_moves(tile, moves);
 		break;
 	case WHITE_K:
-		generate_king_moves(tile, &moves);
+		generate_king_moves(tile, moves);
 		break;
 	case WHITE_B:
-		generate_bishop_moves(tile, &moves);
+		generate_bishop_moves(tile, moves);
 		break;
 	case WHITE_N:
-		generate_knight_moves(tile, &moves);
+		generate_knight_moves(tile, moves);
 		break;
 	case WHITE_R:
-		generate_rook_moves(tile, &moves);
+		generate_rook_moves(tile, moves);
 		break;
 	case WHITE_Q:
-		generate_queen_moves(tile, &moves);
+		generate_queen_moves(tile, moves);
 		break;
 	}
 }
@@ -439,9 +459,9 @@ void generate_king_moves(board_tile tile, linked_list* moves)
 		{
 			if (out_of_boarders(tile.char_indexer + c, tile.int_indexer + r))
 				continue;
-			if (board[r][c].color == color)
+			if (board[tile.char_indexer + c][tile.int_indexer + r].color == color)
 				continue;
-			if (r == 0 && c == 0)
+			if (r == 0 && c == 0) /*stay in place - not a move*/
 				continue;
 			board_tile next = board[(tile.char_indexer) + c][tile.int_indexer + r];
 			cur_move->end = next;
@@ -484,13 +504,13 @@ void generate_knight_moves(board_tile tile, linked_list* moves)
 		for (int c = 0; c < 4; c++)
 		{
 			/*check if move is illegal, if so, discard and continue*/
-			if (out_of_boarders(tile.char_indexer + c, tile.int_indexer + r))
+			if (out_of_boarders(tile.char_indexer + indxs[c], tile.int_indexer + indxs[r]))
 				continue;
 			if (abs(indxs[r]) == abs(indxs[c]))
 				continue;
-			if (board[tile.char_indexer + c][tile.int_indexer + r].color == color)
+			if (board[tile.char_indexer + indxs[c]][tile.int_indexer + indxs[r]].color == color)
 				continue;
-			board_tile next = board[(tile.char_indexer) + c][tile.int_indexer + r];
+			board_tile next = board[(tile.char_indexer) + indxs[c]][tile.int_indexer + indxs[r]];
 			cur_move->end = next;
 
 			list_add(moves, cur_move);
@@ -546,10 +566,12 @@ void generate_pawn_moves(board_tile tile, linked_list* moves)
 		cur_move->promote = EMPTY;
 		
 		/*check if white pawn reached upper line or black pawn reached lower line*/
-		if ((next.int_indexer == 9 && color == WHITE) || (next.int_indexer == 0 && color == BLACK))
+		if ((next.int_indexer == BOARD_SIZE - 1 && color == WHITE) || (next.int_indexer == 0 && color == BLACK))
 			generate_promotion_moves(moves, cur_move);
 
-		list_add(moves, cur_move);
+		else
+			list_add(moves, cur_move);
+
 		if (should_terminate)
 		{
 			free(cur_move);
@@ -565,6 +587,7 @@ void generate_pawn_moves(board_tile tile, linked_list* moves)
 		}
 		cur_move->start = tile;
 	}
+	free(cur_move);
 }
 
 /*adds all possible promotion moves when promotion is achieved*/
@@ -630,13 +653,13 @@ void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg
 	{
 		if (neg) /*advance indexes according to directionality*/
 		{
-			c = c - 1 ? col : c;
-			r = r - 1 ? !col : r;
+			c = col ? c - 1 : c;
+			r = !col ? r - 1 : r;
 		}
 		else
 		{
-			c = c + 1 ? col : c;
-			r = r + 1 ? !col : r;
+			c = col ? c + 1 : c;
+			r = !col ? r + 1 : r;
 		}
 		if (out_of_boarders(c, r))
 			break;
@@ -684,8 +707,8 @@ void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int u
 	cur_move->start = tile;
 	for (int i = 1; i < BOARD_SIZE; i++)
 	{
-		c = c + 1 ? !lft : c - 1; /*advance indexes according to directionality*/
-		r = r + 1 ? up : r - 1;
+		c = !lft ? c + 1 : c - 1; /*advance indexes according to directionality*/
+		r = up ? r + 1 : r - 1;
 		if (out_of_boarders(c, r))
 			break;
 		if (board[c][r].color == color)

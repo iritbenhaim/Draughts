@@ -702,9 +702,26 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	free_moves(moves);
 }
 
-void print_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+void print_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth)
 {
-	linked_list moves = generate_moves(board, color);
+	linked_list moves;
+	linked_list best_moves = new_list();
+	game_move* best;
+	node* crnt;
+	int v = run_minimax(board, &moves, depth, color, &best);
+	crnt = moves.first;
+	for (int i = 0; i < moves.len; i++, crnt = crnt->next)
+	{
+		if (((game_move*)(crnt->data))->score == v)
+			list_add(&best_moves, (game_move*)(crnt->data));
+	}
+	crnt = best_moves.first;
+	for (int i = 0; i < moves.len; i++, crnt = crnt->next)
+		print_single_move(*((game_move*)(crnt->data)));
+
+	free_moves(moves);
+	free_moves(best_moves);
+	free(best);
 }
 
 /*prints a single move in format "<x,y> to <i,j> x\n" */
