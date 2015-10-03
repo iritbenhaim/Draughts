@@ -230,6 +230,14 @@ int user_move(char* input, char player_color)
 		should_terminate = 1;
 		return -1;
 	}
+	if (0 == cmp_input_command(input, "get best moves"))
+	{
+		//todo
+	}
+	if (0 == cmp_input_command(input, "get score"))
+	{
+		//todo
+	}
 	print_message(ILLEGAL_COMMAND);
 	return 0;
 }
@@ -404,18 +412,19 @@ void concat(char *orig, size_t *orig_size, char *addition)
 	strcat(orig, addition);
 }
 
+/*returns 1 if game ended. otherwise returns 0*/
 int check_game_end(char player_color)
 {
 	int end_game = get_winner(board, flip_color(player_color));
 	if (should_terminate)
-		return -1;
+		return 0;
 	if (end_game != 0)
 	{
 		char* winner = player_color == WHITE ? "White player wins!\n" : "Black player wins!\n";
 		print_message(winner);
-		return -1;
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 
