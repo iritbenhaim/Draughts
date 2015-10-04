@@ -41,4 +41,5 @@ int list_cmp(linked_list list1, linked_list list2);
 int is_board_init_legal();
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int promotion(board_tile tile);
+int move_cmp(game_move a, game_move b);
 #endif GAME_LOGIC_

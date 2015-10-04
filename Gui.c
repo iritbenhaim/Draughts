@@ -129,7 +129,7 @@ int game_window()
 				else if (is_in_rect(e.button.x, e.button.y, save_game))
 				{
 					SDL_FreeSurface(w);
-					load_save_game_wind(0);
+					load_save_game_wind(1);
 					if (should_terminate)
 					{
 						return 1;
@@ -159,15 +159,28 @@ int game_window()
 						return 1;
 					}
 
-					//todo - finish me
 				}
 				else
 				{
-					handle_board_press(e, w);
+					int press_resault = handle_board_press(e, w);
 					if (should_terminate)
 					{
 						SDL_FreeSurface(w);
 						return 1;
+					}
+					if (press_resault == 1)
+					{/*game ended*/
+						/*todo - handle end game*/
+						SDL_FreeSurface(w);
+						if (DEBUG)
+						{
+							getchar();
+						}
+						return 1;
+					}
+					else if (press_resault == 0)
+					{
+						next_player = flip_color(next_player);
 					}
 				}
 				break;
@@ -181,12 +194,12 @@ int game_window()
 }
 
 /*handles an event of click in the chess board area
-returns 0 if game ended*/
+returns 1 if game ended, 0 if user turn ended, and 2 otherwise*/
 int handle_board_press(SDL_Event e,SDL_Surface *w)
 {
 	SDL_Rect board_rect = { (int)(SQUERE_S*0.25), SQUERE_S, SQUERE_S *BOARD_SIZE, SQUERE_S*BOARD_SIZE};
 	if (!is_in_rect(e.button.x, e.button.y, board_rect))
-		return 1; /*not inside the board*/
+		return 2; /*not inside the board*/
 
 	int selected_col = get_tile_col(e.button.x);
 	int selected_row = get_tile_row(e.button.y);
@@ -194,7 +207,7 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 	if (selected_tile.color != next_player || selected_tile.type == EMPTY)
 	{/*tile does not contain a piece in current player color*/
 		if (num_tiles_marked == 0)
-			return 1; 
+			return 2; 
 		/*check if the move from current_board_tiles_marked[0] to the tile pressed is legal. if so, do it*/
 		game_move move;
 		move.start = board[get_tile_col(current_board_tiles_marked[0].x)][get_tile_row(current_board_tiles_marked[0].y)];
@@ -203,26 +216,26 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 		int legal = is_legal_move(move, next_player);
 		if (should_terminate || !legal)
 		{
-			return 0;
+			return 2;
 		}
 		/*do promotion*/
-		if (promotion(move.start));
+		if (promotion(move.start) == 1)
 		{	
 			move.promote = do_pawn_promotion(w);
 			if (should_terminate)
 			{
-				return 1;
+				return 2;
 			}
 		}
 		do_move(board, move);
 		flip_color(next_player);
 		draw_current_board(w);
 		if (should_terminate)
-			return 0;
+			return 2;
 		if (SDL_Flip(w) != 0) {
 			should_terminate = 1;
 			printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
-			return 0;
+			return 2;
 		}
 
 		return check_game_end(next_player);
@@ -257,9 +270,9 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 	if (SDL_Flip(w) != 0) {
 		should_terminate = 1;
 		printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
-		return 0;
+		return 2;
 	}
-	return 0;
+	return 2;
 }
 
 /*handles pawn promotion.
@@ -281,11 +294,12 @@ char do_pawn_promotion(SDL_Surface *w)
 	Uint32 green = SDL_MapRGB(symbols_img->format, 0, 255, 0);
 	SDL_SetColorKey(symbols_img, SDL_SRCCOLORKEY, green);
 
-	int y_coordinate = next_player == WHITE ? GAME_WIN_H - SQUERE_S - 1 : 0;
+	int y_coordinate = next_player == BLACK ? GAME_WIN_H - SQUERE_S - 1 : 0;
 	SDL_Rect queen_place = { SQUERE_S * 3, y_coordinate, SQUERE_S, SQUERE_S };
 	SDL_Rect rook_place = { SQUERE_S * 4, y_coordinate, SQUERE_S, SQUERE_S };
 	SDL_Rect bishop_place = { SQUERE_S * 5, y_coordinate, SQUERE_S, SQUERE_S };
 	SDL_Rect knight_place = { SQUERE_S * 6, y_coordinate, SQUERE_S, SQUERE_S };
+	SDL_Rect all_place = { SQUERE_S * 3, y_coordinate, SQUERE_S*4, SQUERE_S };
 
 	board_tile tile;
 	tile.color = next_player;
@@ -326,6 +340,12 @@ char do_pawn_promotion(SDL_Surface *w)
 	}
 	SDL_FreeSurface(symbols_img);
 
+	if (SDL_Flip(w) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+		return 0;
+	}
+
 	char choice = EMPTY;
 	/*buttons events*/
 	while (!quit)
@@ -364,6 +384,13 @@ char do_pawn_promotion(SDL_Surface *w)
 				}
 			}
 		}
+	}
+
+	/* Clear back to BLACK - remove promotion options*/
+	if (SDL_FillRect(w, &all_place, 0) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+		return 1;
 	}
 	return choice;
 }
@@ -573,7 +600,7 @@ int load_save_game_wind(int is_save)
 				{
 					/*pressed a slot button*/
 					SDL_Rect r = { 20 + (slot_num % BTNS_PER_LINE)*(LOAD_BTN_W + 20),
-						90 + (LOAD_BTN_H + 20) * (slot_num / BTNS_PER_LINE), LOAD_BTN_W, LOAD_BTN_H };
+						40 + (LOAD_BTN_H + 20) * (slot_num / BTNS_PER_LINE), LOAD_BTN_W, LOAD_BTN_H };
 					if (is_in_rect(e.button.x, e.button.y, r))
 					{
 						if (save_load_game_from_slot(slot_num, is_save))

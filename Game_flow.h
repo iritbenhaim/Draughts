@@ -63,7 +63,6 @@ char flip_color(char color);
 int count_piece(color, type);
 char get_color(char c);
 int tile_cmp(board_tile a, board_tile b);
-int move_cmp(game_move a, game_move b);
 int out_of_boarders(int first_indexer, int second_indexer);
 char get_tool_type(char color, char type);
 

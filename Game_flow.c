@@ -285,7 +285,7 @@ int save_config(char * config_file_name)
 	char *xml_info = get_xml_game();
 	if (should_terminate)
 		return -1;
-
+	
 	FILE *xml_file = fopen(config_file_name, "wt");
 	if (NULL == xml_file)
 	{
@@ -349,7 +349,7 @@ char *get_xml_game()
 		return NULL;
 	}
 
-	concat(xml_data, &xml_buf_size, "</game_ mode>\n\t<difficulty>");
+	concat(xml_data, &xml_buf_size, "</game_ mode>\n\t");
 	if (should_terminate)
 	{
 		free(xml_data);
@@ -357,6 +357,12 @@ char *get_xml_game()
 	}
 	if (2 == player_vs_player)
 	{
+		concat(xml_data, &xml_buf_size, "<difficulty>");
+		if (should_terminate)
+		{
+			free(xml_data);
+			return NULL;
+		}
 		if (-1 == minimax_depth)
 		{
 			concat(xml_data, &xml_buf_size, "best");
@@ -386,43 +392,49 @@ char *get_xml_game()
 			free(xml_data);
 			return NULL;
 		}
-		concat(xml_data, &xml_buf_size, "</user_color>\n\t<board>\n");
+		concat(xml_data, &xml_buf_size, "</user_color>\n\t");
 		if (should_terminate)
 		{
 			free(xml_data);
 			return NULL;
 		}
-		for (size_t i = BOARD_SIZE; i > 0; i--)
-		{ /*append the board itself*/
-			char row[128];
-			row[0] = '\0';
-			strcat(row, "\t\t<row_");
-			char line_num[8];
-			_itoa(i, line_num, 10);
-			strcat(row, line_num);
-			strcat(row, ">");
-			size_t cur_len = strlen(row);
-			row[cur_len + BOARD_SIZE] = '\0';
-			for (size_t j = 0; j < BOARD_SIZE; j++)
-			{
-				char c = get_tool_type(board[j][i].color, board[j][i].type);
-				if (c == EMPTY)
-					c = '_';
-				row[cur_len + j] = c;
-			}
-			strcat(row, "</row_");
-			strcat(row, line_num);
-			strcat(row, ">\n");
-			concat(xml_data, &xml_buf_size, row);
-			if (should_terminate)
-			{
-				free(xml_data);
-				return NULL;
-			}
+	}
+	concat(xml_data, &xml_buf_size, "<board>\n");
+		if (should_terminate)
+		{
+			free(xml_data);
+			return NULL;
+		}
+	for (int i = BOARD_SIZE - 1; i >= 0; i--)
+	{ /*append the board itself*/
+		char row[128];
+		row[0] = '\0';
+		strcat(row, "\t\t<row_");
+		char line_num[8];
+		_itoa(i, line_num, 10);
+		strcat(row, line_num);
+		strcat(row, ">");
+		size_t cur_len = strlen(row);
+		row[cur_len + BOARD_SIZE] = '\0';
+		for (size_t j = 0; j < BOARD_SIZE; j++)
+		{
+			char c = get_tool_type(board[j][i].color, board[j][i].type);
+			if (c == EMPTY)
+				c = '_';
+			row[cur_len + j] = c;
+		}
+		strcat(row, "</row_");
+		strcat(row, line_num);
+		strcat(row, ">\n");
+		concat(xml_data, &xml_buf_size, row);
+		if (should_terminate)
+		{
+			free(xml_data);
+			return NULL;
 		}
 	}
 
-	concat(xml_data, &xml_buf_size, "\t<\board>\n</game>");
+	concat(xml_data, &xml_buf_size, "\t</board>\n</game>");
 	if (should_terminate)
 	{
 		free(xml_data);
@@ -501,7 +513,7 @@ int settings(char* input)
 	}
 	if (0 == cmp_input_command(input, "difficulty ")) /*no. of steps for minimax*/
 	{
-		if (player_vs_player = 1)
+		if (player_vs_player == 1)
 		{
 			print_message(ILLEGAL_COMMAND);
 			return 0;
@@ -531,7 +543,7 @@ int settings(char* input)
 	}
 	if (0 == cmp_input_command(input, "user_color ")) /*user color in single player game*/
 	{
-		if (player_vs_player = 1)
+		if (player_vs_player == 1)
 		{
 			print_message(ILLEGAL_COMMAND);
 			return 0;
@@ -656,10 +668,12 @@ void load_config(char *file_name)
 	if (NULL == setting_file)
 	{
 		print_message(WRONG_FILE_NAME)
-			return;
+		return;
 	}
+	/*get file length*/
 	fseek(setting_file, 0, SEEK_END);
 	int file_len = ftell(setting_file);
+	fseek(setting_file, 0, SEEK_SET);
 	char *file_data = malloc(file_len);
 	if (file_data == NULL)
 	{
@@ -678,14 +692,14 @@ void load_config(char *file_name)
 	else
 		next_player = BLACK;
 	cur_config = strstr(file_data, "<game_mode>") + strlen("<game_mode>");
-	player_vs_player = cur_config[0] + '0';
+	player_vs_player = cur_config[0] - '0';
 	if (player_vs_player == 2)
 	{
 		cur_config = strstr(file_data, "<difficulty>") + strlen("<difficulty>");
 		if (0 == cmp_input_command(cur_config, "best"))
 			minimax_depth = -1;
 		else
-			minimax_depth = cur_config[0] + '0';
+			minimax_depth = cur_config[0] - '0';
 		cur_config = strstr(file_data, "<user_color>") + strlen("<user_color>");
 		if (0 == cmp_input_command(cur_config, "White"))
 			user_color = WHITE;
@@ -693,13 +707,13 @@ void load_config(char *file_name)
 			user_color = BLACK;
 	}
 	/*get board*/
-
-	for (size_t i = BOARD_SIZE; i > 0; i--)
+	char *cur_file_data = file_data;
+	for (int i = BOARD_SIZE - 1; i >= 0; i--)
 	{ /*parse row*/
-		file_data = strstr(file_data, "<row_") + strlen("<row_C>");
+		cur_file_data = strstr(cur_file_data, "<row_") + strlen("<row_C>");
 		for (size_t j = 0; j < BOARD_SIZE; j++)
 		{/*parse a char on board*/
-			char c = file_data[j];
+			char c = cur_file_data[j];
 			board[j][i].color = get_color(c);
 			if (c == '_')
 				board[j][i].type = EMPTY;
@@ -856,19 +870,6 @@ int count_piece(color, type)
 	return counter;
 }
 
-/*returns 1 if a and b are the same move, else 0*/
-int move_cmp(game_move a, game_move b)
-{
-	if (!tile_cmp(a.start, b.start))
-		return 0;
-	if (!tile_cmp(a.end, b.end))
-		return 0;
-	if ((a.end.int_indexer == BOARD_SIZE - 1 && a.end.color == WHITE) ||
-		(a.end.int_indexer == 0 && a.end.color == BLACK))
-		if (a.promote != b.promote)
-			return 0;
-	return 1;
-}
 
 /*return 1 if a and b are the same tile, else 0*/
 int tile_cmp(board_tile a, board_tile b)

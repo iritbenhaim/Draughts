@@ -1,9 +1,9 @@
 #include <SDL.h>
 #include "Chess.h"
 
+/*save slots*/
 #define NUM_SAVE_SLOTS 7
-
-#define SAVE_FILES_PATH "save_files/"
+#define SAVE_FILES_PATH "save_files\\"
 
 /*images*/
 #define GAME_PROG	"images\\game_prog.bmp"

@@ -117,7 +117,7 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 	m_board[move.end.char_indexer][move.end.int_indexer].type = type;
 	m_board[move.start.char_indexer][move.start.int_indexer].type = EMPTY;
 	m_board[move.start.char_indexer][move.start.int_indexer].color = EMPTY;
-	if (promotion(move.end))
+	if (promotion(move.start))
 		m_board[move.end.char_indexer][move.end.int_indexer].type = move.promote;
 	if (DEBUG)
 		print_board(m_board);
@@ -128,9 +128,9 @@ int promotion(board_tile tile)
 {
 	if (tile.type != WHITE_P)
 		return 0;
-	if (tile.int_indexer == BOARD_SIZE - 1 && tile.color == WHITE)
+	if (tile.int_indexer == BOARD_SIZE - 2 && tile.color == WHITE)
 		return 1;
-	if (tile.int_indexer == 0 && tile.color == BLACK)
+	if (tile.int_indexer == 1 && tile.color == BLACK)
 		return 1;
 	return 0;
 }
@@ -538,7 +538,7 @@ void generate_pawn_moves(board_tile tile, linked_list* moves)
 		cur_move->promote = EMPTY;
 		
 		/*check if white pawn reached upper line or black pawn reached lower line*/
-		if (promotion(next))
+		if (promotion(cur_move->start))
 			generate_promotion_moves(moves, cur_move);
 
 		else
