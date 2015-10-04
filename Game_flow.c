@@ -20,7 +20,6 @@ int gui = 0; /*0 for command line. 1 for gui*/
 int main(int argc, char* argv[])
 {
 	init_board(board);
-	/*main_window();*/
 	if (argc > 2)
 	{
 		print_message("too many command argumants. usage: Chess.exe <gui_type>");
@@ -34,6 +33,7 @@ int main(int argc, char* argv[])
 			gui = 1;
 			main_window();
 			SDL_Quit();
+			return 0;
 		}
 		else if (strcmp(argv[1], "console") != 0)
 		{

@@ -24,6 +24,7 @@
 #define USER_WHITE	"images\\user_white.bmp"
 #define NEXT_BLACK	"images\\next_black.bmp"
 #define NEXT_WHITE	"images\\next_white.bmp"
+#define FINISH		"images\\finish.bmp"
 
 
 
