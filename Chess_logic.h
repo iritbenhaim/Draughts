@@ -7,7 +7,7 @@
 #include "Game_flow.h"
 
 /*generate moves*/
-linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color);
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int check);
 void generate_piece_moves(board_tile tile, linked_list* moves);
 linked_list generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void generate_pawn_moves(board_tile tile, linked_list* moves);

@@ -818,7 +818,7 @@ int main_window()
 				if (is_in_rect(e.button.x, e.button.y, new_game))
 				{
 					SDL_FreeSurface(w);
-					if (player_selection_window() || should_terminate)
+					if (game_window() || should_terminate)
 					{
 						return 1;
 					}

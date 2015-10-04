@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 	/*main_window();*/
 	if (argc > 2)
 	{
-		print_message("to many command argumants. usage: Chess.exe <gui_type>");
+		print_message("too many command argumants. usage: Chess.exe <gui_type>");
 		return -1;
 	}
 	else if (argc == 2 || (DEBUG && DEBUG_GUI))
@@ -741,7 +741,7 @@ char get_color(char c)
 /*prints to the user all his legal moves*/
 void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list moves = generate_moves(board, color);
+	linked_list moves = generate_moves(board, color, 1);
 	node* crnt_move = moves.first;
 	for (int i = 0; i < moves.len; i++)
 	{

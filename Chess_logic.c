@@ -38,6 +38,7 @@ or if there are more than 20 discs of the same color
 else returns 1*/
 int is_board_init_legal()
 {
+	/*TODO - check other cases*/
 	int black_king = 0; /*will be 1 when a black king was found*/
 	int white_king = 0;
 	for (int i = 0; i < BOARD_SIZE; i++)
@@ -66,7 +67,7 @@ char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 		return color;	/*current player wins*/
 	if (board_score == -1000)
 		return flip_color(color);	/*other player wins*/
-	possible_moves = generate_moves(board, color);
+	possible_moves = generate_moves(board, color, 1);
 	if (should_terminate)
 		return -1;
 	if (possible_moves.len == 0)
@@ -333,7 +334,7 @@ linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color,
 
 /*returns a linked list containing all possible moves for a player
 cur_player_color - the color of the current player*/
-linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color)
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int check)
 {
 	int i, j;
 	linked_list moves;
@@ -352,7 +353,8 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 			generate_piece_moves(board[i][j], &moves); /*get all moves for this piece*/
 		}
 	}
-	filter_moves_with_check(board, &moves, cur_player_color);
+	if (check)
+		filter_moves_with_check(board, &moves, cur_player_color);
 	return moves;
 }
 
@@ -720,7 +722,7 @@ int player_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 /*returns 1 if king in check and no moves are possible, otherwise returns 0*/
 int player_in_mate(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list moves = generate_moves(board, color);
+	linked_list moves = generate_moves(board, color, 0);
 	if (player_in_check(board, color))
 		if (moves.len == 0)
 			return 1;
@@ -767,9 +769,9 @@ int is_tile_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, 
 	linked_list enemy_moves;
 	int check = 0;
 	/*generate all possible moves for other player*/
-	enemy_moves = generate_moves(board, flip_color(color));
+	enemy_moves = generate_moves(board, flip_color(color), 0);
 	/*for each move check if end tile is tile in question*/
-	node* move = enemy_moves.first->data;
+	node* move = enemy_moves.first;
 	for (int i = 0; i < enemy_moves.len; i++)
 	{
 		board_tile end = (*(game_move*)move->data).end;
