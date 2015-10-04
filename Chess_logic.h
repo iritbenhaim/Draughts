@@ -45,6 +45,7 @@ int game_move_list_cmp(linked_list list1, linked_list list2);
 int is_legal_move(game_move move, char color);
 int list_cmp(linked_list list1, linked_list list2);
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
+void init_game();
 int promotion(board_tile tile);
 int move_cmp(game_move a, game_move b); 
 board_tile find_king(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);

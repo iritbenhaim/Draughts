@@ -268,6 +268,17 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 
 }
 
+
+/*initializes all globals of game to start a new game*/
+void init_game()
+{
+	init_board(board);
+	minimax_depth = 1;
+	player_vs_player = 1;
+	user_color = WHITE;
+	next_player = WHITE;
+}
+
 /*returns 1 if a and b are the same move, else 0*/
 int move_cmp(game_move a, game_move b)
 {

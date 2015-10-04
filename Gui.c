@@ -10,11 +10,14 @@
 int show_moves_on = 0;
 SDL_Rect current_board_tiles_marked[32];
 int num_tiles_marked = 0;
+int use_fancy_tools = 1;
 
 
 /*draw the game window of the game*/
 int game_window()
 {
+	num_tiles_marked = 0; /*if a previous window marked a tile, we dont care*/
+
 	SDL_Event e;
 	int buttons_x = (int)(SQUERE_S * (0.25 + BOARD_SIZE) + 5);
 	SDL_Rect imgrect = { 0, 0, GAME_IMG_W, GAME_IMG_H };
@@ -328,62 +331,12 @@ char do_pawn_promotion(SDL_Surface *w)
 	SDL_Event e;
 	int quit = 0;
 
-	SDL_Surface *symbols_img = SDL_LoadBMP(SYMBOLS);
-	if (symbols_img == NULL) {
-		should_terminate = 1;
-		printf("ERROR: failed to load image: %s\n", SDL_GetError());
-		return EMPTY;
-	}
+	int y_coordinate = next_player == WHITE ? 0 : GAME_WIN_H - SQUERE_S - 1;
+	SDL_Rect all_place = { SQUERE_S * 3, y_coordinate, SQUERE_S * 4, SQUERE_S };
 
-	/*paint tools images*/
-	Uint32 green = SDL_MapRGB(symbols_img->format, 0, 255, 0);
-	SDL_SetColorKey(symbols_img, SDL_SRCCOLORKEY, green);
-
-	int y_coordinate = next_player == BLACK ? GAME_WIN_H - SQUERE_S - 1 : 0;
-	SDL_Rect queen_place = { SQUERE_S * 3, y_coordinate, SQUERE_S, SQUERE_S };
-	SDL_Rect rook_place = { SQUERE_S * 4, y_coordinate, SQUERE_S, SQUERE_S };
-	SDL_Rect bishop_place = { SQUERE_S * 5, y_coordinate, SQUERE_S, SQUERE_S };
-	SDL_Rect knight_place = { SQUERE_S * 6, y_coordinate, SQUERE_S, SQUERE_S };
-	SDL_Rect all_place = { SQUERE_S * 3, y_coordinate, SQUERE_S*4, SQUERE_S };
-
-	board_tile tile;
-	tile.color = next_player;
-
-	/*paint the options for promotion*/
-	tile.type = WHITE_Q;
-	SDL_Rect tool_rect;
-	get_tool_rect(tile, &tool_rect);
-	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &queen_place) != 0) {
-		should_terminate = 1;
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(symbols_img);
-		return EMPTY;
-	}
-	tile.type = WHITE_R;
-	get_tool_rect(tile, &tool_rect);
-	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &rook_place) != 0) {
-		should_terminate = 1;
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(symbols_img);
-		return EMPTY;
-	}
-	tile.type = WHITE_B;
-	get_tool_rect(tile, &tool_rect);
-	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &bishop_place) != 0) {
-		should_terminate = 1;
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(symbols_img);
-		return EMPTY;
-	}
-	tile.type = WHITE_N;
-	get_tool_rect(tile, &tool_rect);
-	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &knight_place) != 0) {
-		should_terminate = 1;
-		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
-		SDL_FreeSurface(symbols_img);
-		return EMPTY;
-	}
-	SDL_FreeSurface(symbols_img);
+	paint_boarder_pieces(1, next_player, next_player == WHITE, w);
+	if (should_terminate)
+		return 0;
 
 	if (SDL_Flip(w) != 0) {
 		should_terminate = 1;
@@ -407,26 +360,9 @@ char do_pawn_promotion(SDL_Surface *w)
 					quit = 1;
 				break;
 			case (SDL_MOUSEBUTTONUP) :
-				if (is_in_rect(e.button.x, e.button.y, queen_place))
-				{
-					choice = WHITE_Q;
+				choice = get_boarder_pieces_choice(e.button.x, e.button.y, 1, next_player == WHITE);
+				if (choice != '\0')
 					quit = 1;
-				}
-				if (is_in_rect(e.button.x, e.button.y, rook_place))
-				{
-					choice = WHITE_R;
-					quit = 1;
-				}
-				if (is_in_rect(e.button.x, e.button.y, bishop_place))
-				{
-					choice = WHITE_B;
-					quit = 1;
-				}
-				if (is_in_rect(e.button.x, e.button.y, knight_place))
-				{
-					choice = WHITE_N;
-					quit = 1;
-				}
 			}
 		}
 	}
@@ -438,6 +374,162 @@ char do_pawn_promotion(SDL_Surface *w)
 		return 1;
 	}
 	return choice;
+}
+
+/*checks if the given x and y coordinates are inside a boarder piece rectangle.
+if so, returns the matching piece. otherwise returns '\0'
+if is promotion is 1, will only paint promoting pieces. otherwise paints all pieces
+is top - if 1, will put the pieces on the top otherwise on bottom*/
+char get_boarder_pieces_choice(int x, int y, int is_promotion, int is_top)
+{
+
+	int y_coordinate = is_top ? 0 : SQUERE_S * ( BOARD_SIZE + 1);
+	int start_piece_offset = is_promotion ? SQUERE_S * 3 : SQUERE_S;
+	SDL_Rect piece_place = { start_piece_offset, y_coordinate, SQUERE_S, SQUERE_S };
+	char out_piece = '\0';
+	if (!is_promotion)
+	{
+		if (is_in_rect(x, y, piece_place))
+		{
+			out_piece = EMPTY;
+		}
+		piece_place.x += SQUERE_S;
+		if (is_in_rect(x, y, piece_place))
+		{
+			out_piece = WHITE_K;
+		}
+		piece_place.x += SQUERE_S;
+	}
+
+	if (is_in_rect(x, y, piece_place))
+	{
+		out_piece = WHITE_Q;
+	}
+	piece_place.x += SQUERE_S;
+	if (is_in_rect(x, y, piece_place))
+	{
+		out_piece = WHITE_R;
+	}
+	piece_place.x += SQUERE_S;
+	if (is_in_rect(x, y, piece_place))
+	{
+		out_piece = WHITE_B;
+	}
+	piece_place.x += SQUERE_S;
+	if (is_in_rect(x, y, piece_place))
+	{
+		out_piece = WHITE_N;
+	}
+	if (!is_promotion)
+	{
+		piece_place.x += SQUERE_S;
+		if (is_in_rect(x, y, piece_place))
+		{
+			out_piece = WHITE_P;
+		}
+	}
+	return out_piece;
+}
+
+/*paints pieces outside the boarders of the board. used for pawn promotion and board init
+if is promotion is 1, will only paint promoting pieces. otherwise paints all pieces
+color detarmines the color of the pieces
+is top - if 1, will put the pieces on the top otherwise on bottom*/
+void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface *w)
+{
+	SDL_Surface *symbols_img = SDL_LoadBMP(SYMBOLS);
+	if (symbols_img == NULL) {
+		should_terminate = 1;
+		printf("ERROR: failed to load image: %s\n", SDL_GetError());
+		return;
+	}
+
+	/*paint tools images*/
+	Uint32 green = SDL_MapRGB(symbols_img->format, 0, 255, 0);
+	SDL_SetColorKey(symbols_img, SDL_SRCCOLORKEY, green);
+
+	int y_coordinate = is_top ? 0 : SQUERE_S * (BOARD_SIZE + 1);
+	int start_piece_offset = is_promotion ? SQUERE_S * 3 : SQUERE_S;
+	int num_pieces = is_promotion ? 4 : 7;
+	SDL_Rect all_place = { start_piece_offset, y_coordinate, SQUERE_S * num_pieces, SQUERE_S };
+	SDL_Rect piece_place = { start_piece_offset, y_coordinate, SQUERE_S, SQUERE_S };
+
+
+	/* Whiten rectangle */
+	if (SDL_FillRect(w, &all_place, SDL_MapRGB(w->format, 150, 150, 150)) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+		return;
+	}
+
+	board_tile tile;
+	tile.color = color;
+	if (!is_promotion)
+	{
+		/*first tile is empty for putting empty tiles*/
+		piece_place.x += SQUERE_S;
+		tile.type = WHITE_K;
+		SDL_Rect tool_rect;
+		get_tool_rect(tile, &tool_rect);
+		if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
+			should_terminate = 1;
+			printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+			SDL_FreeSurface(symbols_img);
+			return;
+		}
+		piece_place.x += SQUERE_S;
+	}
+
+	/*paint the options for promotion*/
+	tile.type = WHITE_Q;
+	SDL_Rect tool_rect;
+	get_tool_rect(tile, &tool_rect);
+	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		SDL_FreeSurface(symbols_img);
+		return;
+	}
+	piece_place.x += SQUERE_S;
+	tile.type = WHITE_R;
+	get_tool_rect(tile, &tool_rect);
+	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		SDL_FreeSurface(symbols_img);
+		return;
+	}
+	piece_place.x += SQUERE_S;
+	tile.type = WHITE_B;
+	get_tool_rect(tile, &tool_rect);
+	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		SDL_FreeSurface(symbols_img);
+		return;
+	}
+	piece_place.x += SQUERE_S;
+	tile.type = WHITE_N;
+	get_tool_rect(tile, &tool_rect);
+	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
+		should_terminate = 1;
+		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+		SDL_FreeSurface(symbols_img);
+		return;
+	}
+	if (!is_promotion)
+	{
+		piece_place.x += SQUERE_S;
+		tile.type = WHITE_P;
+		SDL_Rect tool_rect;
+		get_tool_rect(tile, &tool_rect);
+		if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
+			should_terminate = 1;
+			printf("ERROR: failed to blit image: %s\n", SDL_GetError());
+			SDL_FreeSurface(symbols_img);
+			return;
+		}
+	}
 }
 
 /*returns the clonum of an x coordinate on the board*/
@@ -523,11 +615,13 @@ void get_tool_rect(board_tile tool, SDL_Rect *out_rect)
 {
 	if (tool.color == EMPTY || tool.type == EMPTY)
 		return;
-	int rect_y = 0;
+	int rect_y = use_fancy_tools ? 150 : 0;
 	int rect_x = 10;
 	if (tool.color == BLACK)
 	{
 		rect_y += SQUERE_S;
+		if (use_fancy_tools)
+			rect_y += 7;
 	}
 	switch (tool.type)
 	{
@@ -538,13 +632,13 @@ void get_tool_rect(board_tile tool, SDL_Rect *out_rect)
 		rect_x += SQUERE_S * 2;
 		break;
 	case WHITE_B:
-		rect_x += SQUERE_S * 3;
+		rect_x += SQUERE_S * 3 + 3;
 		break;
 	case WHITE_N:
-		rect_x += SQUERE_S * 4;
+		rect_x += SQUERE_S * 4 + 7;
 		break;
 	case WHITE_P:
-		rect_x += SQUERE_S * 5;
+		rect_x += SQUERE_S * 5 + 10;
 		break;
 	}
 	out_rect->h = SQUERE_S;
@@ -751,6 +845,7 @@ int main_window()
 
 		if (redraw)
 		{
+			init_game();
 			SDL_WM_SetCaption("Main", "Main");
 			w = SDL_SetVideoMode(MAIN_WIN_W, MAIN_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
 			if (w == NULL) {
@@ -942,6 +1037,236 @@ void paint_rect_edges(SDL_Rect rect, SDL_Surface *w, int color)
 /*draw the player selection window of the game
 returns 0 if finished, 1 on error and 2 if user pressed cancel*/
 int player_selection_window()
+{
+	num_tiles_marked = 0; /*if a previous window marked a tile, we dont care*/
+
+	SDL_Event e;
+	int buttons_x = (int)(SQUERE_S * (0.25 + BOARD_SIZE) + 5);
+	SDL_Rect imgrect = { 0, 0, PLAY_IMG_W, PLAY_IMG_H };
+
+	SDL_Rect cancel = { GAME_WIN_W - 150, GAME_WIN_H - PLAY_IMG_H - 50, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect versus = { buttons_x, 80, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect next = { buttons_x, (int)(80 + PLAY_IMG_H * 1.5), PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect finish = { buttons_x, 80 + PLAY_IMG_H * 3, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect board_rect = { (int)(SQUERE_S*0.25), SQUERE_S, SQUERE_S *BOARD_SIZE, SQUERE_S*BOARD_SIZE };
+
+	int quit = 0;
+	int redraw = 1;
+	SDL_Surface *w = NULL;
+
+	char piece = '\0';
+	char color;
+
+	while (!quit) {
+		if (redraw)
+		{
+			SDL_WM_SetCaption("Player Selection Settings", "Player Selection Settings");
+			w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+			if (w == NULL) {
+				should_terminate = 1;
+				printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
+				return 1;
+			}
+			/* Clear window to BLACK*/
+			if (SDL_FillRect(w, 0, 0) != 0) {
+				should_terminate = 1;
+				printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+				SDL_FreeSurface(w);
+				return 1;
+			}
+
+			/*draw initial board*/
+			draw_current_board(w);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+
+
+			paint_boarder_pieces(0, WHITE, 0, w);
+			if (should_terminate)
+				return 1;
+			paint_boarder_pieces(0, BLACK, 1, w);
+			if (should_terminate)
+				return 1;
+
+
+			/*draw buttons*/
+			draw_image(cancel, imgrect, CANCEL_IMG, w, 0);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			char *img = player_vs_player == 1 ? P_VS_P : P_VS_C;
+			draw_image(versus, imgrect, img, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			img = next_player == WHITE ? NEXT_WHITE : NEXT_BLACK;
+			draw_image(next, imgrect, img, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+
+			draw_image(finish, imgrect, FINISH, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+
+			/* We finished drawing */
+			if (SDL_Flip(w) != 0) {
+				should_terminate = 1;
+				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			redraw = 0;
+		}
+
+		/* Poll for keyboard & mouse events*/
+		while (!quit && SDL_PollEvent(&e) != 0) {
+			switch (e.type) {
+			case (SDL_QUIT) :
+				quit = 1;
+				break;
+			case (SDL_KEYUP) :
+				if (e.key.keysym.sym == SDLK_ESCAPE) quit = 1;
+				break;
+			case (SDL_MOUSEBUTTONUP) :
+				if (is_in_rect(e.button.x, e.button.y, cancel))
+				{
+					SDL_FreeSurface(w);
+					return 2;
+				}
+				else if (is_in_rect(e.button.x, e.button.y, versus))
+				{ /*change player_vs_player*/
+					player_vs_player = player_vs_player % 2 + 1;
+					char *img = player_vs_player == 1 ? P_VS_P : P_VS_C;
+					draw_image(versus, imgrect, img, w, 1);
+					if (should_terminate)
+					{
+						SDL_FreeSurface(w);
+						return 1;
+					}
+					if (SDL_Flip(w) != 0) {
+						should_terminate = 1;
+						printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+						SDL_FreeSurface(w);
+						return 1;
+					}
+				}
+				else if (is_in_rect(e.button.x, e.button.y, next))
+				{ /*change next player*/
+					next_player = flip_color(next_player);
+					char *img = next_player == WHITE ? NEXT_WHITE : NEXT_BLACK;
+					draw_image(next, imgrect, img, w, 1);
+					if (should_terminate)
+					{
+						SDL_FreeSurface(w);
+						return 1;
+					}
+					if (SDL_Flip(w) != 0) {
+						should_terminate = 1;
+						printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+						SDL_FreeSurface(w);
+						return 1;
+					}
+				}
+				else if (is_in_rect(e.button.x, e.button.y, finish))
+				{ /*move to next window*/
+					if (is_board_init_legal())
+					{
+						SDL_FreeSurface(w);
+						quit = 1;
+					}
+					else
+					{
+						/*todo - print board init illegal*/
+					}
+				}
+				else if (is_in_rect(e.button.x, e.button.y, board_rect))
+				{ /*a press on the board. only matters if a piece was chosen*/
+					if (piece != '\0')
+					{
+						handle_board_setting_press(e, w, piece, color);
+						draw_current_board(w);
+						if (SDL_Flip(w) != 0) {
+							should_terminate = 1;
+							printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+							SDL_FreeSurface(w);
+							return 1;
+						}
+					}
+				}
+				else
+				{
+					piece = get_boarder_pieces_choice(e.button.x, e.button.y, 0, 1);
+					color = BLACK;
+					if (piece == '\0')
+					{
+						piece = get_boarder_pieces_choice(e.button.x, e.button.y, 0, 0);
+						color = WHITE;
+					}
+					if (piece != '\0')
+					{ /*paint piece edge*/
+						if (num_tiles_marked > 0)
+						{
+							paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 150, 150, 150));
+							if (should_terminate)
+							{
+								SDL_FreeSurface(w);
+								return 1;
+							}
+						}
+						SDL_Rect r= { e.button.x - e.button.x % SQUERE_S, e.button.y - e.button.y % SQUERE_S, SQUERE_S, SQUERE_S };
+						current_board_tiles_marked[0] = r;
+						num_tiles_marked = 1;
+						paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 0, 255, 0));
+						if (should_terminate)
+						{
+							SDL_FreeSurface(w);
+							return 1;
+						}
+
+					}
+					if (SDL_Flip(w) != 0) {
+						should_terminate = 1;
+						printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+						SDL_FreeSurface(w);
+						return 1;
+					}
+				}
+			default:
+				break;
+			}
+		}
+	}
+	SDL_FreeSurface(w);
+	return 0;
+}
+
+
+/*handles an event of click in the chess board area of the setting window*/
+int handle_board_setting_press(SDL_Event e, SDL_Surface *w, char piece, char color)
+{
+	int selected_col = get_tile_col(e.button.x);
+	int selected_row = get_tile_row(e.button.y);
+	board_tile selected_tile = board[selected_col][selected_row];
+	board[selected_col][selected_row].type = piece;
+	board[selected_col][selected_row].color = color;
+}
+
+/*draw the AI settings window of the game
+returns 0 if finished, 1 on error and 2 if user pressed cancel*/
+int ai_settings_window()
 {
 	SDL_Event e;
 	int buttons_x = (int)(SQUERE_S * (0.25 + BOARD_SIZE) + 5);

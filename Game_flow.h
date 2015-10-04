@@ -30,7 +30,6 @@ struct game_move
 extern board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 extern int should_terminate;
 extern char user_color; /*color of the user player*/
-extern int is_user_turn;
 extern int player_vs_player; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
 extern char next_player;
 extern int gui; /*0 for command line. 1 for gui*/

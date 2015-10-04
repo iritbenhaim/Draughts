@@ -11,15 +11,13 @@
 
 board_tile board[BOARD_SIZE][BOARD_SIZE]; /*game board*/
 int should_terminate = 0;
-char user_color = WHITE; /*color of the user player*/
-int is_turn_end;
-int player_vs_player = 1; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
-char next_player = WHITE;
+char user_color; /*color of the user player*/
+int player_vs_player; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
+char next_player; /*the player who's turn is now*/
 int gui = 0; /*0 for command line. 1 for gui*/
 
 int main(int argc, char* argv[])
 {
-	init_board(board);
 	if (argc > 2)
 	{
 		print_message("too many command argumants. usage: Chess.exe <gui_type>");
@@ -41,6 +39,7 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 	}
+	init_game();
 	int input_size = 1024;
 	char* input = malloc(input_size);
 	if (input == NULL)
@@ -71,7 +70,7 @@ int main(int argc, char* argv[])
 	{/*game play*/
 		if (player_vs_player == 1 || (player_vs_player == 0 && next_player == user_color))
 		{/*user turn*/
-			is_turn_end = 0;
+			int is_turn_end = 0;
 			char* text = next_player == WHITE ? "white player - enter your move:\n" : "black player - enter your move:\n";
 			printf(text);
 			while (!is_turn_end)
@@ -80,7 +79,7 @@ int main(int argc, char* argv[])
 				{
 					return -1; /*no resources were allocated yet*/
 				}
-				int is_turn_end = user_move(input, user_color);
+				is_turn_end = user_move(input, user_color);
 				if (should_terminate)
 				{
 					free(input);
@@ -118,6 +117,7 @@ int main(int argc, char* argv[])
 	}
 	return 0;
 }
+
 
 /*reads a line of input from the user. and returns it in "input"*/
 int read_user_input_line(char* input, int* input_size)

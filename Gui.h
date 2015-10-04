@@ -41,7 +41,7 @@
 /*game window*/
 #define GAME_WIN_W 800
 #define GAME_WIN_H 600
-#define SQUERE_S 61
+#define SQUERE_S 59
 #define GAME_IMG_W 275
 #define GAME_IMG_H 54
 
@@ -73,4 +73,6 @@ char do_pawn_promotion(SDL_Surface *w);
 void get_board_rect(int colnum, int rownum, SDL_Rect *out_rect);
 int get_tile_col(int x);
 int get_tile_row(int y);
-
+void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface *w);
+char get_boarder_pieces_choice(int x, int y, int is_promotion, int is_top);
+int handle_board_setting_press(SDL_Event e, SDL_Surface *w, char piece, char color);
