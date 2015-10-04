@@ -6,6 +6,7 @@
 #define SAVE_FILES_PATH "save_files\\"
 
 /*images*/
+#define FANCY		"images\\fancy.bmp"
 #define GAME_PROG	"images\\game_prog.bmp"
 #define QUIT		"images\\quit.bmp"
 #define LOAD_GAME	"images\\load_game.bmp"
@@ -25,6 +26,8 @@
 #define NEXT_BLACK	"images\\next_black.bmp"
 #define NEXT_WHITE	"images\\next_white.bmp"
 #define FINISH		"images\\finish.bmp"
+#define DIFFICULTY	"images\\diff_0.bmp"
+#define DIFF_GEN_OFFSET	strlen("images\\diff_")
 
 
 
@@ -60,6 +63,7 @@ int  game_window();
 int main_window();
 int player_selection_window();
 int load_save_game_wind(int is_save);
+int ai_settings_window();
 
 void get_tool_rect(struct board_tile tool, SDL_Rect *out_rect);
 int is_in_rect(int x, int y, SDL_Rect rect);
@@ -75,4 +79,4 @@ int get_tile_col(int x);
 int get_tile_row(int y);
 void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface *w);
 char get_boarder_pieces_choice(int x, int y, int is_promotion, int is_top);
-int handle_board_setting_press(SDL_Event e, SDL_Surface *w, char piece, char color);
+void handle_board_setting_press(SDL_Event e, SDL_Surface *w, char piece, char color);

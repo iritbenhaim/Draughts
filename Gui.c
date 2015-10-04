@@ -22,11 +22,12 @@ int game_window()
 	int buttons_x = (int)(SQUERE_S * (0.25 + BOARD_SIZE) + 5);
 	SDL_Rect imgrect = { 0, 0, GAME_IMG_W, GAME_IMG_H };
 
-	SDL_Rect quit_game = { buttons_x, GAME_WIN_H - GAME_IMG_H - 10, GAME_IMG_W, GAME_IMG_H };
 	SDL_Rect main_menu = { buttons_x, 30, GAME_IMG_W, GAME_IMG_H };
 	SDL_Rect save_game = { buttons_x, (int)(30 + GAME_IMG_H * 1.5), GAME_IMG_W, GAME_IMG_H };
 	SDL_Rect show_moves = { buttons_x, 30 + GAME_IMG_H * 3, GAME_IMG_W, GAME_IMG_H };
 	SDL_Rect best_move = { buttons_x, (int)(30 + GAME_IMG_H * 4.5), GAME_IMG_W, GAME_IMG_H };
+	SDL_Rect fancy_rect = { buttons_x, (int)(30 + GAME_IMG_H * 6), GAME_IMG_W, GAME_IMG_H };
+	SDL_Rect quit_game = { buttons_x, (int)(30 + GAME_IMG_H * 7.5), GAME_IMG_W, GAME_IMG_H };
 
 	int quit = 0;
 	int redraw = 1;
@@ -101,6 +102,12 @@ int game_window()
 				SDL_FreeSurface(w);
 				return 1;
 			}
+			draw_image(fancy_rect, imgrect, FANCY, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
 
 			/* We finished drawing */
 			if (SDL_Flip(w) != 0) {
@@ -124,11 +131,19 @@ int game_window()
 				break;
 			case (SDL_MOUSEBUTTONUP) :
 				if (is_in_rect(e.button.x, e.button.y, quit_game))
-					quit = 1;
+				{
+					SDL_FreeSurface(w);
+					return 1;
+				}
 				else if (is_in_rect(e.button.x, e.button.y, main_menu))
 				{
 					SDL_FreeSurface(w);
 					quit = 1;
+				}
+				else if (is_in_rect(e.button.x, e.button.y, fancy_rect))
+				{
+					use_fancy_tools = 1 - use_fancy_tools;
+					redraw = 1;
 				}
 				else if (is_in_rect(e.button.x, e.button.y, save_game))
 				{
@@ -331,7 +346,7 @@ char do_pawn_promotion(SDL_Surface *w)
 	SDL_Event e;
 	int quit = 0;
 
-	int y_coordinate = next_player == WHITE ? 0 : GAME_WIN_H - SQUERE_S - 1;
+	int y_coordinate = next_player == WHITE ? 0 : SQUERE_S *(BOARD_SIZE + 1);
 	SDL_Rect all_place = { SQUERE_S * 3, y_coordinate, SQUERE_S * 4, SQUERE_S };
 
 	paint_boarder_pieces(1, next_player, next_player == WHITE, w);
@@ -910,10 +925,23 @@ int main_window()
 			case (SDL_MOUSEBUTTONUP) :
 				if (is_in_rect(e.button.x, e.button.y, quit_game))
 					quit = 1;
-				if (is_in_rect(e.button.x, e.button.y, new_game))
+				else if (is_in_rect(e.button.x, e.button.y, load_game) || is_in_rect(e.button.x, e.button.y, new_game))
 				{
 					SDL_FreeSurface(w);
-					int answer = player_selection_window();
+					if (is_in_rect(e.button.x, e.button.y, load_game))
+					{ /*load saved game*/
+						int result = load_save_game_wind(0);
+						if (result == -1 || should_terminate)
+						{
+							return 1;
+						}
+						if (result == 0)
+						{
+							redraw = 1;
+							continue;
+						}
+					}
+					int answer = player_selection_window(); /*player setting*/
 					if (should_terminate || answer == 1)
 					{
 						return 1;
@@ -923,32 +951,25 @@ int main_window()
 						redraw = 1;
 						continue;
 					}
+					if (player_vs_player == 2)
+					{
+						answer = ai_settings_window(); /*ai settings*/
+						if (should_terminate || answer == 1)
+						{
+							return 1;
+						}
+						if (answer == 2)
+						{
+							redraw = 1;
+							continue;
+						}
+					}
+					/*run game*/
 					if (game_window() || should_terminate)
 					{
 						return 1;
 					}
-					redraw = 1;
-				}
-				if (is_in_rect(e.button.x, e.button.y, load_game))
-				{
-					SDL_FreeSurface(w);
-					int result = load_save_game_wind(0);
-					if (result == -1 || should_terminate)
-					{
-						return 1;
-					}
-					if (result == 1)
-					{
-						if (player_selection_window() || should_terminate)
-						{
-							return 1;
-						}
-						if (game_window() || should_terminate)
-						{
-							return 1;
-						}
 
-					}
 					redraw = 1;
 				}
 				break;
@@ -1255,11 +1276,10 @@ int player_selection_window()
 
 
 /*handles an event of click in the chess board area of the setting window*/
-int handle_board_setting_press(SDL_Event e, SDL_Surface *w, char piece, char color)
+void handle_board_setting_press(SDL_Event e, SDL_Surface *w, char piece, char color)
 {
 	int selected_col = get_tile_col(e.button.x);
 	int selected_row = get_tile_row(e.button.y);
-	board_tile selected_tile = board[selected_col][selected_row];
 	board[selected_col][selected_row].type = piece;
 	board[selected_col][selected_row].color = color;
 }
@@ -1269,13 +1289,13 @@ returns 0 if finished, 1 on error and 2 if user pressed cancel*/
 int ai_settings_window()
 {
 	SDL_Event e;
-	int buttons_x = (int)(SQUERE_S * (0.25 + BOARD_SIZE) + 5);
+	int buttons_x = 10;
 	SDL_Rect imgrect = { 0, 0, PLAY_IMG_W, PLAY_IMG_H };
 
-	SDL_Rect cancel = { GAME_WIN_W - 150, GAME_WIN_H - PLAY_IMG_H - 50, PLAY_IMG_W, PLAY_IMG_H };
-	SDL_Rect versus = { buttons_x, 80, PLAY_IMG_W, PLAY_IMG_H };
-	SDL_Rect next = { buttons_x, (int)(80 + PLAY_IMG_H * 1.5), PLAY_IMG_W, PLAY_IMG_H };
-	SDL_Rect finish = { buttons_x, 80 + PLAY_IMG_H * 3, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect difficulty = { buttons_x, 20, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect user = { buttons_x, (int)(20 + PLAY_IMG_H * 1.5), PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect finish = { buttons_x, 20 + PLAY_IMG_H * 3, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect cancel = { buttons_x, (int)(80 + PLAY_IMG_H * 4.5), PLAY_IMG_W, PLAY_IMG_H };
 
 	int quit = 0;
 	int redraw = 1;
@@ -1286,7 +1306,7 @@ int ai_settings_window()
 		if (redraw)
 		{
 			SDL_WM_SetCaption("Player Selection Settings", "Player Selection Settings");
-			w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+			w = SDL_SetVideoMode(MAIN_WIN_W, MAIN_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
 			if (w == NULL) {
 				should_terminate = 1;
 				printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
@@ -1300,14 +1320,6 @@ int ai_settings_window()
 				return 1;
 			}
 
-			/*draw initial board*/
-			draw_current_board(w);
-			if (should_terminate)
-			{
-				SDL_FreeSurface(w);
-				return 1;
-			}
-
 			/*draw buttons*/
 			draw_image(cancel, imgrect, CANCEL_IMG, w, 0);
 			if (should_terminate)
@@ -1315,15 +1327,17 @@ int ai_settings_window()
 				SDL_FreeSurface(w);
 				return 1;
 			}
-			char *img = player_vs_player == 1 ? P_VS_P : P_VS_C;
-			draw_image(versus, imgrect, img, w, 1);
+			char img[128];
+			strcpy(img, DIFFICULTY);
+			img[DIFF_GEN_OFFSET] = minimax_depth == -1 ? '0' : minimax_depth + '0';
+			draw_image(difficulty, imgrect, img, w, 1);
 			if (should_terminate)
 			{
 				SDL_FreeSurface(w);
 				return 1;
 			}
-			img = next_player == WHITE ? NEXT_WHITE : NEXT_BLACK;
-			draw_image(next, imgrect, img, w, 1);
+			char *img2 = user_color == WHITE ? USER_WHITE : USER_BLACK;
+			draw_image(user, imgrect, img2, w, 1);
 			if (should_terminate)
 			{
 				SDL_FreeSurface(w);
@@ -1363,11 +1377,18 @@ int ai_settings_window()
 					SDL_FreeSurface(w);
 					return 2;
 				}
-				else if (is_in_rect(e.button.x, e.button.y, versus))
+				else if (is_in_rect(e.button.x, e.button.y, difficulty))
 				{ /*change player_vs_player*/
-					player_vs_player = player_vs_player % 2 + 1;
-					char *img = player_vs_player == 1 ? P_VS_P : P_VS_C;
-					draw_image(versus, imgrect, img, w, 1);
+					minimax_depth += 1;
+					if (minimax_depth == 5)
+						minimax_depth = -1;
+					else if (minimax_depth == 0)
+						minimax_depth = 1;
+
+					char img[128];
+					strcpy(img, DIFFICULTY);
+					img[DIFF_GEN_OFFSET] = minimax_depth == -1 ? '0' : minimax_depth + '0';
+					draw_image(difficulty, imgrect, img, w, 1);
 					if (should_terminate)
 					{
 						SDL_FreeSurface(w);
@@ -1380,11 +1401,11 @@ int ai_settings_window()
 						return 1;
 					}
 				}
-				else if (is_in_rect(e.button.x, e.button.y, next))
+				else if (is_in_rect(e.button.x, e.button.y, user))
 				{ /*change next player*/
-					next_player = flip_color(next_player);
-					char *img = next_player == WHITE ? NEXT_WHITE : NEXT_BLACK;
-					draw_image(next, imgrect, img, w, 1);
+					user_color = flip_color(user_color);
+					char *img = user_color == WHITE ? USER_WHITE : USER_BLACK;
+					draw_image(user, imgrect, img, w, 1);
 					if (should_terminate)
 					{
 						SDL_FreeSurface(w);
