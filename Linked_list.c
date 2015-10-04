@@ -71,6 +71,7 @@ void list_remove(linked_list* list, void* data)
 		{
 			crnt->next = next->next; /*data found, removing node*/
 			free(next);
+			list->len = list->len - 1;
 			return;
 		}
 		crnt = next; /*searching next node*/

@@ -120,8 +120,6 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 	m_board[move.start.char_indexer][move.start.int_indexer].color = EMPTY;
 	if (promotion(move.start))
 		m_board[move.end.char_indexer][move.end.int_indexer].type = move.promote;
-	if (DEBUG)
-		print_board(m_board);
 }
 
 /*return 1 if tile needs promotion, 0 otherwise*/
@@ -735,15 +733,23 @@ void filter_moves_with_check(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_li
 	board_tile copy[BOARD_SIZE][BOARD_SIZE];
 	board_tile king;
 	node* move = moves->first;
+	game_move crnt;
 	for (int i = 0; i < moves->len; i++)
 	{
+		crnt = *(game_move*)(move->data);
 		copy_board(board, copy);
-		do_move(copy, *(game_move*)(move->data)); /*do move on copy board*/
+		do_move(copy, crnt); /*do move on copy board*/
 		king = find_king(copy, color);
 		if (king.type == EMPTY)
 			return;
+		
 		if (is_tile_in_check(copy, king, king.color)) /*check board after move*/
-			list_remove(moves, move->data); /*remove move from possible moves*/
+		{
+			node* tmp = move; /*we want to remove this node*/
+			move = move->next;
+			list_remove(moves, tmp->data); /*remove move from possible moves*/
+		}
+		
 	}
 }
 
@@ -756,7 +762,7 @@ board_tile find_king(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	{
 		for (int j = 0; j < BOARD_SIZE; j++)
 		{
-			if ((board[i][j].color == color) && (board[i][j].type = WHITE_K))
+			if ((board[i][j].color == color) && (board[i][j].type == WHITE_K))
 				return board[i][j];
 		}
 	}
