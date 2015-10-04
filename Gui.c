@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_DEPRECATE
 #include "Gui.h"
 #include "Game_flow.h"
+#include "Minimax.h"
 #include "Chess_logic.h"
 #include <stdio.h>
 #include <SDL.h>
@@ -138,7 +139,39 @@ int game_window()
 				}
 				else if (is_in_rect(e.button.x, e.button.y, best_move))
 				{
-					//todo
+					/*unmark all previously marked tiles on the board*/
+					for (int i = 0; i < num_tiles_marked; i++)
+					{
+						int color = (get_tile_row(current_board_tiles_marked[i].y) + get_tile_col(current_board_tiles_marked[i].x)) % 2 != 0 ?
+							SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
+						paint_rect_edges(current_board_tiles_marked[i], w, color);
+						if (should_terminate)
+						{
+							SDL_FreeSurface(w);
+							return 1;
+						}
+					}
+					num_tiles_marked = 2;
+
+					linked_list moves_list = get_best_moves(board, next_player, minimax_depth);
+					game_move move = *((game_move*)moves_list.first->data);
+					get_board_rect(move.start.char_indexer, move.start.int_indexer, &current_board_tiles_marked[0]);
+					get_board_rect(move.end.char_indexer, move.end.int_indexer, &current_board_tiles_marked[1]);
+					free_moves(moves_list);
+					/*mark start tile*/
+					paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 0, 0, 255));
+					if (should_terminate)
+					{
+						SDL_FreeSurface(w);
+						return 1;
+					}
+					/*mark end tile*/
+					paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 255, 0, 0));
+					if (should_terminate)
+					{
+						SDL_FreeSurface(w);
+						return 1;
+					}
 				}
 				else if (is_in_rect(e.button.x, e.button.y, show_moves))
 				{
@@ -247,11 +280,19 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 		int color = (get_tile_row(current_board_tiles_marked[i].y) + get_tile_col(current_board_tiles_marked[i].x)) % 2 != 0 ?
 			SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
 		paint_rect_edges(current_board_tiles_marked[i], w, color);
+		if (should_terminate)
+		{
+			return 2;
+		}
 	}
 	num_tiles_marked = 1;
 	get_board_rect(selected_col, selected_row, &current_board_tiles_marked[0]);
 	/*mark selected tile*/
 	paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 0, 0, 255));
+	if (should_terminate)
+	{
+		return 2;
+	}
 	if (show_moves_on)
 	{
 		/*mark all tiles possible for current move*/
@@ -263,6 +304,10 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 			board_tile cur_move_end = ((game_move*)n->data)->end;
 			get_board_rect(cur_move_end.char_indexer, cur_move_end.int_indexer, &current_board_tiles_marked[num_tiles_marked]);
 			paint_rect_edges(current_board_tiles_marked[num_tiles_marked], w, SDL_MapRGB(w->format, 255, 0, 0));
+			if (should_terminate)
+			{
+				return 2;
+			}
 			num_tiles_marked++;
 		}
 	}
@@ -773,7 +818,7 @@ int main_window()
 				if (is_in_rect(e.button.x, e.button.y, new_game))
 				{
 					SDL_FreeSurface(w);
-					if (game_window() || should_terminate)
+					if (player_selection_window() || should_terminate)
 					{
 						return 1;
 					}
@@ -789,7 +834,7 @@ int main_window()
 					}
 					if (result == 1)
 					{
-						if (game_window() || should_terminate)
+						if (player_selection_window() || should_terminate)
 						{
 							return 1;
 						}
@@ -877,4 +922,135 @@ void paint_rect_edges(SDL_Rect rect, SDL_Surface *w, int color)
 		printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
 		return;
 	}
+}
+
+
+
+/*draw the player selection window of the game*/
+int player_selection_window()
+{
+	SDL_Event e;
+	int buttons_x = (int)(SQUERE_S * (0.25 + BOARD_SIZE) + 5);
+	SDL_Rect imgrect = { 0, 0, PLAY_IMG_W, PLAY_IMG_H };
+
+	SDL_Rect cancel = { GAME_WIN_W - 150, GAME_WIN_H - PLAY_IMG_H - 30, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect versus = { buttons_x, 60, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect save_game = { buttons_x, (int)(60 + PLAY_IMG_H * 1.5), PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect show_moves = { buttons_x, 60 + PLAY_IMG_H * 3, PLAY_IMG_W, PLAY_IMG_H };
+	SDL_Rect best_move = { buttons_x, (int)(60 + PLAY_IMG_H * 4.5), PLAY_IMG_W, PLAY_IMG_H };
+
+	int quit = 0;
+	int redraw = 1;
+	SDL_Surface *w = NULL;
+
+
+	while (!quit) {
+		if (redraw)
+		{
+			SDL_WM_SetCaption("Game Play", "Game Play");
+			w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+			if (w == NULL) {
+				should_terminate = 1;
+				printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
+				return 1;
+			}
+			/* Clear window to BLACK*/
+			if (SDL_FillRect(w, 0, 0) != 0) {
+				should_terminate = 1;
+				printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+				SDL_FreeSurface(w);
+				return 1;
+			}
+
+			/*draw initial board*/
+			draw_current_board(w);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+
+			/*draw buttons*/
+			draw_image(cancel, imgrect, CANCEL_IMG, w, 0);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			char *img = player_vs_player == 1 ? P_VS_P : P_VS_C;
+			draw_image(versus, imgrect, img, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			/*draw_image(save_game, imgrect, SAVE_GAME, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			draw_image(show_moves, imgrect, SHOW_MOVES, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			draw_image(best_move, imgrect, BEST_MOVE, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}*/
+
+			/* We finished drawing */
+			if (SDL_Flip(w) != 0) {
+				should_terminate = 1;
+				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			redraw = 0;
+		}
+
+
+		/* Poll for keyboard & mouse events*/
+		while (!quit && SDL_PollEvent(&e) != 0) {
+			switch (e.type) {
+			case (SDL_QUIT) :
+				quit = 1;
+				break;
+			case (SDL_KEYUP) :
+				if (e.key.keysym.sym == SDLK_ESCAPE) quit = 1;
+				break;
+			case (SDL_MOUSEBUTTONUP) :
+				if (is_in_rect(e.button.x, e.button.y, cancel))
+				{
+					SDL_FreeSurface(w);
+					quit = 1;
+				}
+				else if (is_in_rect(e.button.x, e.button.y, versus))
+				{
+					player_vs_player = player_vs_player % 2 + 1;
+					char *img = player_vs_player == 1 ? P_VS_P : P_VS_C;
+					draw_image(versus, imgrect, img, w, 1);
+					if (should_terminate)
+					{
+						SDL_FreeSurface(w);
+						return 1;
+					}
+					if (SDL_Flip(w) != 0) {
+						should_terminate = 1;
+						printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+						SDL_FreeSurface(w);
+						return 1;
+					}
+				}
+			default:
+				break;
+			}
+		}
+	}
+	SDL_FreeSurface(w);
+	return 0;
 }

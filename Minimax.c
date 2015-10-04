@@ -35,6 +35,9 @@ int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible
 
 	if (is_leaf(board, depth, color))	/*reached max depth or a winning/losig board*/
 	{
+		*possible = new_list();
+		if (should_terminate)
+			return -1;
 		return score(board, color);
 	}
 
@@ -55,7 +58,13 @@ int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible
 		{
 			v = tmp_v;
 			if (top)
-				*best = (game_move*)(crnt->data);
+			{
+				*best = copy_move((game_move*)(crnt->data));
+				if (should_terminate)
+				{
+					return -1;
+				}
+			}
 		}
 		((game_move*)(crnt->data))->score = v;
 		a = change_a(a, v, max);	/*update alpha - only for max node*/
