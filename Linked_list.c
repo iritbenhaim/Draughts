@@ -52,3 +52,28 @@ void list_add(linked_list* list, void* data)
 	((*list).last)->data = NULL;
 	(*list).len++;
 }
+
+/*removes a single node from the list if it contains specific data*/
+void list_remove(linked_list* list, void* data)
+{
+	node* crnt = list->first;
+	node* next = crnt->next;
+	if (crnt->data == data) /*case node deleted is first*/
+	{
+		list->first = crnt->next;
+		free(crnt->data);
+		return;
+	}
+
+	for (int i = 0; i < list->len; i++)
+	{
+		if (next->data == data)
+		{
+			crnt->next = next->next; /*data found, removing node*/
+			free(next);
+			return;
+		}
+		crnt = next; /*searching next node*/
+		next = next->next;
+	}
+}

@@ -22,6 +22,7 @@ struct linked_list
 
 void free_list(linked_list list);
 void list_add(linked_list* list, void* data);
+void list_remove(linked_list* list, void* data);
 linked_list new_list();
 
 

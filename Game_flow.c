@@ -511,7 +511,7 @@ int settings(char* input)
 		else
 			print_message(WRONG_GAME_MODE);
 	}
-	if (0 == cmp_input_command(input, "difficulty ")) /*no. of steps for minimax*/
+	else if (0 == cmp_input_command(input, "difficulty ")) /*no. of steps for minimax*/
 	{
 		if (player_vs_player == 1)
 		{
@@ -541,7 +541,7 @@ int settings(char* input)
 		print_message(ILLEGAL_COMMAND);
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "user_color ")) /*user color in single player game*/
+	else if (0 == cmp_input_command(input, "user_color ")) /*user color in single player game*/
 	{
 		if (player_vs_player == 1)
 		{
@@ -557,7 +557,7 @@ int settings(char* input)
 			user_color = BLACK;
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "load ")) /*load saved game settings*/
+	else if (0 == cmp_input_command(input, "load ")) /*load saved game settings*/
 	{
 		input += strlen("load ");
 		load_config(input);
@@ -565,7 +565,7 @@ int settings(char* input)
 			return 0;
 		print_board(board);
 	}	
-	if (0 == cmp_input_command(input, "clear")) /*clear the board*/
+	else if (0 == cmp_input_command(input, "clear")) /*clear the board*/
 	{
 		for (i = 0; i < BOARD_SIZE; ++i)
 		{
@@ -577,7 +577,7 @@ int settings(char* input)
 		}
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "next_player ")) /*first player color*/
+	else if (0 == cmp_input_command(input, "next_player ")) /*first player color*/
 	{
 		input += strlen("next_player ");
 		if (0 == cmp_input_command(input, "white"))
@@ -585,7 +585,7 @@ int settings(char* input)
 		else if (0 == cmp_input_command(input, "black"))
 			next_player = BLACK;
 	}
-	if (0 == cmp_input_command(input, "rm ")) /*remove piece from location*/
+	else if (0 == cmp_input_command(input, "rm ")) /*remove piece from location*/
 	{
 		if (0 == get_board_position(input, &i, &j))
 			return 0;
@@ -594,7 +594,7 @@ int settings(char* input)
 		return 0;
 
 	}
-	if (0 == cmp_input_command(input, "set ")) /*place piece on location*/
+	else if (0 == cmp_input_command(input, "set ")) /*place piece on location*/
 	{
 		char color, type;
 		input_copy = strchr(input, '>') + 2;
@@ -636,18 +636,18 @@ int settings(char* input)
 		board[i][j].type = type;
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "print")) /*print game board*/
+	else if (0 == cmp_input_command(input, "print")) /*print game board*/
 	{
 		print_board(board);
 		return 0;
 
 	}
-	if (0 == cmp_input_command(input, "quit")) /*exit the program*/
+	else if (0 == cmp_input_command(input, "quit")) /*exit the program*/
 	{
 		should_terminate = 1;
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "start")) /*start the game*/
+	else if (0 == cmp_input_command(input, "start")) /*start the game*/
 	{
 		/*TODO - when the game starts, if no legal moves, we should move to game end*/
 		if (!is_board_init_legal())
@@ -657,7 +657,8 @@ int settings(char* input)
 		}
 		return 1;
 	}
-	print_message(ILLEGAL_COMMAND);
+	else
+		print_message(ILLEGAL_COMMAND);
 	return 0;
 }
 

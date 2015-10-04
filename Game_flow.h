@@ -35,7 +35,7 @@ extern int player_vs_player; /*1 - player vs player mode. 2 - player vs comp. 0 
 extern char next_player;
 extern int gui; /*0 for command line. 1 for gui*/
 
-/*memory issues*/
+/*memory*/
 void free_moves(linked_list list);
 
 /*print and read functions*/
@@ -55,7 +55,6 @@ int save_config(char * config_file_name);
 int user_move(char* input, char player_color);
 int settings(char* input);
 int do_computer_move(char color);
-
 
 /*help functions*/
 void concat(char *orig, size_t *orig_size, char *addition);
