@@ -4,7 +4,7 @@
 
 
 #define DEBUG 1
-#define DEBUG_GUI 0
+#define DEBUG_GUI 1
 #define COMP_ONLY 0
 
 

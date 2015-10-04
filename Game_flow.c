@@ -186,7 +186,7 @@ int user_move(char* input, char player_color)
 		}
 		move.end = board[i][j];
 
-		if (move.start.color != player_color)
+		if (move.start.color != player_color || move.start.type == EMPTY)
 		{
 			print_message(NO_PIECE);
 			return 0;

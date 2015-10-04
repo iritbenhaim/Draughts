@@ -18,7 +18,11 @@ int W_KING_MOVE = 0;
 /*returns 1 if the move is legal for the player of color "color"*/
 int is_legal_move(game_move move, char color)
 {
-	linked_list all_moves = generate_moves(board, color);
+	if (move.start.color != color)
+		return 0;
+	linked_list all_moves = new_list();
+	generate_piece_moves(move.start, &all_moves);
+	/*linked_list all_moves = generate_moves(board, color);*/
 	if (should_terminate)
 	{
 		return 0;
@@ -96,11 +100,6 @@ int get_board_position(char* input, int* i, int* j)
 	}
 	*j = temp - 1;
 	*i = input[start + 1] - 'a';
-	if ((*i + *j) % 2 != 0)
-	{
-		print_message(WRONG_POSITION);
-		return 0;
-	}
 	return 1;
 
 }
@@ -117,6 +116,7 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 	m_board[move.end.char_indexer][move.end.int_indexer].color = color;
 	m_board[move.end.char_indexer][move.end.int_indexer].type = type;
 	m_board[move.start.char_indexer][move.start.int_indexer].type = EMPTY;
+	m_board[move.start.char_indexer][move.start.int_indexer].color = EMPTY;
 	if (promotion(move.end))
 		m_board[move.end.char_indexer][move.end.int_indexer].type = move.promote;
 	if (DEBUG)
@@ -645,8 +645,6 @@ void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg
 			free(cur_move);
 			return;
 		}
-		if (next.color == flip_color(color)) /*eat move - no more moves to this direction*/
-			break;
 		/*malloc the next move*/
 		cur_move = malloc(sizeof(game_move));
 		if (cur_move == NULL)
@@ -656,6 +654,9 @@ void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg
 			return;
 		}
 		cur_move->start = tile;
+
+		if (next.color == flip_color(color)) /*eat move - no more moves to this direction*/
+			break;
 	}
 	free(cur_move);
 }
@@ -693,8 +694,6 @@ void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int u
 			free(cur_move);
 			return;
 		}
-		if (next.color == flip_color(color)) /*eat move - no more moves to this direction*/
-			break;
 		/*malloc the next move*/
 		cur_move = malloc(sizeof(game_move));
 		if (cur_move == NULL)
@@ -704,6 +703,9 @@ void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int u
 			return;
 		}
 		cur_move->start = tile;
+
+		if (next.color == flip_color(color)) /*eat move - no more moves to this direction*/
+			break;
 	}
 	free(cur_move);
 }

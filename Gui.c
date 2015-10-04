@@ -191,10 +191,11 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 	int selected_col = get_tile_col(e.button.x);
 	int selected_row = get_tile_row(e.button.y);
 	board_tile selected_tile = board[selected_col][selected_row];
-	if (selected_tile.color != next_player)
+	if (selected_tile.color != next_player || selected_tile.type == EMPTY)
 	{/*tile does not contain a piece in current player color*/
 		if (num_tiles_marked == 0)
 			return 1; 
+		/*check if the move from current_board_tiles_marked[0] to the tile pressed is legal. if so, do it*/
 		game_move move;
 		move.start = board[get_tile_col(current_board_tiles_marked[0].x)][get_tile_row(current_board_tiles_marked[0].y)];
 		move.end = board[selected_col][selected_row];
@@ -204,8 +205,8 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 		{
 			return 0;
 		}
-		if (move.end.type == WHITE_P && ((move.end.int_indexer == BOARD_SIZE - 1 && next_player == WHITE)
-			|| (move.end.int_indexer == 0 && next_player == BLACK)))
+		/*do promotion*/
+		if (promotion(move.start));
 		{	
 			move.promote = do_pawn_promotion(w);
 			if (should_terminate)
@@ -230,7 +231,7 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 	/*unmark all previously marked tiles on the board*/
 	for (int i = 0; i < num_tiles_marked; i++)
 	{
-		int color = (get_tile_row(current_board_tiles_marked[i].y) + get_tile_col(current_board_tiles_marked[i].x)) % 2 == 0 ?
+		int color = (get_tile_row(current_board_tiles_marked[i].y) + get_tile_col(current_board_tiles_marked[i].x)) % 2 != 0 ?
 			SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
 		paint_rect_edges(current_board_tiles_marked[i], w, color);
 	}
@@ -403,7 +404,7 @@ void draw_current_board(SDL_Surface *w)
 		for (int j = 0; j < BOARD_SIZE; ++j)
 		{
 			/*paint one tile*/
-			int color = (i + j) % 2 == 0 ? SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
+			int color = (i + j) % 2 != 0 ? SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
 			SDL_Rect rect;
 			get_board_rect(i, j, &rect);
 			if (SDL_FillRect(w, &rect, color) != 0)
@@ -423,7 +424,7 @@ void draw_current_board(SDL_Surface *w)
 	{
 		for (int j = 0; j < BOARD_SIZE; ++j)
 		{
-			if (board[i][j].color == EMPTY)
+			if (board[i][j].color == EMPTY || board[i][j].type == EMPTY)
 				continue;
 			SDL_Rect tool_rect;
 			get_tool_rect(board[i][j], &tool_rect);
@@ -448,15 +449,13 @@ void draw_current_board(SDL_Surface *w)
 returns null if given tool is EMPTY*/
 void get_tool_rect(board_tile tool, SDL_Rect *out_rect)
 {
+	if (tool.color == EMPTY || tool.type == EMPTY)
+		return;
 	int rect_y = 0;
 	int rect_x = 10;
-	switch (tool.color)
+	if (tool.color == BLACK)
 	{
-	case EMPTY:
-		return;
-	case BLACK:
 		rect_y += SQUERE_S;
-		break;
 	}
 	switch (tool.type)
 	{
