@@ -37,47 +37,6 @@ int game_window()
 
 	while (!quit)
 	{
-		/*handle endgame*/
-		if (mate || check || tie || end_game_img != NULL)
-		{
-			if ((!mate && !check && !tie) || ((end_game_img != NULL) && (strcmp(end_game_img, CHECK) && (mate || tie))))
-			{ /*no end_game anymore, or endgame moved from check to mate or tie. clear endgame rect*/
-				end_game_img = NULL;
-				if (SDL_FillRect(w, &end_game, 0) != 0) {
-					should_terminate = 1;
-					printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-					SDL_FreeSurface(w);
-					return 1;
-				}
-			}
-			if (mate)
-			{
-				end_game_img = MATE;
-			}
-			else if (tie)
-			{
-				end_game_img = END_TIE;
-			}
-			else if (check)
-			{
-				end_game_img = CHECK;
-			}
-			if (end_game_img != NULL)
-			{
-				draw_image(end_game, end_game_place, end_game_img, w, 1);
-				if (should_terminate)
-				{
-					SDL_FreeSurface(w);
-					return 1;
-				}
-			}
-			if (SDL_Flip(w) != 0) {
-				should_terminate = 1;
-				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
-				SDL_FreeSurface(w);
-				return 1;
-			}
-		}
 		if ((player_vs_player != 1 && (player_vs_player == 0 || next_player != user_color)))
 		{/*computer turn*/
 			SDL_Delay(300);
@@ -255,6 +214,48 @@ int game_window()
 				default:
 					break;
 				}
+			}
+		}
+
+		/*handle endgame*/
+		if (mate || check || tie || end_game_img != NULL)
+		{
+			if ((!mate && !check && !tie) || ((end_game_img != NULL) && (strcmp(end_game_img, CHECK) && (mate || tie))))
+			{ /*no end_game anymore, or endgame moved from check to mate or tie. clear endgame rect*/
+				end_game_img = NULL;
+				if (SDL_FillRect(w, &end_game, 0) != 0) {
+					should_terminate = 1;
+					printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+					SDL_FreeSurface(w);
+					return 1;
+				}
+			}
+			if (mate)
+			{
+				end_game_img = MATE;
+			}
+			else if (tie)
+			{
+				end_game_img = END_TIE;
+			}
+			else if (check)
+			{
+				end_game_img = CHECK;
+			}
+			if (end_game_img != NULL)
+			{
+				draw_image(end_game, end_game_place, end_game_img, w, 1);
+				if (should_terminate)
+				{
+					SDL_FreeSurface(w);
+					return 1;
+				}
+			}
+			if (SDL_Flip(w) != 0) {
+				should_terminate = 1;
+				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+				SDL_FreeSurface(w);
+				return 1;
 			}
 		}
 	}
