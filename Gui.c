@@ -32,10 +32,11 @@ int game_window()
 	SDL_Surface *w = NULL;
 
 
-	while (!quit) {
-		if (!(player_vs_player == 1 || (player_vs_player == 2 && next_player == user_color)))
+	while (!quit)
+	{
+		if ((player_vs_player != 1 && (player_vs_player == 0 || next_player != user_color)))
 		{/*computer turn*/
-			SDL_Delay(1000);
+			SDL_Delay(300);
 			if (1 == do_computer_move(next_player))
 			{/*game ended*/
 				if (DEBUG)
@@ -46,167 +47,170 @@ int game_window()
 			next_player = flip_color(next_player);
 			redraw = 1;
 		}
-		if (redraw)
-		{
-			SDL_WM_SetCaption("Game Play", "Game Play");
-			w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
-			if (w == NULL) {
-				should_terminate = 1;
-				printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
-				return 1;
-			}
-			/* Clear window to BLACK*/
-			if (SDL_FillRect(w, 0, 0) != 0) {
-				should_terminate = 1;
-				printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-				SDL_FreeSurface(w);
-				return 1;
-			}
-
-			/*draw initial board*/
-			draw_current_board(w);
-			if (should_terminate)
+		else
+		{/*user turn*/
+			if (redraw)
 			{
-				SDL_FreeSurface(w);
-				return 1;
-			}
-			/*draw buttons*/
-			paint_all_buttons(w, images, GAME_WIND_BUTTONS, top_button, imgrect);
-			if (should_terminate)
-			{
-				SDL_FreeSurface(w);
-				return 1;
-			}
-			
-			/* We finished drawing */
-			if (SDL_Flip(w) != 0) {
-				should_terminate = 1;
-				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
-				SDL_FreeSurface(w);
-				return 1;
-			}
-			redraw = 0;
-		}
+				SDL_WM_SetCaption("Game Play", "Game Play");
+				w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+				if (w == NULL) {
+					should_terminate = 1;
+					printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
+					return 1;
+				}
+				/* Clear window to BLACK*/
+				if (SDL_FillRect(w, 0, 0) != 0) {
+					should_terminate = 1;
+					printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+					SDL_FreeSurface(w);
+					return 1;
+				}
 
-		int button_num;
-		/* Poll for keyboard & mouse events*/
-		while (!quit && SDL_PollEvent(&e) != 0) {
-			switch (e.type) {
-			case (SDL_QUIT) :
-				quit = 1;
-				break;
-			case (SDL_KEYUP) :
-				if (e.key.keysym.sym == SDLK_ESCAPE) quit = 1;
-				break;
-			case (SDL_MOUSEBUTTONUP) :
-				button_num = get_num_button_pressed(e.button.x, e.button.y, top_button, GAME_WIND_BUTTONS);
-				if (button_num != -1)
+				/*draw initial board*/
+				draw_current_board(w);
+				if (should_terminate)
 				{
-					switch (button_num) {
-					case 0: /*main menu*/
-						SDL_FreeSurface(w);
-						quit = 1;
-						break;
-					case 1: /*save game*/
-						SDL_FreeSurface(w);
-						load_save_game_wind(1);
-						if (should_terminate)
-						{
-							return 1;
-						}
-						redraw = 1;
-						break;
-					case 2: /*show moves*/
-						/*turn show_moves on\off*/
-						show_moves_on = !show_moves_on;
+					SDL_FreeSurface(w);
+					return 1;
+				}
+				/*draw buttons*/
+				paint_all_buttons(w, images, GAME_WIND_BUTTONS, top_button, imgrect);
+				if (should_terminate)
+				{
+					SDL_FreeSurface(w);
+					return 1;
+				}
 
-						/*underline the show moves button*/
-						int color = show_moves_on ? SDL_MapRGB(w->format, 0, 255, 0) : SDL_MapRGB(w->format, 255, 255, 255);
-						SDL_Rect show_moves = { buttons_x, buttons_y + GAME_IMG_H * (button_num+1), GAME_IMG_W, GAME_IMG_H };
-						SDL_Rect underline = { show_moves.x + 4, show_moves.y + show_moves.h - 8, show_moves.w - 8, 4 };
-						if (SDL_FillRect(w, &underline, color) != 0){
-							should_terminate = 1;
-							printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+				/* We finished drawing */
+				if (SDL_Flip(w) != 0) {
+					should_terminate = 1;
+					printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+					SDL_FreeSurface(w);
+					return 1;
+				}
+				redraw = 0;
+			}
+
+			int button_num;
+			/* Poll for keyboard & mouse events*/
+			while (!quit && SDL_PollEvent(&e) != 0) {
+				switch (e.type) {
+				case (SDL_QUIT) :
+					quit = 1;
+					break;
+				case (SDL_KEYUP) :
+					if (e.key.keysym.sym == SDLK_ESCAPE) quit = 1;
+					break;
+				case (SDL_MOUSEBUTTONUP) :
+					button_num = get_num_button_pressed(e.button.x, e.button.y, top_button, GAME_WIND_BUTTONS);
+					if (button_num != -1)
+					{
+						switch (button_num) {
+						case 0: /*main menu*/
 							SDL_FreeSurface(w);
-							return 1;
-						}
-						if (SDL_Flip(w) != 0) {
-							should_terminate = 1;
-							printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+							quit = 1;
+							break;
+						case 1: /*save game*/
 							SDL_FreeSurface(w);
-							return 1;
-						}
-						break;
-					case 3: /*best move*/
-						/*unmark all previously marked tiles on the board*/
-						for (int i = 0; i < num_tiles_marked; i++)
-						{
-							int color = (get_tile_row(current_board_tiles_marked[i].y) + get_tile_col(current_board_tiles_marked[i].x)) % 2 != 0 ?
-								SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
-							paint_rect_edges(current_board_tiles_marked[i], w, color);
+							load_save_game_wind(1);
+							if (should_terminate)
+							{
+								return 1;
+							}
+							redraw = 1;
+							break;
+						case 2: /*show moves*/
+							/*turn show_moves on\off*/
+							show_moves_on = !show_moves_on;
+
+							/*underline the show moves button*/
+							int color = show_moves_on ? SDL_MapRGB(w->format, 0, 255, 0) : SDL_MapRGB(w->format, 255, 255, 255);
+							SDL_Rect show_moves = { buttons_x, buttons_y + GAME_IMG_H * (button_num + 1), GAME_IMG_W, GAME_IMG_H };
+							SDL_Rect underline = { show_moves.x + 4, show_moves.y + show_moves.h - 8, show_moves.w - 8, 4 };
+							if (SDL_FillRect(w, &underline, color) != 0){
+								should_terminate = 1;
+								printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+								SDL_FreeSurface(w);
+								return 1;
+							}
+							if (SDL_Flip(w) != 0) {
+								should_terminate = 1;
+								printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+								SDL_FreeSurface(w);
+								return 1;
+							}
+							break;
+						case 3: /*best move*/
+							/*unmark all previously marked tiles on the board*/
+							for (int i = 0; i < num_tiles_marked; i++)
+							{
+								int color = (get_tile_row(current_board_tiles_marked[i].y) + get_tile_col(current_board_tiles_marked[i].x)) % 2 != 0 ?
+									SDL_MapRGB(w->format, 255, 255, 255) : SDL_MapRGB(w->format, 75, 75, 75);
+								paint_rect_edges(current_board_tiles_marked[i], w, color);
+								if (should_terminate)
+								{
+									SDL_FreeSurface(w);
+									return 1;
+								}
+							}
+							num_tiles_marked = 2;
+
+							linked_list moves_list = get_best_moves(board, next_player, minimax_depth);
+							game_move move = *((game_move*)moves_list.first->data);
+							get_board_rect(move.start.char_indexer, move.start.int_indexer, &current_board_tiles_marked[0]);
+							get_board_rect(move.end.char_indexer, move.end.int_indexer, &current_board_tiles_marked[1]);
+							free_moves(moves_list);
+							/*mark start tile*/
+							paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 0, 0, 255));
 							if (should_terminate)
 							{
 								SDL_FreeSurface(w);
 								return 1;
 							}
+							/*mark end tile*/
+							paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 255, 0, 0));
+							if (should_terminate)
+							{
+								SDL_FreeSurface(w);
+								return 1;
+							}
+							break;
+						case 4: /*fancy*/
+							use_fancy_tools = 1 - use_fancy_tools;
+							redraw = 1;
+							break;
+						case 5: /*quit game*/
+							SDL_FreeSurface(w);
+							return 1;
 						}
-						num_tiles_marked = 2;
-
-						linked_list moves_list = get_best_moves(board, next_player, minimax_depth);
-						game_move move = *((game_move*)moves_list.first->data);
-						get_board_rect(move.start.char_indexer, move.start.int_indexer, &current_board_tiles_marked[0]);
-						get_board_rect(move.end.char_indexer, move.end.int_indexer, &current_board_tiles_marked[1]);
-						free_moves(moves_list);
-						/*mark start tile*/
-						paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 0, 0, 255));
+					}
+					else
+					{ /*no button was pressed*/
+						int press_resault = handle_board_press(e, w);
 						if (should_terminate)
 						{
 							SDL_FreeSurface(w);
 							return 1;
 						}
-						/*mark end tile*/
-						paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 255, 0, 0));
-						if (should_terminate)
-						{
+						if (press_resault == 1)
+						{/*game ended*/
+							/*todo - handle end game*/
 							SDL_FreeSurface(w);
+							if (DEBUG)
+							{
+								getchar();
+							}
 							return 1;
 						}
-						break;
-					case 4: /*fancy*/
-						use_fancy_tools = 1 - use_fancy_tools;
-						redraw = 1;
-						break;
-					case 5: /*quit game*/
-						SDL_FreeSurface(w);
-						return 1;
-					}
-				}
-				else
-				{ /*no button was pressed*/
-					int press_resault = handle_board_press(e, w);
-					if (should_terminate)
-					{
-						SDL_FreeSurface(w);
-						return 1;
-					}
-					if (press_resault == 1)
-					{/*game ended*/
-						/*todo - handle end game*/
-						SDL_FreeSurface(w);
-						if (DEBUG)
+						else if (press_resault == 0)
 						{
-							getchar();
+							next_player = flip_color(next_player);
 						}
-						return 1;
 					}
-					else if (press_resault == 0)
-					{
-						next_player = flip_color(next_player);
-					}
+					break;
+				default:
+					break;
 				}
-				break;
-			default:
-				break;
 			}
 		}
 	}
@@ -1059,12 +1063,12 @@ int player_selection_window()
 	num_tiles_marked = 0; /*if a previous window marked a tile, we dont care*/
 
 	SDL_Event e;
-	int buttons_x = (int)(SQUERE_S * (0.25 + BOARD_SIZE) + 5);
+	SDL_Rect board_rect = { (int)(SQUERE_S*0.25), SQUERE_S, SQUERE_S *BOARD_SIZE, SQUERE_S*BOARD_SIZE };
+	int buttons_x = board_rect.x + board_rect.w + 5;
+	int buttons_y = 80;
 	SDL_Rect imgrect = { 0, 0, PLAY_IMG_W, PLAY_IMG_H };
 
-	SDL_Rect cancel = { GAME_WIN_W - 150, GAME_WIN_H - PLAY_IMG_H - 50, PLAY_IMG_W, PLAY_IMG_H };
-	SDL_Rect top_button = { buttons_x, 80, PLAY_IMG_W, PLAY_IMG_H };
-	SDL_Rect board_rect = { (int)(SQUERE_S*0.25), SQUERE_S, SQUERE_S *BOARD_SIZE, SQUERE_S*BOARD_SIZE };
+	SDL_Rect top_button = { buttons_x, buttons_y, PLAY_IMG_W, PLAY_IMG_H };
 
 	int quit = 0;
 	int redraw = 1;
@@ -1078,7 +1082,7 @@ int player_selection_window()
 		{
 			char *versus_img = player_vs_player == 1 ? P_VS_P : P_VS_C;
 			char *next_img = next_player == WHITE ? NEXT_WHITE : NEXT_BLACK;
-			char *images[PLAY_WIND_BUTTONS - 1] = { versus_img, next_img, FINISH }; /*-1 because cancel button isnt here*/
+			char *images[PLAY_WIND_BUTTONS] = { versus_img, next_img, FINISH, CANCEL_IMG }; /*-1 because cancel button isnt here*/
 			SDL_WM_SetCaption("Player Selection Settings", "Player Selection Settings");
 			w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
 			if (w == NULL) {
@@ -1112,13 +1116,7 @@ int player_selection_window()
 
 
 			/*draw buttons*/
-			draw_image(cancel, imgrect, CANCEL_IMG, w, 0);
-			if (should_terminate)
-			{
-				SDL_FreeSurface(w);
-				return 1;
-			}
-			paint_all_buttons(w, images, PLAY_WIND_BUTTONS - 1, top_button, imgrect);
+			paint_all_buttons(w, images, PLAY_WIND_BUTTONS, top_button, imgrect);
 			if (should_terminate)
 			{
 				SDL_FreeSurface(w);
@@ -1145,7 +1143,7 @@ int player_selection_window()
 				if (e.key.keysym.sym == SDLK_ESCAPE) quit = 1;
 				break;
 			case (SDL_MOUSEBUTTONUP) :
-				num_button = get_num_button_pressed(e.button.x, e.button.y, top_button, PLAY_WIND_BUTTONS - 1);
+				num_button = get_num_button_pressed(e.button.x, e.button.y, top_button, PLAY_WIND_BUTTONS);
 				if (num_button != -1)
 				{
 					switch (num_button){
@@ -1168,15 +1166,40 @@ int player_selection_window()
 						}
 						else
 						{
-							/*todo - print board init illegal*/
+							SDL_Rect illegal_place = { 0, 0, PLAY_IMG_W, (int)(PLAY_IMG_H * 1.7) };
+							SDL_Rect illegal = { buttons_x, (int)(buttons_y + PLAY_WIND_BUTTONS * (PLAY_IMG_H * 1.5)), illegal_place.w, illegal_place.h };
+							draw_image(illegal, illegal_place, ILLEGAL, w, 1);
+							if (should_terminate) {
+								SDL_FreeSurface(w);
+								return 1;
+							}
+							if (SDL_Flip(w) != 0) {
+								should_terminate = 1;
+								printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+								SDL_FreeSurface(w);
+								return 1;
+							}
+							SDL_Delay(1500);
+
+							/*clear back to black*/
+							if (SDL_FillRect(w, &illegal, 0) != 0) {
+								should_terminate = 1;
+								printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+								SDL_FreeSurface(w);
+								return 1;
+							}
+							if (SDL_Flip(w) != 0) {
+								should_terminate = 1;
+								printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+								SDL_FreeSurface(w);
+								return 1;
+							}
 						}
 						break;
+					case 3: /*cancel*/
+						SDL_FreeSurface(w);
+						return 2;
 					}
-				}
-				else if (is_in_rect(e.button.x, e.button.y, cancel))
-				{
-					SDL_FreeSurface(w);
-					return 2;
 				}
 				else if (is_in_rect(e.button.x, e.button.y, board_rect))
 				{ /*a press on the board. only matters if a piece was chosen*/
@@ -1258,7 +1281,6 @@ int ai_settings_window()
 	SDL_Rect imgrect = { 0, 0, PLAY_IMG_W, PLAY_IMG_H };
 
 	SDL_Rect top_button = { buttons_x, 50, PLAY_IMG_W, PLAY_IMG_H };
-	SDL_Rect cancel = { buttons_x, (int)(80 + PLAY_IMG_H * 4.5), PLAY_IMG_W, PLAY_IMG_H };
 
 	int quit = 0;
 	int redraw = 1;
@@ -1272,7 +1294,7 @@ int ai_settings_window()
 			strcpy(diff_img, DIFFICULTY);
 			diff_img[DIFF_GEN_OFFSET] = minimax_depth == -1 ? '0' : minimax_depth + '0';
 			char *user_img = user_color == WHITE ? USER_WHITE : USER_BLACK;
-			char *images[PLAY_WIND_BUTTONS - 1] = { diff_img, user_img, FINISH }; /*-1 because cancel button isnt here*/
+			char *images[AI_WIND_BUTTONS] = { diff_img, user_img, FINISH, CANCEL_IMG }; /*-1 because cancel button isnt here*/
 
 
 			SDL_WM_SetCaption("Player Selection Settings", "Player Selection Settings");
@@ -1291,13 +1313,7 @@ int ai_settings_window()
 			}
 
 			/*draw buttons*/
-			draw_image(cancel, imgrect, CANCEL_IMG, w, 0);
-			if (should_terminate)
-			{
-				SDL_FreeSurface(w);
-				return 1;
-			}
-			paint_all_buttons(w, images, PLAY_WIND_BUTTONS - 1, top_button, imgrect);
+			paint_all_buttons(w, images, AI_WIND_BUTTONS, top_button, imgrect);
 			if (should_terminate)
 			{
 				SDL_FreeSurface(w);
@@ -1325,7 +1341,7 @@ int ai_settings_window()
 				if (e.key.keysym.sym == SDLK_ESCAPE) quit = 1;
 				break;
 			case (SDL_MOUSEBUTTONUP) :
-				num_button = get_num_button_pressed(e.button.x, e.button.y, top_button, AI_WIND_BUTTONS - 1);
+				num_button = get_num_button_pressed(e.button.x, e.button.y, top_button, AI_WIND_BUTTONS);
 				if (num_button != -1)
 				{
 					switch (num_button){
@@ -1346,12 +1362,10 @@ int ai_settings_window()
 						SDL_FreeSurface(w);
 						quit = 1;
 						break;
+					case 3: /*cancel*/
+						SDL_FreeSurface(w);
+						return 2;
 					}
-				}
-				else if (is_in_rect(e.button.x, e.button.y, cancel))
-				{
-					SDL_FreeSurface(w);
-					return 2;
 				}
 			default:
 				break;

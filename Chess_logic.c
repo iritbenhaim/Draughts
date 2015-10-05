@@ -33,28 +33,65 @@ int is_legal_move(game_move move, char color)
 	return is_success;
 }
 
-/*returns 0 if the board is empty or if there are discs of only one color
-or if there are more than 20 discs of the same color
+/*returns 0 if one of the sides has no king or has more pieces of any king than the starting amount
 else returns 1*/
 int is_board_init_legal()
 {
-	/*TODO - check other cases*/
-	int black_king = 0; /*will be 1 when a black king was found*/
-	int white_king = 0;
+	int count_black_pieces[6] = { 0, 0, 0, 0, 0, 0 };
+	int count_white_pieces[6] = { 0, 0, 0, 0, 0, 0 };
+	int *current_count;
 	for (int i = 0; i < BOARD_SIZE; i++)
 	{
 		for (int j = 0; j < BOARD_SIZE; j++)
 		{
-			if (board[i][j].type == WHITE_K)
+			/*check witch board to inc*/
+			if (board[i][j].color == WHITE)
+				current_count = count_white_pieces;
+			else if (board[i][j].color == BLACK)
+				current_count = count_black_pieces;
+			else
+				continue;
+			/*check witch piece to inc*/
+			switch (board[i][j].type)
 			{
-				if (board[i][j].color == WHITE)
-					++white_king;
-				else
-					++black_king;
+			case WHITE_K:
+				current_count[0]++;
+				break;
+			case WHITE_Q:
+				current_count[1]++;
+				break;
+			case WHITE_R:
+				current_count[2]++;
+				break;
+			case WHITE_B:
+				current_count[3]++;
+				break;
+			case WHITE_N:
+				current_count[4]++;
+				break;
+			case WHITE_P:
+				current_count[5]++;
+				break;
 			}
 		}
 	}
-	return (white_king == 1 && black_king == 1);
+	int is_legal = 1;
+	current_count = count_black_pieces;
+	for (int i = 0; i < 2; ++i)
+	{
+		if (current_count[0] != 1 /*exacly one king*/
+			|| current_count[1] > 1 /*at most one queen*/
+			|| current_count[2] > 2 /*at most 2 rooks*/
+			|| current_count[3] > 2 /*at most 2 bishops*/
+			|| current_count[4] > 2 /*at most 2 knights*/
+			|| current_count[5] > 8) /*at most 8 pawns*/
+		{
+			is_legal = 0;
+			break;
+		}
+		current_count = count_white_pieces;
+	}
+	return is_legal;
 }
 
 /*if a player has won return its color

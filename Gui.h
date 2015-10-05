@@ -17,7 +17,7 @@
 #define NEW_GAME	"images\\new_game.bmp"
 #define EMPTY_IMG	"images\\empty.bmp"
 #define USED_IMG	"images\\used.bmp"
-#define CANCEL_IMG	"images\\cancel.bmp"
+#define CANCEL_IMG	"images\\cancel2.bmp"
 #define SYMBOLS		"images\\Chess_symbols.bmp"
 #define P_VS_C		"images\\vs_comp.bmp"
 #define P_VS_P		"images\\vs_player.bmp"
@@ -28,6 +28,10 @@
 #define FINISH		"images\\finish.bmp"
 #define DIFFICULTY	"images\\diff_0.bmp"
 #define DIFF_GEN_OFFSET	strlen("images\\diff_")
+#define CHECK		"images\\check.bmp"
+#define MATE		"images\\mate.bmp"
+#define END_TIE		"images\\tie.bmp"
+#define ILLEGAL		"images\\illegal_init.bmp"
 
 
 
