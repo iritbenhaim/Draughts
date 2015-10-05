@@ -19,7 +19,7 @@ void generate_rook_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile ti
 void get_direct_rook_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves, int col, int neg);
 void get_direct_bishop_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves, int lft, int up);
 int generate_direct_castling_move(linked_list* moves, board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile king, board_tile rook);
-void generate_promotion_moves(linked_list* moves, game_move* move);
+void generate_promotion_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* moves, game_move* move);
 
 /*general logic*/
 linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth);
