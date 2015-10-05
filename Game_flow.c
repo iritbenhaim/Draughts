@@ -246,6 +246,7 @@ int user_move(char* input, char player_color)
 			return 0;
 
 		do_move(board, move);
+		check = 0;
 		print_board(board);
 		if (check_game_end(player_color))
 			return -1;
@@ -353,6 +354,7 @@ int do_computer_move(char color)
 	if (s == INT_MIN)
 		return 1;
 	do_move(board, *chosen_move); /*perform chosen move*/
+	check = 0;
 	print_message("Computer: move "); 
 	print_single_move(*chosen_move); 
 	print_board(board); /*print updated board*/
@@ -922,7 +924,6 @@ char get_tool_type(char color, char type)
 	return toupper(type);
 }
 
-
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
 	{
 		int i, j;
@@ -964,7 +965,6 @@ int count_piece(color, type)
 	}
 	return counter;
 }
-
 
 /*return 1 if a and b are the same tile, else 0*/
 int tile_cmp(board_tile a, board_tile b)

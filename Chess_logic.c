@@ -370,7 +370,7 @@ linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color,
 
 /*returns a linked list containing all possible moves for a player
 cur_player_color - the color of the current player*/
-linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int check)
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int is_check)
 {
 	int i, j;
 	linked_list moves;
@@ -389,7 +389,7 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 			generate_piece_moves(board, board[i][j], &moves); /*get all moves for this piece*/
 		}
 	}
-	if (check)
+	if (is_check)
 		filter_moves_with_check(board, &moves, cur_player_color);
 	return moves;
 }
@@ -764,13 +764,16 @@ int player_in_tie(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 int player_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
 	board_tile king = find_king(board, color);
-	return (is_tile_in_check(board, king, color));
+	int in_check = is_tile_in_check(board, king, color);
+	if (in_check)
+		check = 1;
+	return in_check;
 }
 
 /*returns 1 if king in check and no moves are possible, otherwise returns 0*/
 int player_in_mate(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list moves = generate_moves(board, color, 0);
+	linked_list moves = generate_moves(board, color, 1);
 	if (player_in_check(board, color))
 		if (moves.len == 0)
 			return 1;
@@ -821,7 +824,7 @@ board_tile find_king(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 int is_tile_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color)
 {
 	linked_list enemy_moves;
-	int check = 0;
+	int is_check = 0;
 	/*generate all possible moves for other player*/
 	enemy_moves = generate_moves(board, flip_color(color), 0);
 	/*for each move check if end tile is tile in question*/
@@ -831,13 +834,13 @@ int is_tile_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, 
 		board_tile end = (*(game_move*)move->data).end;
 		if (end.char_indexer == tile.char_indexer && end.int_indexer == tile.int_indexer)
 		{
-			check = 1; /*current tile is in check*/
+			is_check = 1; /*current tile is in check*/
 			break;
 		}
 		move = move->next;
 	}
 	free_moves(enemy_moves);
-	return check;
+	return is_check;
 }
 
 /*this function checks if castling move is possible with given king and rook
