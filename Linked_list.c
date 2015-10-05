@@ -60,8 +60,11 @@ void list_remove(linked_list* list, void* data)
 	node* next = crnt->next;
 	if (crnt->data == data) /*case node deleted is first*/
 	{
-		list->first = crnt->next;
+		list->first = next;
 		free(crnt->data);
+		crnt = next;
+		next = crnt->next;
+		list->len = list->len - 1;
 		return;
 	}
 

@@ -783,7 +783,8 @@ void filter_moves_with_check(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_li
 	board_tile king;
 	node* move = moves->first;
 	game_move crnt;
-	for (int i = 0; i < moves->len; i++)
+	int len = moves->len;
+	for (int i = 0; i < len; i++)
 	{
 		crnt = *(game_move*)(move->data);
 		copy_board(board, copy);
