@@ -49,6 +49,7 @@
 #define WRONG_POSITION "Invalid position on the board\n"
 #define NO_PIECE "Setting this piece creates an invalid board\n"  
 #define WROND_BOARD_INITIALIZATION "Wrong board initialization\n"
+#define NOT_YOUR_PIECE "The specified position does not contain your	piece\n"
 
 #define ILLEGAL_COMMAND "Illegal command, please try again\n"
 #define ILLEGAL_MOVE "Illegal move\n"

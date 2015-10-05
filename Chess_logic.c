@@ -200,7 +200,6 @@ int up_direction(int start_c, int end_c, int is_white)
 	}
 }
 
-
 /*returns a score for the current board
   win -> 1000
   lose -> -1000

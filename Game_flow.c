@@ -15,9 +15,9 @@ char user_color; /*color of the user player*/
 int player_vs_player; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
 char next_player; /*the player who's turn is now*/
 int gui = 0; /*0 for command line. 1 for gui*/
-int tie;
-int mate;
-int check;
+int tie = 0;
+int mate = 0;
+int check = 0;
 
 int main(int argc, char* argv[])
 {
@@ -82,14 +82,14 @@ int main(int argc, char* argv[])
 				{
 					return -1; /*no resources were allocated yet*/
 				}
-				is_turn_end = user_move(input, user_color);
+				is_turn_end = user_move(input, next_player);
 				if (should_terminate)
 				{
 					free(input);
 					return -1;
 				}
 				if (is_turn_end == -1)
-				{
+				{ /*game ended*/
 					if (DEBUG)
 					{
 						getchar();
@@ -157,97 +157,189 @@ int read_user_input_line(char* input, int* input_size)
 	return 1;
 }
 
+/*input -  a string containing a game move.
+parses input into the move variable
+returns 0 on error, and 1 on success*/
+int get_move(char *input, game_move* move, char player_color)
+{
+	int i, j;
+	char* input_copy = strchr(input, '>') + 1;
+	if (0 == get_board_position(input, &i, &j))
+		return 0;
+	input = input_copy;
+	if (out_of_boarders(i, j))
+	{
+		print_message(WRONG_POSITION);
+		return 0;
+	}
+	move->start = board[i][j];
+
+
+	input = strchr(input, '<'); /*move to second board place in input*/
+	input_copy = strchr(input, '>') + 1;
+	if (0 == get_board_position(input, &i, &j))
+	return 0;
+	input = input_copy;
+	if (out_of_boarders(i, j))
+	{
+		print_message(WRONG_POSITION);
+		return 0;
+	}
+	move->end = board[i][j];
+
+	if (move->start.color != player_color || move->start.type == EMPTY)
+	{
+		print_message("The specified position does not contain your piece\n");
+		return 0;
+	}
+	while (input[0] == ' ')
+		++input;	
+
+	int is_promotion = promotion(move->start);
+	if (is_promotion && input[0] == '\0')
+	{ /*bad move*/
+		print_message(NOT_YOUR_PIECE);
+		return 0;
+	}
+	else if (is_promotion)
+	{
+		if (0 == cmp_input_command(input, "queen"))
+		{
+			move->promote = WHITE_Q;
+		}
+		else if (0 == cmp_input_command(input, "rook"))
+		{
+			move->promote = WHITE_R;
+		}
+		else if (0 == cmp_input_command(input, "bishop"))
+		{
+			move->promote = WHITE_B;
+		}
+		else if (0 == cmp_input_command(input, "knight"))
+		{
+			move->promote = WHITE_N;
+		}
+	}
+	/*else not promotion, but legal move. do nothing*/
+
+	int legal = is_legal_move(*move, player_color);
+	if (should_terminate)
+	{
+		return 0;
+	}
+	if (!legal)
+	{
+		print_message(ILLEGAL_MOVE);
+		return 0;
+	}
+	return 1;
+}
+
 /*gets user input, parses it, and run the command in it
 returns 1 if user turn ended. -1 if game ended. else returns 0*/
 int user_move(char* input, char player_color)
 {
 	if (0 == cmp_input_command(input, "move "))
 	{
-		int i, j;
 		game_move move;
-		char* input_copy = strchr(input, '>') + 1;
-		if (0 == get_board_position(input, &i, &j))
+		if (!get_move(input + strlen("move "), &move, player_color))
 			return 0;
-		input = input_copy;
-		if (out_of_boarders(i, j))
-		{
-			print_message(WRONG_POSITION);
-			return 0;
-		}
-		move.start = board[i][j];
 
-
-		input = strchr(input, '<'); /*move to second board place in input*/
-		input_copy = strchr(input, '>') + 1;
-		if (0 == get_board_position(input, &i, &j))
-			return 0;
-		input = input_copy;
-		if (out_of_boarders(i, j))
-		{
-			print_message(WRONG_POSITION);
-			return 0;
-		}
-		move.end = board[i][j];
-
-		if (move.start.color != player_color || move.start.type == EMPTY)
-		{
-			print_message(NO_PIECE);
-			return 0;
-		}
-		while (input[0] == ' ')
-			++input;
-		/*TODO - pawn promotion*/
-
-		int legal = is_legal_move(move, player_color);
-		if (should_terminate)
-		{
-			return -1;
-		}
-		if (legal)
-		{
-			do_move(board, move);
-			print_board(board);
-		}
-		else
-		{
-			print_message(ILLEGAL_MOVE);
-			return 0;
-		}
-
+		do_move(board, move);
+		print_board(board);
 		if (check_game_end(player_color))
-			return 1;
+			return -1;
 		if (player_in_check(board, flip_color(player_color)))
 		{
 			char* is_check = "Check!\n";
 			print_message(check);
 			check = 1;
 		}
+		return 1;
 	}
-	if (0 == cmp_input_command(input, "get_moves"))
+	else if (0 == cmp_input_command(input, "get_moves "))
 	{
-		print_moves(board, player_color);
+		int i, j;
+		get_board_position(input + strlen("get_moves "), &i, &j);
+		if (should_terminate)
+			return 1;
+		if (board[i][j].color != next_player || board[i][j].type == EMPTY)
+		{
+			print_message(NOT_YOUR_PIECE);
+		}
+
+		linked_list moves = new_list();
+		if (should_terminate)
+			return 1;
+		generate_piece_moves(board, board[i][j], &moves);
+		if (should_terminate)
+		{
+			free_moves(moves);
+			return 1;
+		}
+		filter_moves_with_check(board, &moves, next_player);
+		if (should_terminate)
+		{
+			free_moves(moves);
+			return 1;
+		}
+
+		free_moves(moves);
 		return 0;
 	}
-	if (0 == cmp_input_command(input, "save "))
+	else if (0 == cmp_input_command(input, "save "))
 	{
 		char *file_name = input + strlen("save ");
 
 		return save_config(file_name);
 	}
-	if (0 == cmp_input_command(input, "quit"))
+	else if (0 == cmp_input_command(input, "quit"))
 	{
 		should_terminate = 1;
 		return -1;
 	}
-	if (0 == cmp_input_command(input, "get best moves"))
+	else if (0 == cmp_input_command(input, "get best moves "))
 	{
-		//todo
+		char *difficulty = input + strlen("get best moves ");
+		int int_dif;
+		if (0 == cmp_input_command(difficulty, "best"))
+			int_dif = -1;
+		else
+		{
+			int_dif = atoi(difficulty);
+		}
+		print_best_moves(board, next_player, int_dif);
+		if (should_terminate)
+			return -1;
 	}
-	if (0 == cmp_input_command(input, "get score"))
+	else if (0 == cmp_input_command(input, "get score"))
 	{
-		//todo
+		char *difficulty = input + strlen("get best moves ");
+		int int_dif;
+		char *move_str;
+		if (0 == cmp_input_command(difficulty, "best"))
+		{
+			int_dif = -1;
+			move_str = difficulty + strlen("best");
+		}
+		else
+		{
+			difficulty[1] = '\0';
+			int_dif = atoi(difficulty);
+			move_str = difficulty + 2;
+		}
+		game_move move;
+		if (!get_move(move_str, &move, next_player) || should_terminate)
+			return 0;
+		int score = get_move_score(board, move, int_dif);
+		if (score != 0)
+			printf("%d\n", score);
+
 	}
-	print_message(ILLEGAL_COMMAND);
+	else
+	{
+		print_message(ILLEGAL_COMMAND);
+	}
 	return 0;
 }
 

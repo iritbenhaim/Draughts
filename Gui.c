@@ -31,9 +31,45 @@ int game_window()
 	int redraw = 1;/*when this is 1, will paint the screen from scratch*/
 	SDL_Surface *w = NULL;
 
+	char *end_game_img = NULL; /*img for "check" "mate" or "tie" pictures. if null, no pucture is there*/
+	SDL_Rect end_game = { SQUERE_S * 3, 0, GAME_IMG_W, GAME_IMG_H };
+	SDL_Rect end_game_place = { 0, 0, GAME_IMG_W, GAME_IMG_H };
 
 	while (!quit)
 	{
+		/*handle endgame*/
+		if (mate || check || tie || end_game_img != NULL)
+		{
+			if ((!mate && !check && !tie) || (strcmp(end_game_img, CHECK) && (mate || tie)))
+			{ /*no end_game anymore, or endgame moved from check to mate or tie. clear endgame rect*/
+				end_game_img = NULL;
+				if (SDL_FillRect(w, &end_game, 0) != 0) {
+					should_terminate = 1;
+					printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+					SDL_FreeSurface(w);
+					return 1;
+				}
+			}
+			if (mate)
+			{
+				end_game_img = MATE;
+			}
+			else if (tie)
+			{
+				end_game_img = END_TIE;
+			}
+			else if (check)
+			{
+				end_game_img = CHECK;
+			}
+
+			draw_image(end_game, end_game_place, end_game_img, w, 1);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+		}
 		if ((player_vs_player != 1 && (player_vs_player == 0 || next_player != user_color)))
 		{/*computer turn*/
 			SDL_Delay(300);

@@ -46,10 +46,12 @@ void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 void print_single_move(game_move move);
 void print_line();
 void print_tile(board_tile tile);
+void print_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth);
 int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
 
 /*game flow*/
+int get_move(char *input, game_move* move, char player_color);
 int check_game_end(char player_color);
 char *get_xml_game();
 void load_config(char *file_data);
