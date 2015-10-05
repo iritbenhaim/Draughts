@@ -33,6 +33,9 @@ extern char user_color; /*color of the user player*/
 extern int player_vs_player; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
 extern char next_player;
 extern int gui; /*0 for command line. 1 for gui*/
+extern int check; /*is 1 if game is in check*/
+extern int tie; /*is 1 if game in tie*/
+extern int mate; /*is 1 if game in mate*/
 
 /*memory*/
 void free_moves(linked_list list);

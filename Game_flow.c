@@ -15,6 +15,9 @@ char user_color; /*color of the user player*/
 int player_vs_player; /*1 - player vs player mode. 2 - player vs comp. 0 (for debug only) - comp vs comp*/
 char next_player; /*the player who's turn is now*/
 int gui = 0; /*0 for command line. 1 for gui*/
+int tie;
+int mate;
+int check;
 
 int main(int argc, char* argv[])
 {
@@ -211,7 +214,14 @@ int user_move(char* input, char player_color)
 			return 0;
 		}
 
-		return check_game_end(player_color);
+		if (check_game_end(player_color))
+			return 1;
+		if (player_in_check(board, flip_color(player_color)))
+		{
+			char* is_check = "Check!\n";
+			print_message(check);
+			check = 1;
+		}
 	}
 	if (0 == cmp_input_command(input, "get_moves"))
 	{
@@ -250,23 +260,22 @@ int do_computer_move(char color)
 	int s = run_minimax(board, &moves, minimax_depth, color, &chosen_move);
 	if (s == INT_MIN)
 		return 1;
-	do_move(board, *chosen_move);
-	print_message("Computer: move ");
-	print_single_move(*chosen_move);
-	print_board(board);
-	end_game = get_winner(board, flip_color(user_color));
-	if (should_terminate)
-	{
-		free(chosen_move);
-		free_moves(moves);
-		return -1;
-	}
+	do_move(board, *chosen_move); /*perform chosen move*/
+	print_message("Computer: move "); 
+	print_single_move(*chosen_move); 
+	print_board(board); /*print updated board*/
+	end_game = check_game_end(color); /*check for mate/tie*/
 	free(chosen_move);
 	free_moves(moves);
+	if (should_terminate)
+		return -1;
 	if (end_game != 0)
+		return 1; /*notifies game ended*/
+	if (player_in_check(board, flip_color(color)))
 	{
-		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
-		return 1;
+		char* is_check = "Check!\n";
+		print_message(check);
+		check = 1;
 	}
 	return 0;
 }
@@ -456,13 +465,21 @@ void concat(char *orig, size_t *orig_size, char *addition)
 /*returns 1 if game ended. otherwise returns 0*/
 int check_game_end(char player_color)
 {
-	int end_game = get_winner(board, flip_color(player_color)); /*check if there is a winner*/
+	char winner = get_winner(board, flip_color(player_color)); /*check if there is a winner*/
 	if (should_terminate)
 		return 0;
-	if (end_game != 0)
+	if (winner != 0)
 	{
-		char* winner = end_game == WHITE ? "White player wins!\n" : "Black player wins!\n";
-		print_message(winner);
+		char* winner_found = winner == WHITE ? "Mate! White player wins the game\n" : "Mate! Black player wins the game\n";
+		print_message(winner_found);
+		mate = 1;
+		return 1;
+	}
+	if (player_in_tie(board, player_color))
+	{
+		char* tie_found = "The game ends in a tie\n";
+		print_message(tie_found);
+		tie = 1;
 		return 1;
 	}
 	return 0;

@@ -322,6 +322,17 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 		/*mark all tiles possible for current move*/
 		linked_list l = new_list();
 		generate_piece_moves(board, board[selected_col][selected_row],&l);
+		if (should_terminate)
+		{
+			free_moves(l);
+			return 2;
+		}
+		filter_moves_with_check(board, &l, next_player);
+		if (should_terminate)
+		{
+			free_moves(l);
+			return 2;
+		}
 		node* n = l.first;
 		for (int i=0; i < l.len ; i++, n=n->next)
 		{

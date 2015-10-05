@@ -22,6 +22,7 @@ int is_legal_move(game_move move, char color)
 		return 0;
 	linked_list all_moves = new_list();
 	generate_piece_moves(board, move.start, &all_moves);
+	filter_moves_with_check(board, &all_moves, color);
 	/*linked_list all_moves = generate_moves(board, color);*/
 	if (should_terminate)
 	{
@@ -94,26 +95,15 @@ int is_board_init_legal()
 	return is_legal;
 }
 
-/*if a player has won return its color
-  if no one won yet return 0*/
+/*if a player has won return its color, if no one won yet return 0
+  a player wins if mate was reached*/
 char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list possible_moves;
-	int board_score = score(board, color);
-	if (board_score == 1000)
-		return color;	/*current player wins*/
-	if (board_score == -1000)
-		return flip_color(color);	/*other player wins*/
-	possible_moves = generate_moves(board, color, 1);
-	if (should_terminate)
-		return -1;
-	if (possible_moves.len == 0)
-	{
-		free_moves(possible_moves);
-		return flip_color(color);	/*current player has no moves - other player wins*/
-	}
-	free_moves(possible_moves);
-	return 0;
+	if (player_in_mate(board, color))
+		return flip_color(color); /*current player in mate, other player wins*/
+	if (player_in_mate(board, flip_color(color)))
+		return color; /*other player in mate, current player wins*/
+	return 0; /*no one won yet*/
 }
 
 /*gets a string containing <x,y> - a board position.
@@ -587,7 +577,7 @@ void generate_pawn_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile ti
 		
 		/*check if white pawn reached upper line or black pawn reached lower line*/
 		if (promotion(cur_move->start))
-			generate_promotion_moves(moves, cur_move);
+			generate_promotion_moves(board, moves, cur_move);
 
 		else
 			list_add(moves, cur_move);
@@ -622,9 +612,11 @@ void generate_promotion_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_l
 		cur_move->promote = types[i];
 		list_add(moves, cur_move);
 		if (should_terminate)
+		{
+			free(cur_move);
 			return;
+		}
 	}
-
 }
 
 /*queen moves combines possible moves for rook and bishop*/
