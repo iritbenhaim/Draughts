@@ -366,7 +366,7 @@ int do_computer_move(char color)
 	if (player_in_check(board, flip_color(color)))
 	{
 		char* is_check = "Check!\n";
-		print_message(check);
+		print_message(is_check);
 		check = 1;
 	}
 	return 0;

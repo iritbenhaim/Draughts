@@ -171,9 +171,15 @@ int game_window()
 								return 1;
 							}
 							/*mark end tile*/
-							paint_rect_edges(current_board_tiles_marked[0], w, SDL_MapRGB(w->format, 255, 0, 0));
+							paint_rect_edges(current_board_tiles_marked[1], w, SDL_MapRGB(w->format, 255, 0, 0));
 							if (should_terminate)
 							{
+								SDL_FreeSurface(w);
+								return 1;
+							}
+							if (SDL_Flip(w) != 0) {
+								should_terminate = 1;
+								printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
 								SDL_FreeSurface(w);
 								return 1;
 							}
@@ -1325,6 +1331,8 @@ void handle_board_setting_press(SDL_Event e, SDL_Surface *w, char piece, char co
 	int selected_col = get_tile_col(e.button.x);
 	int selected_row = get_tile_row(e.button.y);
 	board[selected_col][selected_row].type = piece;
+	if (piece == EMPTY)
+		color = EMPTY;
 	board[selected_col][selected_row].color = color;
 }
 

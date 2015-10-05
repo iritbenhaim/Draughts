@@ -352,19 +352,17 @@ int get_move_score(board_tile board[BOARD_SIZE][BOARD_SIZE], game_move move, int
 linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth)
 {
 	linked_list moves;
-	linked_list best_moves = new_list();
-	game_move* best;
+	game_move* best = NULL;
 	node* crnt;
 	int v = run_minimax(board, &moves, depth, color, &best); /*run minimax to find highest score*/
 	crnt = moves.first;
 	for (int i = 0; i < moves.len; i++, crnt = crnt->next)
 	{
-		if (((game_move*)(crnt->data))->score == v)	/*find all moves with v - highest score*/
-			list_add(&best_moves, (game_move*)(crnt->data));
+		if (((game_move*)(crnt->data))->score != v)	/*find all moves with v - highest score*/
+			list_remove(&moves, crnt->data);
 	}
-	free_moves(moves);
 	free(best);
-	return best_moves;
+	return moves;
 }
 
 /*returns a linked list containing all possible moves for a player
@@ -468,7 +466,8 @@ void generate_king_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile ti
 		{
 			if (out_of_boarders(tile.char_indexer + c, tile.int_indexer + r))
 				continue;
-			if (board[tile.char_indexer + c][tile.int_indexer + r].color == color)
+			if (board[tile.char_indexer + c][tile.int_indexer + r].type != EMPTY &&
+				board[tile.char_indexer + c][tile.int_indexer + r].color == color)
 				continue;
 			if (r == 0 && c == 0) /*stay in place - not a move*/
 				continue;
