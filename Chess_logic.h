@@ -8,16 +8,16 @@
 
 /*generate moves*/
 linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int check);
-void generate_piece_moves(board_tile tile, linked_list* moves);
+void generate_piece_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
 linked_list generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
-void generate_pawn_moves(board_tile tile, linked_list* moves);
-void generate_king_moves(board_tile tile, linked_list* moves);
-void generate_knight_moves(board_tile tile, linked_list* moves);
-void generate_queen_moves(board_tile tile, linked_list* moves);
-void generate_bishop_moves(board_tile tile, linked_list* moves);
-void generate_rook_moves(board_tile tile, linked_list* moves);
-void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg);
-void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int up);
+void generate_pawn_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
+void generate_king_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
+void generate_knight_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
+void generate_queen_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
+void generate_bishop_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
+void generate_rook_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
+void get_direct_rook_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves, int col, int neg);
+void get_direct_bishop_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves, int lft, int up);
 int generate_direct_castling_move(linked_list* moves, board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile king, board_tile rook);
 void generate_promotion_moves(linked_list* moves, game_move* move);
 
@@ -30,7 +30,8 @@ int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 int is_board_init_legal();
 int is_tile_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color);
 int player_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
-int player_in_mate(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
+int player_in_mate(board_tile board[BOARD_SIZE][BOARD_SIZE], char color); 
+int player_in_tie(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 
 /*do moves*/
 void do_move(board_tile m_board[][BOARD_SIZE], game_move move);

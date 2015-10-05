@@ -21,7 +21,7 @@ int is_legal_move(game_move move, char color)
 	if (move.start.color != color)
 		return 0;
 	linked_list all_moves = new_list();
-	generate_piece_moves(move.start, &all_moves);
+	generate_piece_moves(board, move.start, &all_moves);
 	/*linked_list all_moves = generate_moves(board, color);*/
 	if (should_terminate)
 	{
@@ -359,7 +359,7 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 			if (cur_player_color != board[i][j].color) /*other player piece*/
 				continue;
 			type = board[i][j].type;
-			generate_piece_moves(board[i][j], &moves); /*get all moves for this piece*/
+			generate_piece_moves(board, board[i][j], &moves); /*get all moves for this piece*/
 		}
 	}
 	if (check)
@@ -368,28 +368,28 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 }
 
 /*checks the type of a single piece and generates moves accordingly*/
-void generate_piece_moves(board_tile tile, linked_list* moves)
+void generate_piece_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves)
 {
 	char type = tile.type;
 	switch (type)
 	{
 	case WHITE_P:
-		generate_pawn_moves(tile, moves);
+		generate_pawn_moves(board, tile, moves);
 		break;
 	case WHITE_K:
-		generate_king_moves(tile, moves);
+		generate_king_moves(board, tile, moves);
 		break;
 	case WHITE_B:
-		generate_bishop_moves(tile, moves);
+		generate_bishop_moves(board, tile, moves);
 		break;
 	case WHITE_N:
-		generate_knight_moves(tile, moves);
+		generate_knight_moves(board, tile, moves);
 		break;
 	case WHITE_R:
-		generate_rook_moves(tile, moves);
+		generate_rook_moves(board, tile, moves);
 		break;
 	case WHITE_Q:
-		generate_queen_moves(tile, moves);
+		generate_queen_moves(board, tile, moves);
 		break;
 	}
 }
@@ -424,7 +424,7 @@ linked_list generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], ch
 }
 
 /*return legal moves for a king*/
-void generate_king_moves(board_tile tile, linked_list* moves)
+void generate_king_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves)
 {
 	char color = tile.color;
 	game_move* cur_move = malloc(sizeof(game_move));
@@ -469,7 +469,7 @@ void generate_king_moves(board_tile tile, linked_list* moves)
 }
 
 /*returns legal moves for a knight out of 8 possible*/
-void generate_knight_moves(board_tile tile, linked_list* moves)
+void generate_knight_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves)
 {
 	char color = tile.color;
 	int indxs[4] = { -2, -1, 1, 2 };
@@ -517,7 +517,7 @@ void generate_knight_moves(board_tile tile, linked_list* moves)
 }
 
 /*returns a single move forward or diagonally if capturing*/
-void generate_pawn_moves(board_tile tile, linked_list* moves)
+void generate_pawn_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves)
 {
 	char color = tile.color;
 	int r;
@@ -574,7 +574,7 @@ void generate_pawn_moves(board_tile tile, linked_list* moves)
 }
 
 /*adds all possible promotion moves when promotion is achieved*/
-void generate_promotion_moves(linked_list* moves, game_move* move)
+void generate_promotion_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* moves, game_move* move)
 {
 	char types[] = { WHITE_B, WHITE_N, WHITE_Q, WHITE_R };
 	for (int i = 0; i < 4; i++)
@@ -591,33 +591,33 @@ void generate_promotion_moves(linked_list* moves, game_move* move)
 }
 
 /*queen moves combines possible moves for rook and bishop*/
-void generate_queen_moves(board_tile tile, linked_list* moves)
+void generate_queen_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves)
 {
-	generate_rook_moves(tile, moves); /*possible queen moves as rook moves*/
-	generate_bishop_moves(tile, moves); /* possible queen moves as bishop moves*/
+	generate_rook_moves(board, tile, moves); /*possible queen moves as rook moves*/
+	generate_bishop_moves(board, tile, moves); /* possible queen moves as bishop moves*/
 }
 
 /*returns all legal bishop moves along the diagonals*/
-void generate_bishop_moves(board_tile tile, linked_list* moves)
+void generate_bishop_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves)
 {
-	get_direct_bishop_moves(tile, moves, 1, 1);
-	get_direct_bishop_moves(tile, moves, 1, 0);
-	get_direct_bishop_moves(tile, moves, 0, 1);
-	get_direct_bishop_moves(tile, moves, 0, 0);
+	get_direct_bishop_moves(board, tile, moves, 1, 1);
+	get_direct_bishop_moves(board, tile, moves, 1, 0);
+	get_direct_bishop_moves(board, tile, moves, 0, 1);
+	get_direct_bishop_moves(board, tile, moves, 0, 0);
 }
 
 /*return all legal rook moves along row and column*/
-void generate_rook_moves(board_tile tile, linked_list* moves)
+void generate_rook_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves)
 {
-	get_direct_rook_moves(tile, moves, 1, 1);
-	get_direct_rook_moves(tile, moves, 0, 1);
-	get_direct_rook_moves(tile, moves, 1, 0);
-	get_direct_rook_moves(tile, moves, 0, 0);
+	get_direct_rook_moves(board, tile, moves, 1, 1);
+	get_direct_rook_moves(board, tile, moves, 0, 1);
+	get_direct_rook_moves(board, tile, moves, 1, 0);
+	get_direct_rook_moves(board, tile, moves, 0, 0);
 }
 
 /*this function adds rook moves for a specific direction of four directions:
   up, down, left, right - reflected in col and neg variables*/
-void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg)
+void get_direct_rook_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves, int col, int neg)
 {
 	if (should_terminate)
 		return;
@@ -674,7 +674,7 @@ void get_direct_rook_moves(board_tile tile, linked_list* moves, int col, int neg
 
 /*this function adds bishop moves for a specific firection of four directions
   reflected in lft and up variables*/
-void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int up)
+void get_direct_bishop_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves, int lft, int up)
 {
 	if (should_terminate)
 		return;
@@ -721,6 +721,15 @@ void get_direct_bishop_moves(board_tile tile, linked_list* moves, int lft, int u
 	free(cur_move);
 }
 
+/*returns 1 if king not in check and no legal moves, otherwise 0*/
+int player_in_tie(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+{
+	linked_list moves = generate_moves(board, color, 0);
+	if ((moves.len == 0) && !player_in_check(board, color))
+		return 1;
+	return 0;
+}
+
 /*return 1 if king in check, otherwise 0*/
 int player_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
@@ -753,13 +762,10 @@ void filter_moves_with_check(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_li
 		king = find_king(copy, color);
 		if (king.type == EMPTY)
 			return;
-		
+		node* tmp = move; /*we might need to remove this node*/
+		move = move->next;
 		if (is_tile_in_check(copy, king, king.color)) /*check board after move*/
-		{
-			node* tmp = move; /*we want to remove this node*/
-			move = move->next;
 			list_remove(moves, tmp->data); /*remove move from possible moves*/
-		}
 		
 	}
 }

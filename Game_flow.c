@@ -245,13 +245,7 @@ int user_move(char* input, char player_color)
 int do_computer_move(char color)
 {
 	int end_game;
-	game_move* chosen_move = NULL;/* = malloc(sizeof(game_move));
-								  if (chosen_move == NULL)
-								  {
-								  should_terminate = 1;
-								  perror_message("malloc");
-								  return 1;
-								  }*/
+	game_move* chosen_move = NULL;
 	linked_list moves;
 	int s = run_minimax(board, &moves, minimax_depth, color, &chosen_move);
 	if (s == INT_MIN)
@@ -267,15 +261,13 @@ int do_computer_move(char color)
 		free_moves(moves);
 		return -1;
 	}
+	free(chosen_move);
+	free_moves(moves);
 	if (end_game != 0)
 	{
-		free(chosen_move);
-		free_moves(moves);
 		print_message(user_color == WHITE ? "Black player wins!\n" : "White player wins!\n");
 		return 1;
 	}
-	free(chosen_move);
-	free_moves(moves);
 	return 0;
 }
 
@@ -764,18 +756,11 @@ void print_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int 
 
 /*prints a single move in format "<x,y> to <i,j> x\n" */
 void print_single_move(game_move move)
-{/*
-	node crnt_node = *move.jumps.first;
-	board_tile tile;
+{
 	print_tile(move.start);
 	printf(" to ");
-	for (int i = 0; i < move.jumps.len; i++)
-	{
-		tile = *(board_tile*)crnt_node.data;
-		crnt_node = *crnt_node.next;
-		print_tile(tile);
-	}
-	printf("\n");*/
+	print_tile(move.end);
+	printf("\n");
 }
 
 void print_line(){
