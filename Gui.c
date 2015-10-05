@@ -42,10 +42,6 @@ int game_window()
 			SDL_Delay(300);
 			if (1 == do_computer_move(next_player))
 			{/*game ended*/
-				if (DEBUG)
-				{
-					getchar();
-				}
 			}
 			next_player = flip_color(next_player);
 			redraw = 1;
@@ -204,12 +200,12 @@ int game_window()
 						if (press_resault == 1)
 						{/*game ended*/
 							/*todo - handle end game*/
-							SDL_FreeSurface(w);
+							/*SDL_FreeSurface(w);
 							if (DEBUG)
 							{
 								getchar();
 							}
-							return 1;
+							return 1;*/
 						}
 						else if (press_resault == 0)
 						{

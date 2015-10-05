@@ -303,6 +303,9 @@ void init_game()
 	player_vs_player = 1;
 	user_color = WHITE;
 	next_player = WHITE;
+	check = 0;
+	mate = 0;
+	tie = 0;
 }
 
 /*returns 1 if a and b are the same move, else 0*/
