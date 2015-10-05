@@ -374,8 +374,6 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 {
 	int i, j;
 	linked_list moves;
-	char type;
-
 	moves = new_list();
 	if (should_terminate)
 		return moves;
@@ -385,7 +383,6 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 		{
 			if (cur_player_color != board[i][j].color) /*other player piece*/
 				continue;
-			type = board[i][j].type;
 			generate_piece_moves(board, board[i][j], &moves); /*get all moves for this piece*/
 		}
 	}
