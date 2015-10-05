@@ -33,8 +33,9 @@ int game_window()
 
 
 	while (!quit) {
-		if (!(player_vs_player == 1 || (player_vs_player == 0 && next_player == user_color)))
+		if (!(player_vs_player == 1 || (player_vs_player == 2 && next_player == user_color)))
 		{/*computer turn*/
+			SDL_Delay(1000);
 			if (1 == do_computer_move(next_player))
 			{/*game ended*/
 				if (DEBUG)
@@ -43,6 +44,7 @@ int game_window()
 				}
 			}
 			next_player = flip_color(next_player);
+			redraw = 1;
 		}
 		if (redraw)
 		{

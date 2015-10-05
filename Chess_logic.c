@@ -54,7 +54,7 @@ int is_board_init_legal()
 			}
 		}
 	}
-	return (white_king && black_king);
+	return (white_king == 1 && black_king == 1);
 }
 
 /*if a player has won return its color
