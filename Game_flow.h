@@ -16,6 +16,7 @@ struct board_tile
 	int int_indexer; /*row_num - second*/
 	char type; /*type of the piece in the tile. if no piece, EMPTY */
 	char color; /*color of the piece in the tile. if no piece, EMPTY*/
+	int moved; /*boolean variable marking that the original piece in this tile moved*/
 };
 
 /*represent a movement with the game piece on "start" tile*/
@@ -51,6 +52,7 @@ int read_user_input_line(char* input, int* input_size);
 int cmp_input_command(char* input, char* cmd);
 
 /*game flow*/
+int main_cmd();
 int get_move(char *input, game_move* move, char player_color);
 int check_game_end(char player_color);
 char *get_xml_game();

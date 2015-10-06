@@ -41,7 +41,7 @@ int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible
 		return score(board, color);
 	}
 
-	*possible = generate_moves(board, max ? color : flip_color(color), 1); /*all possible moves for current player*/
+	*possible = generate_moves(board, max ? color : flip_color(color), 1, 1); /*all possible moves for current player*/
 	if (should_terminate)
 		return -1;
 	node* crnt = possible->first;

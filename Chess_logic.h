@@ -7,9 +7,9 @@
 #include "Game_flow.h"
 
 /*generate moves*/
-linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int check);
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int is_check, int should_generate_king);
 void generate_piece_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
-linked_list generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
+void generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, linked_list* moves);
 void generate_pawn_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
 void generate_king_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
 void generate_knight_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
@@ -25,7 +25,7 @@ void generate_promotion_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_l
 linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth);
 int get_move_score(board_tile board[BOARD_SIZE][BOARD_SIZE], game_move move, int depth);
 void filter_moves_with_check(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* moves, char color);
-char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
+char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 int is_board_init_legal();
 int is_tile_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color);
@@ -47,6 +47,7 @@ int is_legal_move(game_move move, char color);
 int list_cmp(linked_list list1, linked_list list2);
 void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 void init_game();
+int init_turn(int is_first_turn);
 int promotion(board_tile tile);
 int move_cmp(game_move a, game_move b); 
 board_tile find_king(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);

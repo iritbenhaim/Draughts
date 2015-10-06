@@ -42,6 +42,13 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 	}
+	main_cmd();
+	return 0;
+}
+
+/*the main function of cmd game*/
+int main_cmd()
+{
 	init_game();
 	int input_size = 1024;
 	char* input = malloc(input_size);
@@ -67,10 +74,18 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 	}
-	
-	
+
 	while (check_game_end(WHITE) != -1)
 	{/*game play*/
+		if (1 == init_turn(0))
+		{/*game ended*/
+			if (DEBUG)
+			{
+				getchar();
+				break;
+			}
+
+		}
 		if (player_vs_player == 1 || (player_vs_player == 0 && next_player == user_color))
 		{/*user turn*/
 			int is_turn_end = 0;
@@ -111,14 +126,12 @@ int main(int argc, char* argv[])
 			}
 			break;
 		}
-		next_player = flip_color(next_player);
 	}
 	free(input);
 	if (DEBUG)
 	{
 		getchar();
 	}
-	return 0;
 }
 
 
@@ -189,7 +202,7 @@ int get_move(char *input, game_move* move, char player_color)
 
 	if (move->start.color != player_color || move->start.type == EMPTY)
 	{
-		print_message("The specified position does not contain your piece\n");
+		print_message(NOT_YOUR_PIECE);
 		return 0;
 	}
 	while (input[0] == ' ')
@@ -205,19 +218,19 @@ int get_move(char *input, game_move* move, char player_color)
 	{
 		if (0 == cmp_input_command(input, "queen"))
 		{
-			move->promote = WHITE_Q;
+			move->promote = QUEEN;
 		}
 		else if (0 == cmp_input_command(input, "rook"))
 		{
-			move->promote = WHITE_R;
+			move->promote = ROOK;
 		}
 		else if (0 == cmp_input_command(input, "bishop"))
 		{
-			move->promote = WHITE_B;
+			move->promote = BISHOP;
 		}
 		else if (0 == cmp_input_command(input, "knight"))
 		{
-			move->promote = WHITE_N;
+			move->promote = KNIGHT;
 		}
 	}
 	/*else not promotion, but legal move. do nothing*/
@@ -263,7 +276,7 @@ int user_move(char* input, char player_color)
 		int i, j;
 		get_board_position(input + strlen("get_moves "), &i, &j);
 		if (should_terminate)
-			return 1;
+			return -1;
 		if (board[i][j].color != next_player || board[i][j].type == EMPTY)
 		{
 			print_message(NOT_YOUR_PIECE);
@@ -271,18 +284,18 @@ int user_move(char* input, char player_color)
 
 		linked_list moves = new_list();
 		if (should_terminate)
-			return 1;
+			return -1;
 		generate_piece_moves(board, board[i][j], &moves);
 		if (should_terminate)
 		{
 			free_moves(moves);
-			return 1;
+			return -1;
 		}
 		filter_moves_with_check(board, &moves, next_player);
 		if (should_terminate)
 		{
 			free_moves(moves);
-			return 1;
+			return -1;
 		}
 
 		free_moves(moves);
@@ -337,6 +350,42 @@ int user_move(char* input, char player_color)
 			printf("%d\n", score);
 
 	}
+	else if (0 == cmp_input_command(input, "castle "))
+	{
+		int i, j;
+		if (0 == get_board_position(input + strlen("castle "), &i, &j))
+		{
+			return 0;
+		}
+		board_tile rook = board[i][j];
+		if (rook.color != player_color || rook.type == EMPTY)
+		{
+			print_message(NOT_YOUR_PIECE);
+			return 0;
+		}
+		if (rook.type != ROOK)
+		{
+			print_message(WRONG_ROOK_POSITION);
+			return 0;
+		}
+		int castle_line = player_color == WHITE ? 0 : 7;
+		if (board[4][castle_line].type != KING || (rook.char_indexer != 0 && rook.char_indexer != 7))
+		{
+			print_message(ILLEGAL_CALTLING_MOVE);
+			return 0;
+		}
+		int move_offset = rook.char_indexer == 0 ? -2 : 2; /*if left rook, will castle left. otherwise, right*/
+		game_move move;
+		move.start = board[4][castle_line];
+		move.end = board[4 + move_offset][castle_line];
+
+		if (!is_legal_move(move, player_color) || should_terminate)
+		{
+			print_message(ILLEGAL_CALTLING_MOVE);
+			return 0;
+		}
+		do_move(board, move);
+	}
 	else
 	{
 		print_message(ILLEGAL_COMMAND);
@@ -344,7 +393,7 @@ int user_move(char* input, char player_color)
 	return 0;
 }
 
-/*executes 1 computer turn. return 1 if game ended*/
+/*executes one computer turn. return 1 if game ended*/
 int do_computer_move(char color)
 {
 	int end_game;
@@ -358,7 +407,7 @@ int do_computer_move(char color)
 	print_message("Computer: move "); 
 	print_single_move(*chosen_move); 
 	print_board(board); /*print updated board*/
-	end_game = check_game_end(color); /*check for mate/tie*/
+	end_game = check_game_end(flip_color(color)); /*check for mate/tie*/
 	free(chosen_move);
 	free_moves(moves);
 	if (should_terminate)
@@ -529,7 +578,32 @@ char *get_xml_game()
 		}
 	}
 
-	concat(xml_data, &xml_buf_size, "\t</board>\n</game>");
+	concat(xml_data, &xml_buf_size, "\t</board>\n\t<general>");
+	if (should_terminate)
+	{
+		free(xml_data);
+		return NULL;
+	}
+	char castle[7];
+	castle[6] = '\0';
+	int col[3] = { CASTLE_KING_COL, CASTLE_LEFT_ROOK, CASTLE_RIGHT_ROOK };
+	int row[2] = { W_CASTLE_ROW, B_CASTLE_ROW };
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 2; j++)
+		{
+			castle[i + 3 * j] = board[col[i]][row[j]].moved ? '1' : '0';
+		}
+
+	}
+	concat(xml_data, &xml_buf_size, castle);
+	if (should_terminate)
+	{
+		free(xml_data);
+		return NULL;
+	}
+
+	concat(xml_data, &xml_buf_size, "</general>\n</game>");
 	if (should_terminate)
 	{
 		free(xml_data);
@@ -559,7 +633,7 @@ void concat(char *orig, size_t *orig_size, char *addition)
 /*returns 1 if game ended. otherwise returns 0*/
 int check_game_end(char player_color)
 {
-	char winner = get_winner(board, flip_color(player_color)); /*check if there is a winner*/
+	char winner = get_winner(board); /*check if there is a winner*/
 	if (should_terminate)
 		return 0;
 	if (winner != 0)
@@ -576,6 +650,7 @@ int check_game_end(char player_color)
 		tie = 1;
 		return 1;
 	}
+	check = player_in_check(board, player_color);
 	return 0;
 }
 
@@ -715,22 +790,22 @@ int settings(char* input)
 		while (input_copy[0] == ' ')
 			++input_copy;
 		if (0 == cmp_input_command(input_copy, "king"))
-			type = WHITE_K;
+			type = KING;
 		if (0 == cmp_input_command(input_copy, "queen"))
-			type = WHITE_Q;
+			type = QUEEN;
 		if (0 == cmp_input_command(input_copy, "rook"))
-			type = WHITE_R;
+			type = ROOK;
 		if (0 == cmp_input_command(input_copy, "knight"))
-			type = WHITE_N;
+			type = KNIGHT;
 		if (0 == cmp_input_command(input_copy, "bishop"))
-			type = WHITE_B;
+			type = BISHOP;
 		if (0 == cmp_input_command(input_copy, "pawn"))
-			type = WHITE_P;
+			type = PAWN;
 
 		int piece_num = count_piece(color, type);
-		if (( (type == WHITE_K || type == WHITE_Q) && piece_num >= 1) ||
-			(type == WHITE_P && piece_num >= 8) ||
-			( (type == WHITE_R || type == WHITE_N || type == WHITE_B) && piece_num >= 2))
+		if (( (type == KING || type == QUEEN) && piece_num >= 1) ||
+			(type == PAWN && piece_num >= 8) ||
+			( (type == ROOK || type == KNIGHT || type == BISHOP) && piece_num >= 2))
 		{
 			print_message(NO_PIECE);
 			return 0;
@@ -826,6 +901,20 @@ void load_config(char *file_name)
 		}
 	}
 
+	/*get casteling*/
+	cur_config = strstr(file_data, "<general>") + strlen("<general>");
+	int col[3] = { CASTLE_KING_COL, CASTLE_LEFT_ROOK, CASTLE_RIGHT_ROOK };
+	int row[2] = { W_CASTLE_ROW, B_CASTLE_ROW };
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 2; j++)
+		{
+			board[col[i]][row[j]].moved = cur_config[i + 3 * j] == '1' ? 1 : 0;
+		}
+
+	}
+
+
 	free(file_data);
 
 }
@@ -844,7 +933,7 @@ char get_color(char c)
 /*prints to the user all his legal moves*/
 void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list moves = generate_moves(board, color, 1);
+	linked_list moves = generate_moves(board, color, 1, 1);
 	node* crnt_move = moves.first;
 	for (int i = 0; i < moves.len; i++)
 	{

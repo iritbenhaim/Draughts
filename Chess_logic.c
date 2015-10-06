@@ -8,12 +8,6 @@
 #include "Game_flow.h"
 #include "Minimax.h"
 
-int L_B_ROOK_MOVE = 0;
-int R_B_ROOK_MOVE = 0;
-int L_W_ROOK_MOVE = 0;
-int R_W_ROOK_MOVE = 0;
-int B_KING_MOVE = 0;
-int W_KING_MOVE = 0;
 
 /*returns 1 if the move is legal for the player of color "color"*/
 int is_legal_move(game_move move, char color)
@@ -55,22 +49,22 @@ int is_board_init_legal()
 			/*check witch piece to inc*/
 			switch (board[i][j].type)
 			{
-			case WHITE_K:
+			case KING:
 				current_count[0]++;
 				break;
-			case WHITE_Q:
+			case QUEEN:
 				current_count[1]++;
 				break;
-			case WHITE_R:
+			case ROOK:
 				current_count[2]++;
 				break;
-			case WHITE_B:
+			case BISHOP:
 				current_count[3]++;
 				break;
-			case WHITE_N:
+			case KNIGHT:
 				current_count[4]++;
 				break;
-			case WHITE_P:
+			case PAWN:
 				current_count[5]++;
 				break;
 			}
@@ -97,12 +91,12 @@ int is_board_init_legal()
 
 /*if a player has won return its color, if no one won yet return 0
   a player wins if mate was reached*/
-char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE])
 {
-	if (player_in_mate(board, color))
-		return flip_color(color); /*current player in mate, other player wins*/
-	if (player_in_mate(board, flip_color(color)))
-		return color; /*other player in mate, current player wins*/
+	if (player_in_mate(board, WHITE))
+		return BLACK; /*current player in mate, other player wins*/
+	if (player_in_mate(board, BLACK))
+		return WHITE; /*other player in mate, current player wins*/
 	return 0; /*no one won yet*/
 }
 
@@ -145,6 +139,17 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 	m_board[move.end.char_indexer][move.end.int_indexer].type = type;
 	m_board[move.start.char_indexer][move.start.int_indexer].type = EMPTY;
 	m_board[move.start.char_indexer][move.start.int_indexer].color = EMPTY;
+	m_board[move.start.char_indexer][move.start.int_indexer].moved = 1;
+	if (move.start.type == KING && move.start.char_indexer == 4 && (move.end.char_indexer == 2 || move.end.char_indexer == 6))
+	{/*casteling*/
+		int row = move.start.int_indexer;
+		int start_col = move.end.char_indexer == 2 ? 0 : 7; /*check if left or right rook*/
+		int end_row = move.end.char_indexer == 2 ? 3 : 5;
+		m_board[end_row][row].color = color;
+		m_board[end_row][row].type = ROOK;
+		m_board[start_col][row].type = EMPTY;
+		m_board[start_col][row].color = EMPTY;
+	}
 	if (promotion(move.start))
 		m_board[move.end.char_indexer][move.end.int_indexer].type = move.promote;
 }
@@ -152,7 +157,7 @@ void do_move(board_tile m_board[][BOARD_SIZE], game_move move)
 /*return 1 if tile needs promotion, 0 otherwise*/
 int promotion(board_tile tile)
 {
-	if (tile.type != WHITE_P)
+	if (tile.type != PAWN)
 		return 0;
 	if (tile.int_indexer == BOARD_SIZE - 2 && tile.color == WHITE)
 		return 1;
@@ -219,15 +224,15 @@ int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 			col = board[i][j].color;
 			if (tile == EMPTY)
 				continue;
-			if (tile == WHITE_K)
+			if (tile == KING)
 				score = 400;
-			if (tile == WHITE_Q)
+			if (tile == QUEEN)
 				score = 9;
-			if ((tile == WHITE_N) || (tile == WHITE_B))
+			if ((tile == KNIGHT) || (tile == BISHOP))
 				score = 3;
-			if (tile == WHITE_R)
+			if (tile == ROOK)
 				score = 5;
-			if (tile == WHITE_P)
+			if (tile == PAWN)
 				score = 1;
 			if (col == WHITE)
 				white += score;
@@ -259,7 +264,7 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 	for (i = 0; i < BOARD_SIZE; i++){
 		for (j = 0; j < BOARD_SIZE; j++){
 			if (1 == j || 6 == j) {
-				board[i][j].type = WHITE_P;
+				board[i][j].type = PAWN;
 				board[i][j].color = j == 1 ? WHITE : BLACK;
 			}
 			else if (j == 0)
@@ -273,24 +278,25 @@ void init_board(board_tile board[BOARD_SIZE][BOARD_SIZE]){
 			}
 			board[i][j].char_indexer = i;
 			board[i][j].int_indexer = j;
+			board[i][j].moved = 0;
 		}
 	}
-	board[0][0].type = WHITE_R;
-	board[1][0].type = WHITE_N;
-	board[2][0].type = WHITE_B;
-	board[3][0].type = WHITE_Q;
-	board[4][0].type = WHITE_K;
-	board[5][0].type = WHITE_B;
-	board[6][0].type = WHITE_N;
-	board[7][0].type = WHITE_R;
-	board[0][BOARD_SIZE - 1].type = WHITE_R;
-	board[1][BOARD_SIZE - 1].type = WHITE_N;
-	board[2][BOARD_SIZE - 1].type = WHITE_B;
-	board[3][BOARD_SIZE - 1].type = WHITE_Q;
-	board[4][BOARD_SIZE - 1].type = WHITE_K;
-	board[5][BOARD_SIZE - 1].type = WHITE_B;
-	board[6][BOARD_SIZE - 1].type = WHITE_N;
-	board[7][BOARD_SIZE - 1].type = WHITE_R;
+	board[0][0].type = ROOK;
+	board[1][0].type = KNIGHT;
+	board[2][0].type = BISHOP;
+	board[3][0].type = QUEEN;
+	board[4][0].type = KING;
+	board[5][0].type = BISHOP;
+	board[6][0].type = KNIGHT;
+	board[7][0].type = ROOK;
+	board[0][BOARD_SIZE - 1].type = ROOK;
+	board[1][BOARD_SIZE - 1].type = KNIGHT;
+	board[2][BOARD_SIZE - 1].type = BISHOP;
+	board[3][BOARD_SIZE - 1].type = QUEEN;
+	board[4][BOARD_SIZE - 1].type = KING;
+	board[5][BOARD_SIZE - 1].type = BISHOP;
+	board[6][BOARD_SIZE - 1].type = KNIGHT;
+	board[7][BOARD_SIZE - 1].type = ROOK;
 
 }
 
@@ -306,6 +312,15 @@ void init_game()
 	check = 0;
 	mate = 0;
 	tie = 0;
+}
+
+/*initialize stuff that should be changed or checked on every move start.
+returns 1 if game ended. otherwise returns 0*/
+int init_turn(int is_first_turn)
+{
+	if (!is_first_turn)
+		next_player = flip_color(next_player);
+	return check_game_end(next_player);
 }
 
 /*returns 1 if a and b are the same move, else 0*/
@@ -369,12 +384,12 @@ linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color,
 }
 
 /*returns a linked list containing all possible moves for a player
-cur_player_color - the color of the current player*/
-linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int is_check)
+cur_player_color - the color of the current player
+should_generate_king - if 0, will not genrate kings moves*/
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int is_check, int should_generate_king)
 {
 	int i, j;
 	linked_list moves;
-	char type;
 
 	moves = new_list();
 	if (should_terminate)
@@ -385,7 +400,8 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 		{
 			if (cur_player_color != board[i][j].color) /*other player piece*/
 				continue;
-			type = board[i][j].type;
+			if (!should_generate_king && board[i][j].type == KING)
+				continue;
 			generate_piece_moves(board, board[i][j], &moves); /*get all moves for this piece*/
 		}
 	}
@@ -400,22 +416,22 @@ void generate_piece_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile t
 	char type = tile.type;
 	switch (type)
 	{
-	case WHITE_P:
+	case PAWN:
 		generate_pawn_moves(board, tile, moves);
 		break;
-	case WHITE_K:
+	case KING:
 		generate_king_moves(board, tile, moves);
 		break;
-	case WHITE_B:
+	case BISHOP:
 		generate_bishop_moves(board, tile, moves);
 		break;
-	case WHITE_N:
+	case KNIGHT:
 		generate_knight_moves(board, tile, moves);
 		break;
-	case WHITE_R:
+	case ROOK:
 		generate_rook_moves(board, tile, moves);
 		break;
-	case WHITE_Q:
+	case QUEEN:
 		generate_queen_moves(board, tile, moves);
 		break;
 	}
@@ -423,37 +439,34 @@ void generate_piece_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile t
 
 /*returns a list containing all possible rooks that can be used in a castling move for a player
 */
-linked_list generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+void generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, linked_list* moves)
 {
-	linked_list rooks;
-	rooks = new_list();
-	if (should_terminate)
-		return rooks;
 	if (color == WHITE)
 	{
-		if (W_KING_MOVE)
-			return rooks;
-		if (!L_W_ROOK_MOVE)
-			generate_direct_castling_move(&rooks, board, board[W_K_X][W_K_Y], board[W_L_R_X][W_L_R_Y]);
-		if (!R_W_ROOK_MOVE)
-			generate_direct_castling_move(&rooks, board, board[W_K_X][W_K_Y], board[W_R_R_X][W_R_R_Y]);
+		if (board[CASTLE_KING_COL][W_CASTLE_ROW].moved)
+			return;
+		if (!board[CASTLE_LEFT_ROOK][W_CASTLE_ROW].moved)
+			generate_direct_castling_move(moves, board, board[CASTLE_KING_COL][W_CASTLE_ROW], board[CASTLE_LEFT_ROOK][W_CASTLE_ROW]);
+		if (!board[CASTLE_RIGHT_ROOK][W_CASTLE_ROW].moved)
+			generate_direct_castling_move(moves, board, board[CASTLE_KING_COL][W_CASTLE_ROW], board[CASTLE_RIGHT_ROOK][W_CASTLE_ROW]);
 	}
 	if (color == BLACK)
 	{
-		if (B_KING_MOVE)
-			return rooks;
-		if (!L_B_ROOK_MOVE)
-			generate_direct_castling_move(&rooks, board, board[B_K_X][B_K_Y], board[B_L_R_X][B_L_R_Y]);
-		if (!R_B_ROOK_MOVE)
-			generate_direct_castling_move(&rooks, board, board[B_K_X][B_K_Y], board[B_R_R_X][B_R_R_Y]);
+		if (board[CASTLE_KING_COL][B_CASTLE_ROW].moved)
+			return;
+		if (!board[CASTLE_LEFT_ROOK][B_CASTLE_ROW].moved)
+			generate_direct_castling_move(moves, board, board[CASTLE_KING_COL][B_CASTLE_ROW], board[CASTLE_LEFT_ROOK][B_CASTLE_ROW]);
+		if (!board[CASTLE_RIGHT_ROOK][B_CASTLE_ROW].moved)
+			generate_direct_castling_move(moves, board, board[CASTLE_KING_COL][B_CASTLE_ROW], board[CASTLE_RIGHT_ROOK][B_CASTLE_ROW]);
 	}
-	return rooks;
 }
 
 /*return legal moves for a king*/
 void generate_king_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves)
 {
 	char color = tile.color;
+	generate_castling_moves(board, color, moves);
+
 	game_move* cur_move = malloc(sizeof(game_move));
 	if (cur_move == NULL)
 	{
@@ -604,7 +617,7 @@ void generate_pawn_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile ti
 /*adds all possible promotion moves when promotion is achieved*/
 void generate_promotion_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* moves, game_move* move)
 {
-	char types[] = { WHITE_B, WHITE_N, WHITE_Q, WHITE_R };
+	char types[] = { BISHOP, KNIGHT, QUEEN, ROOK };
 	for (int i = 0; i < 4; i++)
 	{
 		game_move* cur_move = copy_move(move);
@@ -754,7 +767,7 @@ void get_direct_bishop_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_til
 /*returns 1 if king not in check and no legal moves, otherwise 0*/
 int player_in_tie(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list moves = generate_moves(board, color, 0);
+	linked_list moves = generate_moves(board, color, 1, 1);
 	if ((moves.len == 0) && !player_in_check(board, color))
 		return 1;
 	return 0;
@@ -764,19 +777,15 @@ int player_in_tie(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 int player_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
 	board_tile king = find_king(board, color);
-	int in_check = is_tile_in_check(board, king, color);
-	if (in_check)
-		check = 1;
-	return in_check;
+	return is_tile_in_check(board, king, color);
 }
 
 /*returns 1 if king in check and no moves are possible, otherwise returns 0*/
 int player_in_mate(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list moves = generate_moves(board, color, 1);
-	if (player_in_check(board, color))
-		if (moves.len == 0)
-			return 1;
+	linked_list moves = generate_moves(board, color, 1, 1);
+	if (moves.len == 0 && player_in_check(board, color))
+		return 1;
 	return 0;
 }
 
@@ -791,6 +800,25 @@ void filter_moves_with_check(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_li
 	for (int i = 0; i < len; i++)
 	{
 		crnt = *(game_move*)(move->data);
+		if (crnt.start.type == KING && crnt.start.char_indexer == 4 && (crnt.end.char_indexer == 2 || crnt.end.char_indexer == 6))
+		{/*casteling move*/
+			if (is_tile_in_check(board, crnt.start, color)) /*check board before move*/
+			{
+				node* tmp = move; /*we might need to remove this node*/
+				move = move->next;
+				list_remove(moves, tmp->data); /*remove move from possible moves*/
+				continue;
+			}
+			/*check middle tile*/
+			board_tile middle = board[crnt.start.char_indexer + (crnt.end.char_indexer - crnt.start.char_indexer) / 2][crnt.start.int_indexer];
+			if (is_tile_in_check(board, middle, color)) /*check board before move*/
+			{
+				node* tmp = move; /*we might need to remove this node*/
+				move = move->next;
+				list_remove(moves, tmp->data); /*remove move from possible moves*/
+				continue;
+			}
+		}
 		copy_board(board, copy);
 		do_move(copy, crnt); /*do move on copy board*/
 		king = find_king(copy, color);
@@ -813,7 +841,7 @@ board_tile find_king(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	{
 		for (int j = 0; j < BOARD_SIZE; j++)
 		{
-			if ((board[i][j].color == color) && (board[i][j].type == WHITE_K))
+			if ((board[i][j].color == color) && (board[i][j].type == KING))
 				return board[i][j];
 		}
 	}
@@ -826,7 +854,7 @@ int is_tile_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, 
 	linked_list enemy_moves;
 	int is_check = 0;
 	/*generate all possible moves for other player*/
-	enemy_moves = generate_moves(board, flip_color(color), 0);
+	enemy_moves = generate_moves(board, flip_color(color), 0, 0);
 	/*for each move check if end tile is tile in question*/
 	node* move = enemy_moves.first;
 	for (int i = 0; i < enemy_moves.len; i++)
@@ -849,27 +877,36 @@ if possible, it attaches the rook tile to list of moves
 int generate_direct_castling_move(linked_list* moves, board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile king, board_tile rook)
 {
 	int k_start[] = { king.char_indexer, king.int_indexer };
-	if (is_tile_in_check(board, king, king.color))
+	/*if (is_tile_in_check(board, king, king.color))
+		return 1;*/ /*checked in filter moves*/
+	board_tile k_end;
+	if (king.type != KING || rook.type != ROOK)
 		return 1;
 	if (rook.char_indexer < king.char_indexer) /*left rook*/
 	{
-		board_tile k_end = board[king.char_indexer - 2][king.int_indexer]; /*end position for king*/
-		board_tile r_end = board[king.char_indexer - 1][king.int_indexer]; /*end position for rook*/
-		if (is_tile_in_check(board, k_end, king.color))
-			return 1;
-		if (is_tile_in_check(board, r_end, king.color))
+		k_end = board[king.char_indexer - 2][king.int_indexer]; /*end position for king*/
+		if (board[king.char_indexer - 1][king.int_indexer].type != EMPTY ||
+			board[king.char_indexer - 2][king.int_indexer].type != EMPTY ||
+			board[king.char_indexer - 3][king.int_indexer].type != EMPTY)
 			return 1;
 	}
 	else /*right rook*/
 	{
-		board_tile k_end = board[king.char_indexer + 2][king.int_indexer]; /*end position for king*/
-		board_tile r_end = board[king.char_indexer + 1][king.int_indexer]; /*end position for rook*/
-		if (is_tile_in_check(board,k_end, king.color))
-			return 1;
-		if (is_tile_in_check(board, r_end, king.color))
+		k_end = board[king.char_indexer + 2][king.int_indexer]; /*end position for king*/
+		if (board[king.char_indexer + 1][king.int_indexer].type != EMPTY ||
+			board[king.char_indexer + 2][king.int_indexer].type != EMPTY)
 			return 1;
 	}
-	list_add(moves, &rook); /*current rook and king can perform castling*/
+	game_move *move = malloc(sizeof(game_move));
+	if (move == NULL)
+	{
+		should_terminate = 1;
+		perror_message("malloc");
+		return 1;
+	}
+	move->start = king;
+	move->end = k_end;
+	list_add(moves, move); /*current rook and king can perform castling*/
 	return 0;
 }
 

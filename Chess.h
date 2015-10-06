@@ -10,28 +10,22 @@
 
 #include <stdio.h>
 
-#define WHITE	'w'
-#define WHITE_P 'm'
-#define WHITE_B 'b'
-#define WHITE_N 'n'
-#define WHITE_R 'r'
-#define WHITE_Q 'q'
-#define WHITE_K 'k'
-
 #define BLACK	'B'
+#define WHITE	'w'
 
-#define W_K_X 4
-#define W_K_Y 0
-#define W_L_R_X 0
-#define W_L_R_Y 0
-#define W_R_R_X 9
-#define W_R_R_Y 0
-#define B_K_X 4
-#define B_K_Y 9
-#define B_L_R_X 0
-#define B_L_R_Y 9
-#define B_R_R_X 9
-#define B_R_R_Y 9
+#define PAWN 'm'
+#define BISHOP 'b'
+#define KNIGHT 'n'
+#define ROOK 'r'
+#define QUEEN 'q'
+#define KING 'k'
+
+
+#define CASTLE_KING_COL		4
+#define CASTLE_LEFT_ROOK	0
+#define CASTLE_RIGHT_ROOK	7
+#define W_CASTLE_ROW		0
+#define B_CASTLE_ROW		7
 
 
 

@@ -31,12 +31,24 @@ int game_window()
 	int redraw = 1;/*when this is 1, will paint the screen from scratch*/
 	SDL_Surface *w = NULL;
 
+	w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	if (w == NULL) {
+		should_terminate = 1;
+		printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
+		return 1;
+	}
+
 	char *end_game_img = NULL; /*img for "check" "mate" or "tie" pictures. if null, no pucture is there*/
-	SDL_Rect end_game = { SQUERE_S * 3, 0, 150, 45 };
-	SDL_Rect end_game_place = { 0, 0, end_game.w, end_game.h };
 
 	while (!quit)
 	{
+		init_turn_gui(&end_game_img, w);
+		if (should_terminate)
+		{
+			SDL_FreeSurface(w);
+			return 1;
+
+		}
 		if ((player_vs_player != 1 && (player_vs_player == 0 || next_player != user_color)))
 		{/*computer turn*/
 			SDL_Delay(300);
@@ -110,6 +122,8 @@ int game_window()
 							quit = 1;
 							break;
 						case 1: /*save game*/
+							if (tie || mate)
+								break;
 							SDL_FreeSurface(w);
 							load_save_game_wind(1);
 							if (should_terminate)
@@ -119,6 +133,8 @@ int game_window()
 							redraw = 1;
 							break;
 						case 2: /*show moves*/
+							if (tie || mate)
+								break;
 							/*turn show_moves on\off*/
 							show_moves_on = !show_moves_on;
 
@@ -140,6 +156,8 @@ int game_window()
 							}
 							break;
 						case 3: /*best move*/
+							if (tie || mate)
+								break;
 							/*unmark all previously marked tiles on the board*/
 							for (int i = 0; i < num_tiles_marked; i++)
 							{
@@ -199,13 +217,6 @@ int game_window()
 						}
 						if (press_resault == 1)
 						{/*game ended*/
-							/*todo - handle end game*/
-							/*SDL_FreeSurface(w);
-							if (DEBUG)
-							{
-								getchar();
-							}
-							return 1;*/
 						}
 						else if (press_resault == 0)
 						{
@@ -218,51 +229,57 @@ int game_window()
 				}
 			}
 		}
-
-		/*handle endgame*/
-		if (mate || check || tie || end_game_img != NULL)
-		{
-			if ((!mate && !check && !tie) || ((end_game_img != NULL) && (strcmp(end_game_img, CHECK) && (mate || tie))))
-			{ /*no end_game anymore, or endgame moved from check to mate or tie. clear endgame rect*/
-				end_game_img = NULL;
-				if (SDL_FillRect(w, &end_game, 0) != 0) {
-					should_terminate = 1;
-					printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-					SDL_FreeSurface(w);
-					return 1;
-				}
-			}
-			if (mate)
-			{
-				end_game_img = MATE;
-			}
-			else if (tie)
-			{
-				end_game_img = END_TIE;
-			}
-			else if (check)
-			{
-				end_game_img = CHECK;
-			}
-			if (end_game_img != NULL)
-			{
-				draw_image(end_game, end_game_place, end_game_img, w, 1);
-				if (should_terminate)
-				{
-					SDL_FreeSurface(w);
-					return 1;
-				}
-			}
-			if (SDL_Flip(w) != 0) {
-				should_terminate = 1;
-				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
-				SDL_FreeSurface(w);
-				return 1;
-			}
-		}
 	}
 	SDL_FreeSurface(w);
 	return 0;
+}
+
+void init_turn_gui(char **pEnd_game_image, SDL_Surface *w)
+{
+	SDL_Rect end_game = { SQUERE_S * 3, 7, 120, 45 };
+	SDL_Rect end_game_place = { 0, 0, end_game.w, end_game.h };
+	/*handle endgame*/
+	if (mate || check || tie || *pEnd_game_image != NULL)
+	{
+		if ((!mate && !check && !tie) || ((*pEnd_game_image != NULL) && (strcmp(*pEnd_game_image, CHECK) && (mate || tie))))
+		{ /*no end_game anymore, or endgame moved from check to mate or tie. clear endgame rect*/
+			*pEnd_game_image = NULL;
+			if (SDL_FillRect(w, &end_game, 0) != 0)
+			{
+				should_terminate = 1;
+				printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+				return;
+			}
+		}
+		if (mate)
+		{
+			*pEnd_game_image = MATE;
+			end_game.w = 100;
+		}
+		else if (tie)
+		{
+			*pEnd_game_image = END_TIE;
+			end_game.w = 70;
+		}
+		else if (check)
+		{
+			*pEnd_game_image = CHECK;
+			end_game.w = 120;
+		}
+		if (*pEnd_game_image != NULL)
+		{
+			draw_image(end_game, end_game_place, *pEnd_game_image, w, 1);
+			if (should_terminate)
+			{
+				return;
+			}
+		}
+		if (SDL_Flip(w) != 0) {
+			should_terminate = 1;
+			printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+			return;
+		}
+	}
 }
 
 /*returns the number of button pressed (zero base) if no button was pressed, returns -1*/
@@ -316,7 +333,7 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 		game_move move;
 		move.start = board[get_tile_col(current_board_tiles_marked[0].x)][get_tile_row(current_board_tiles_marked[0].y)];
 		move.end = board[selected_col][selected_row];
-		move.promote = WHITE_Q; /*defult promotion to pass is_legal check*/
+		move.promote = QUEEN; /*defult promotion to pass is_legal check*/
 		int legal = is_legal_move(move, next_player);
 		if (should_terminate || !legal)
 		{
@@ -342,7 +359,7 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 			return 2;
 		}
 
-		return check_game_end(next_player);
+		return check_game_end(flip_color(next_player));
 	}
 
 	/*unmark all previously marked tiles on the board*/
@@ -475,36 +492,36 @@ char get_boarder_pieces_choice(int x, int y, int is_promotion, int is_top)
 		piece_place.x += SQUERE_S;
 		if (is_in_rect(x, y, piece_place))
 		{
-			out_piece = WHITE_K;
+			out_piece = KING;
 		}
 		piece_place.x += SQUERE_S;
 	}
 
 	if (is_in_rect(x, y, piece_place))
 	{
-		out_piece = WHITE_Q;
+		out_piece = QUEEN;
 	}
 	piece_place.x += SQUERE_S;
 	if (is_in_rect(x, y, piece_place))
 	{
-		out_piece = WHITE_R;
+		out_piece = ROOK;
 	}
 	piece_place.x += SQUERE_S;
 	if (is_in_rect(x, y, piece_place))
 	{
-		out_piece = WHITE_B;
+		out_piece = BISHOP;
 	}
 	piece_place.x += SQUERE_S;
 	if (is_in_rect(x, y, piece_place))
 	{
-		out_piece = WHITE_N;
+		out_piece = KNIGHT;
 	}
 	if (!is_promotion)
 	{
 		piece_place.x += SQUERE_S;
 		if (is_in_rect(x, y, piece_place))
 		{
-			out_piece = WHITE_P;
+			out_piece = PAWN;
 		}
 	}
 	return out_piece;
@@ -547,7 +564,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 	{
 		/*first tile is empty for putting empty tiles*/
 		piece_place.x += SQUERE_S;
-		tile.type = WHITE_K;
+		tile.type = KING;
 		SDL_Rect tool_rect;
 		get_tool_rect(tile, &tool_rect);
 		if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
@@ -560,7 +577,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 	}
 
 	/*paint the options for promotion*/
-	tile.type = WHITE_Q;
+	tile.type = QUEEN;
 	SDL_Rect tool_rect;
 	get_tool_rect(tile, &tool_rect);
 	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
@@ -570,7 +587,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 		return;
 	}
 	piece_place.x += SQUERE_S;
-	tile.type = WHITE_R;
+	tile.type = ROOK;
 	get_tool_rect(tile, &tool_rect);
 	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
 		should_terminate = 1;
@@ -579,7 +596,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 		return;
 	}
 	piece_place.x += SQUERE_S;
-	tile.type = WHITE_B;
+	tile.type = BISHOP;
 	get_tool_rect(tile, &tool_rect);
 	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
 		should_terminate = 1;
@@ -588,7 +605,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 		return;
 	}
 	piece_place.x += SQUERE_S;
-	tile.type = WHITE_N;
+	tile.type = KNIGHT;
 	get_tool_rect(tile, &tool_rect);
 	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
 		should_terminate = 1;
@@ -599,7 +616,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 	if (!is_promotion)
 	{
 		piece_place.x += SQUERE_S;
-		tile.type = WHITE_P;
+		tile.type = PAWN;
 		SDL_Rect tool_rect;
 		get_tool_rect(tile, &tool_rect);
 		if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
@@ -704,19 +721,19 @@ void get_tool_rect(board_tile tool, SDL_Rect *out_rect)
 	}
 	switch (tool.type)
 	{
-	case WHITE_Q:
+	case QUEEN:
 		rect_x += SQUERE_S;
 		break;
-	case WHITE_R:
+	case ROOK:
 		rect_x += SQUERE_S * 2;
 		break;
-	case WHITE_B:
+	case BISHOP:
 		rect_x += SQUERE_S * 3 + 3;
 		break;
-	case WHITE_N:
+	case KNIGHT:
 		rect_x += SQUERE_S * 4 + 7;
 		break;
-	case WHITE_P:
+	case PAWN:
 		rect_x += SQUERE_S * 5 + 10;
 		break;
 	}
@@ -1319,7 +1336,6 @@ int player_selection_window()
 	SDL_FreeSurface(w);
 	return 0;
 }
-
 
 /*handles an event of click in the chess board area of the setting window*/
 void handle_board_setting_press(SDL_Event e, SDL_Surface *w, char piece, char color)
