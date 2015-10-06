@@ -418,10 +418,12 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 			paint_rect_edges(current_board_tiles_marked[num_tiles_marked], w, SDL_MapRGB(w->format, 255, 0, 0));
 			if (should_terminate)
 			{
+				free_moves(l);
 				return 2;
 			}
 			num_tiles_marked++;
 		}
+		free_moves(l);
 	}
 
 	if (SDL_Flip(w) != 0) {
