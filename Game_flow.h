@@ -43,7 +43,7 @@ void free_moves(linked_list list);
 
 /*print and read functions*/
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
-void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color);
+int print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color);
 void print_single_move(game_move move);
 void print_line();
 void print_tile(board_tile tile);

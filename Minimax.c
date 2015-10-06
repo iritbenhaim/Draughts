@@ -18,15 +18,13 @@ int minimax_depth = 1;		/*levels considered in minimax tree. -1: means difficult
 /*wrapper function for the minimax algorithm which determines all default values and runs minimax*/
 int run_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible, int depth, char color)
 {
-	int a, b, top, max, minimax_depth;
+	int a, b, max;
 	a = INT_MIN;
 	b = INT_MAX;
 	max = 1;
 	if (depth == -1)
-		minimax_depth = calc_best_depth(board, color); /*calculate best possible depth*/
-	else
-		minimax_depth = depth;
-	return minimax_algo(board, possible, minimax_depth, max, a, b, color);
+		depth = calc_best_depth(board, color); /*calculate best possible depth*/
+	return minimax_algo(board, possible, depth, max, a, b, color);
 }
 
 /*running minimax algorithm with alpha-beta pruning*/
@@ -55,13 +53,14 @@ int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible
 		copy_board(board, copy);
 		do_move(copy, *(game_move*)(crnt->data));
 		linked_list next_level;
+		if (DEBUG)
+			print_board(copy);
 		tmp_v = minimax_algo(copy, &next_level, depth - 1, flip_max(max), a, b, color);
 		free_moves(next_level);
+		(*(game_move*)(crnt->data)).score = tmp_v; /*update node score*/
+		if (determine_v(v, tmp_v, max))	
+			v = tmp_v; /*change value if needed*/
 
-		if (determine_v(v, tmp_v, max))		/*change node value if needed*/
-			v = tmp_v;
-
-		((game_move*)(crnt->data))->score = v;
 		a = change_a(a, v, max);	/*update alpha - only for max node*/
 		b = change_b(b, v, max);	/*update beta - only for min node*/
 		if (prune(v, max, a, b))	/*prune sub-tree if possible*/
@@ -77,7 +76,7 @@ int is_leaf(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, char color)
 {
 	if (depth == 0)
 		return 1;
-	if (get_winner(board, color) != 0)
+	if (get_winner(board) != 0)
 		return 1;
 	if (player_in_tie(board, color))
 		return 1;

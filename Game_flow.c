@@ -386,17 +386,17 @@ int user_move(char* input, char player_color)
 int do_computer_move(char color)
 {
 	int end_game;
-	game_move* chosen_move = NULL;
+	game_move chosen_move;
 	linked_list moves = get_best_moves(board, color, minimax_depth);
 	if (should_terminate)
 		return -1;
-	do_move(board, choose_rand_move(moves)); /*perform chosen move*/
+	chosen_move = choose_rand_move(moves);
+	do_move(board, chosen_move); /*perform chosen move*/
 	check = 0;
 	print_message("Computer: move "); 
-	print_single_move(*chosen_move); 
+	print_single_move(chosen_move); 
 	print_board(board); /*print updated board*/
 	end_game = check_game_end(flip_color(color)); /*check for mate/tie*/
-	free(chosen_move);
 	free_moves(moves);
 	if (should_terminate)
 		return -1;
@@ -923,7 +923,7 @@ char get_color(char c)
 }
 
 /*prints to the user all legal moves for a specific piece*/
-void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color)
+int print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color)
 {
 	linked_list moves = new_list();
 	node* crnt_move;

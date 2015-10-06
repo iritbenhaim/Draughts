@@ -219,12 +219,12 @@ int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 	char win = get_winner(board);
 	if (win != 0)
 		return win == color ? 1000 : -1000;
-	if (player_in_tie(board, tie))
+	if (player_in_tie(board, color))
 		return 0;
-	if (player_in_check(board, WHITE))
+	/*if (player_in_check(board, WHITE))
 		black += 5;
 	if (player_in_check(board, BLACK))
-		white += 5;
+		white += 5;*/
 	for (int i = 0; i < BOARD_SIZE; i++)
 	{
 		for (int j = 0; j < BOARD_SIZE; j++)
@@ -378,13 +378,18 @@ int get_move_score(board_tile board[BOARD_SIZE][BOARD_SIZE], game_move move, int
 linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth)
 {
 	linked_list moves;
-	node* crnt;
+	int len;;
+	node *crnt, *next;
 	int v = run_minimax(board, &moves, depth, color); /*run minimax to find highest score*/
 	crnt = moves.first;
-	for (int i = 0; i < moves.len; i++, crnt = crnt->next)
+	next = (crnt->next);
+	len = moves.len;
+	for (int i = 0; i < len; i++)
 	{
 		if (((game_move*)(crnt->data))->score != v)	/*find all moves with v - highest score*/
 			list_remove(&moves, crnt->data);
+		crnt = next;
+		next = crnt->next;
 	}
 	return moves;
 }
