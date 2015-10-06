@@ -85,7 +85,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 void paint_all_buttons(SDL_Surface *w, char ** images, int img_count, SDL_Rect top_button, SDL_Rect imgrect);
 
 
-void init_turn_gui(char **pEnd_game_image, SDL_Surface *w);
+void init_turn_gui(char **pEnd_game_image, SDL_Surface *w, int is_first_turn);
 int get_num_button_pressed(int x, int y, SDL_Rect top_button, int button_count);
 void get_tool_rect(struct board_tile tool, SDL_Rect *out_rect);
 int is_in_rect(int x, int y, SDL_Rect rect);

@@ -39,10 +39,9 @@ int game_window()
 	}
 
 	char *end_game_img = NULL; /*img for "check" "mate" or "tie" pictures. if null, no pucture is there*/
-
+	init_turn_gui(&end_game_img, w, 1);
 	while (!quit)
 	{
-		init_turn_gui(&end_game_img, w);
 		if (should_terminate)
 		{
 			SDL_FreeSurface(w);
@@ -55,8 +54,8 @@ int game_window()
 			if (1 == do_computer_move(next_player))
 			{/*game ended*/
 			}
-			next_player = flip_color(next_player);
 			redraw = 1;
+			init_turn_gui(&end_game_img, w, 0);
 		}
 		else
 		{/*user turn*/
@@ -217,10 +216,11 @@ int game_window()
 						}
 						if (press_resault == 1)
 						{/*game ended*/
+							init_turn_gui(&end_game_img, w, 0);
 						}
 						else if (press_resault == 0)
-						{
-							next_player = flip_color(next_player);
+						{ /*turn ended*/
+							init_turn_gui(&end_game_img, w, 0);
 						}
 					}
 					break;
@@ -234,8 +234,9 @@ int game_window()
 	return 0;
 }
 
-void init_turn_gui(char **pEnd_game_image, SDL_Surface *w)
+void init_turn_gui(char **pEnd_game_image, SDL_Surface *w, int is_first_turn)
 {
+	init_turn(is_first_turn);
 	SDL_Rect end_game = { SQUERE_S * 3, 7, 120, 45 };
 	SDL_Rect end_game_place = { 0, 0, end_game.w, end_game.h };
 	/*handle endgame*/

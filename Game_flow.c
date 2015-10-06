@@ -76,9 +76,10 @@ int main_cmd()
 		}
 	}
 
-	while (check_game_end(WHITE) != -1)
+	int is_first_turn = 1;
+	while (1)
 	{/*game play*/
-		if (1 == init_turn(0))
+		if (1 == init_turn(is_first_turn))
 		{/*game ended*/
 			if (DEBUG)
 			{
@@ -87,13 +88,14 @@ int main_cmd()
 			}
 
 		}
+		is_first_turn = 0;
 		if (player_vs_player == 1 || (player_vs_player == 0 && next_player == user_color))
 		{/*user turn*/
 			int is_turn_end = 0;
-			char* text = next_player == WHITE ? "white player - enter your move:\n" : "black player - enter your move:\n";
-			printf(text);
 			while (!is_turn_end)
 			{
+				char* text = next_player == WHITE ? "White player - enter your move:\n" : "Black player - enter your move:\n";
+				print_message(text);
 				if (read_user_input_line(input, &input_size) == -1)
 				{
 					return -1; /*no resources were allocated yet*/
@@ -266,8 +268,7 @@ int user_move(char* input, char player_color)
 			return -1;
 		if (player_in_check(board, flip_color(player_color)))
 		{
-			char* is_check = "Check!\n";
-			print_message(check);
+			print_message("Check!\n");
 			check = 1;
 		}
 		return 1;
@@ -828,7 +829,6 @@ int settings(char* input)
 	}
 	else if (0 == cmp_input_command(input, "start")) /*start the game*/
 	{
-		/*TODO - when the game starts, if no legal moves, we should move to game end*/
 		if (!is_board_init_legal())
 		{
 			print_message(WROND_BOARD_INITIALIZATION);
@@ -903,16 +903,21 @@ void load_config(char *file_name)
 	}
 
 	/*get casteling*/
-	cur_config = strstr(file_data, "<general>") + strlen("<general>");
-	int col[3] = { CASTLE_KING_COL, CASTLE_LEFT_ROOK, CASTLE_RIGHT_ROOK };
-	int row[2] = { W_CASTLE_ROW, B_CASTLE_ROW };
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 2; j++)
-		{
-			board[col[i]][row[j]].moved = cur_config[i + 3 * j] == '1' ? 1 : 0;
-		}
+	cur_config = strstr(file_data, "<general>");
 
+	if (cur_config != NULL)
+	{
+		cur_config += strlen("<general>");
+		int col[3] = { CASTLE_KING_COL, CASTLE_LEFT_ROOK, CASTLE_RIGHT_ROOK };
+		int row[2] = { W_CASTLE_ROW, B_CASTLE_ROW };
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 2; j++)
+			{
+				board[col[i]][row[j]].moved = cur_config[i + 3 * j] == '1' ? 1 : 0;
+			}
+
+		}
 	}
 
 
@@ -966,7 +971,7 @@ void print_single_move(game_move move)
 
 void print_line(){
 	int i;
-	printf("  |");
+	printf(" |");
 	for (i = 1; i < BOARD_SIZE * 4; i++){
 		printf("-");
 	}
@@ -1020,7 +1025,7 @@ void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
 		print_line();
 		for (j = BOARD_SIZE - 1; j >= 0; j--)
 		{
-			printf((j < 9 ? " %d" : "%d"), j + 1);
+			printf((j < 9 ? "%d" : "%d"), j + 1);
 			for (i = 0; i < BOARD_SIZE; i++){
 				printf("| %c ", get_tool_type(board[i][j].color, board[i][j].type));
 
@@ -1028,7 +1033,7 @@ void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE])
 			printf("|\n");
 			print_line();
 		}
-		printf("   ");
+		printf("  ");
 		for (j = 0; j < BOARD_SIZE; j++){
 			printf(" %c  ", (char)('a' + j));
 		}
