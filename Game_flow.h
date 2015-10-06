@@ -65,7 +65,7 @@ int do_computer_move(char color);
 /*help functions*/
 void concat(char *orig, size_t *orig_size, char *addition);
 char flip_color(char color);
-int count_piece(color, type);
+int count_piece(char color, char type);
 char get_color(char c);
 int tile_cmp(board_tile a, board_tile b);
 int out_of_boarders(int first_indexer, int second_indexer);

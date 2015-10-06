@@ -21,6 +21,7 @@ int check = 0;
 
 int main(int argc, char* argv[])
 {
+	init_board(board);
 	if (argc > 2)
 	{
 		print_message("too many command argumants. usage: Chess.exe <gui_type>");
@@ -1041,7 +1042,7 @@ char flip_color(char color)
 }
 
 /*count the number of pieces of given type and color are on the board*/
-int count_piece(color, type)
+int count_piece(char color, char type)
 {
 	int counter = 0;
 	for (int i = 0; i < BOARD_SIZE; ++i)

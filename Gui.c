@@ -1044,7 +1044,6 @@ int main_window()
 						{
 							return 1;
 						}
-
 						redraw = 1;
 					}
 				}
@@ -1204,7 +1203,7 @@ int player_selection_window()
 				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
 				SDL_FreeSurface(w);
 				return 1;
-			}
+		}
 			redraw = 0;
 		}
 		int num_button;

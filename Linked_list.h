@@ -1,4 +1,3 @@
-
 #ifndef LINKED_LIST_
 #define LINKED_LIST_
 
@@ -24,6 +23,5 @@ void free_list(linked_list list);
 void list_add(linked_list* list, void* data);
 void list_remove(linked_list* list, void* data);
 linked_list new_list();
-
 
 #endif LINKED_LIST_

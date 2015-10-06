@@ -390,7 +390,6 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 {
 	int i, j;
 	linked_list moves;
-
 	moves = new_list();
 	if (should_terminate)
 		return moves;

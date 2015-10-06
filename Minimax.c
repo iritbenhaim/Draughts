@@ -18,12 +18,16 @@ int minimax_depth = 1;		/*levels considered in minimax tree. -1: means difficult
 /*wrapper function for the minimax algorithm which determines all default values and runs minimax*/
 int run_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible, int depth, char color, game_move** best)
 {
-	int a, b, top, max;
+	int a, b, top, max, minimax_depth;
 	a = INT_MIN;
 	b = INT_MAX;
 	top = 1;
 	max = 1;
-	return minimax_algo(board, possible, depth, max, a, b, best, color, top);
+	if (depth == -1)
+		minimax_depth = calc_best_depth(board, color); /*calculate best possible depth*/
+	else
+		minimax_depth = depth;
+	return minimax_algo(board, possible, minimax_depth, max, a, b, best, color, top);
 }
 
 /*running minimax algorithm with alpha-beta pruning*/
@@ -77,12 +81,14 @@ int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible
 
 
 /*checks if current node in minimax tree is a leaf - 
-if we reached minimax depth or some player won*/
+if we reached minimax depth or some player won or tied*/
 int is_leaf(board_tile board[BOARD_SIZE][BOARD_SIZE], int depth, char color)
 {
 	if (depth == 0)
 		return 1;
 	if (get_winner(board, color) != 0)
+		return 1;
+	if (player_in_tie(board, color))
 		return 1;
 	return 0;
 }
@@ -140,3 +146,54 @@ int prune(int v, int max, int a, int b)
 		return a < v ? 0 : 1;
 }
 
+/*returns the best depth while boards don't exceed 1000000*/
+int calc_best_depth(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+{
+	int my_moves = 0;
+	int other_moves = 0;
+	int sum_moves;
+	int depth = 0;
+	for (int i = 0; i < BOARD_SIZE; i++)
+	{
+		for (int j = 0; j < BOARD_SIZE; j++)
+		{
+			if (board[i][j].color == color)
+				my_moves += calc_piece_moves(board[i][j]); /*current player piece*/
+			if (board[i][j].color == flip_color(color))
+				other_moves += calc_piece_moves(board[i][j]); /*other player piece*/
+
+		}
+	}
+	sum_moves = my_moves;
+	while (sum_moves < 1000000) /*check no. of boards don't exceed 1000000*/
+	{
+		if (depth % 2 == 0)
+			sum_moves *= other_moves;
+		else
+			sum_moves *= my_moves;
+		depth += 1;
+	}
+	return depth;
+}
+
+/*return max no. of moves for piece*/
+int calc_piece_moves(board_tile tile)
+{
+	switch (tile.type)
+	{
+	case KING:
+		return 8;
+	case QUEEN:
+		return 13 + 14;
+	case ROOK:
+		return 14;
+	case BISHOP:
+		return 13;
+	case KNIGHT:
+		return 8;
+	case PAWN:
+		return 3;
+	default:
+		return 0;
+	}
+}
