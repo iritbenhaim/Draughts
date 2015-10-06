@@ -39,66 +39,79 @@ int game_window()
 
 	char *end_game_img = NULL; /*img for "check" "mate" or "tie" pictures. if null, no pucture is there*/
 	init_turn_gui(&end_game_img, w, 1);
+	if (should_terminate)
+	{
+		SDL_FreeSurface(w);
+		return 1;
+	}
 	while (!quit)
 	{
-		if (should_terminate)
+		if (redraw)
 		{
-			SDL_FreeSurface(w);
-			return 1;
+			SDL_WM_SetCaption("Game Play", "Game Play");
+			w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
+			if (w == NULL) {
+				should_terminate = 1;
+				printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
+				return 1;
+			}
+			/* Clear window to BLACK*/
+			if (SDL_FillRect(w, 0, 0) != 0) {
+				should_terminate = 1;
+				printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
+				SDL_FreeSurface(w);
+				return 1;
+			}
 
+			/*draw initial board*/
+			draw_current_board(w);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			/*draw buttons*/
+			paint_all_buttons(w, images, GAME_WIND_BUTTONS, top_button, imgrect);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
+
+			/* We finished drawing */
+			if (SDL_Flip(w) != 0) {
+				should_terminate = 1;
+				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+				SDL_FreeSurface(w);
+				return 1;
+			}
+			redraw = 0;
 		}
-		if ((player_vs_player != 1 && (player_vs_player == 0 || next_player != user_color)))
+
+
+		if (!mate && !tie && (player_vs_player != 1 && (player_vs_player == 0 || next_player != user_color)))
 		{/*computer turn*/
 			SDL_Delay(300);
 			if (1 == do_computer_move(next_player))
 			{/*game ended*/
 			}
-			redraw = 1;
+			draw_current_board(w);
+			if (should_terminate)
+			{
+				SDL_FreeSurface(w);
+				return 1;
+			}
 			init_turn_gui(&end_game_img, w, 0);
+			/* We finished drawing */
+			if (SDL_Flip(w) != 0) {
+				should_terminate = 1;
+				printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
+				SDL_FreeSurface(w);
+				return 1;
+			}
 		}
 		else
 		{/*user turn*/
-			if (redraw)
-			{
-				SDL_WM_SetCaption("Game Play", "Game Play");
-				w = SDL_SetVideoMode(GAME_WIN_W, GAME_WIN_H, 0, SDL_HWSURFACE | SDL_DOUBLEBUF);
-				if (w == NULL) {
-					should_terminate = 1;
-					printf("ERROR: failed to set video mode: %s\n", SDL_GetError());
-					return 1;
-				}
-				/* Clear window to BLACK*/
-				if (SDL_FillRect(w, 0, 0) != 0) {
-					should_terminate = 1;
-					printf("ERROR: failed to draw rect: %s\n", SDL_GetError());
-					SDL_FreeSurface(w);
-					return 1;
-				}
-
-				/*draw initial board*/
-				draw_current_board(w);
-				if (should_terminate)
-				{
-					SDL_FreeSurface(w);
-					return 1;
-				}
-				/*draw buttons*/
-				paint_all_buttons(w, images, GAME_WIND_BUTTONS, top_button, imgrect);
-				if (should_terminate)
-				{
-					SDL_FreeSurface(w);
-					return 1;
-				}
-
-				/* We finished drawing */
-				if (SDL_Flip(w) != 0) {
-					should_terminate = 1;
-					printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
-					SDL_FreeSurface(w);
-					return 1;
-				}
-				redraw = 0;
-			}
 
 			int button_num;
 			/* Poll for keyboard & mouse events*/
@@ -358,8 +371,8 @@ int handle_board_press(SDL_Event e,SDL_Surface *w)
 			printf("ERROR: failed to flip buffer: %s\n", SDL_GetError());
 			return 2;
 		}
-
-		return check_game_end(flip_color(next_player));
+		char end = check_game_end(flip_color(next_player));
+		return !(end == EMPTY || end == 'C');
 	}
 
 	/*unmark all previously marked tiles on the board*/
@@ -956,6 +969,7 @@ int main_window()
 				SDL_FreeSurface(w);
 				return 1;
 			}
+			
 
 			/*draw buttons*/
 			paint_all_buttons(w, images, MAIN_WIND_BUTTONS, top_button, imgrect);

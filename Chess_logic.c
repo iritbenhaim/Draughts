@@ -17,7 +17,6 @@ int is_legal_move(game_move move, char color)
 	linked_list all_moves = new_list();
 	generate_piece_moves(board, move.start, &all_moves);
 	filter_moves_with_check(board, &all_moves, color);
-	/*linked_list all_moves = generate_moves(board, color);*/
 	if (should_terminate)
 	{
 		return 0;
@@ -312,7 +311,8 @@ int init_turn(int is_first_turn)
 {
 	if (!is_first_turn)
 		next_player = flip_color(next_player);
-	return check_game_end(next_player);
+	char end = check_game_end(next_player);
+	return !(end == EMPTY || end == 'C');
 }
 
 /*returns 1 if a and b are the same move, else 0*/
@@ -347,13 +347,15 @@ int find_move(linked_list possible_moves, game_move* move)
 }
 
 /*this function finds the score for the move and returns it, 
-  if its not a legal move it returns 0*/
-int get_move_score(board_tile board[BOARD_SIZE][BOARD_SIZE], game_move move, int depth)
+  if its not a legal move it returns 0
+  out_is_legal - will be 0 if move was illegal*/
+int get_move_score(board_tile board[BOARD_SIZE][BOARD_SIZE], game_move move, int depth, int *out_is_legal)
 {
 	linked_list moves;
+	*out_is_legal = 1;
 	run_minimax(board, &moves, depth, move.start.color); /*run minimax to find score for moves*/
 	if (!find_move(moves, &move))
-		return 0; /*move not legal*/
+		*out_is_legal = 0; /*move not legal*/
 	return move.score; /*updated score*/
 }
 
@@ -380,7 +382,7 @@ linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color,
 /*returns a linked list containing all possible moves for a player
 cur_player_color - the color of the current player
 should_generate_king - if 0, will not genrate kings moves*/
-linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int is_check, int should_generate_king)
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int is_check)
 {
 	int i, j;
 	linked_list moves;
@@ -393,8 +395,8 @@ linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_pl
 		{
 			if (cur_player_color != board[i][j].color) /*other player piece*/
 				continue;
-			if (!should_generate_king && board[i][j].type == KING)
-				continue;
+			/*if (!should_generate_king && board[i][j].type == KING)
+				continue;*/
 			generate_piece_moves(board, board[i][j], &moves); /*get all moves for this piece*/
 		}
 	}
@@ -760,7 +762,7 @@ void get_direct_bishop_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_til
 /*returns 1 if king not in check and no legal moves, otherwise 0*/
 int player_in_tie(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list moves = generate_moves(board, color, 1, 1);
+	linked_list moves = generate_moves(board, color, 1);
 	if ((moves.len == 0) && !player_in_check(board, color))
 		return 1;
 	return 0;
@@ -776,7 +778,7 @@ int player_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 /*returns 1 if king in check and no moves are possible, otherwise returns 0*/
 int player_in_mate(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
 {
-	linked_list moves = generate_moves(board, color, 1, 1);
+	linked_list moves = generate_moves(board, color, 1);
 	if (moves.len == 0 && player_in_check(board, color))
 		return 1;
 	return 0;
@@ -847,7 +849,7 @@ int is_tile_in_check(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, 
 	linked_list enemy_moves;
 	int is_check = 0;
 	/*generate all possible moves for other player*/
-	enemy_moves = generate_moves(board, flip_color(color), 0, 0);
+	enemy_moves = generate_moves(board, flip_color(color), 0);
 	/*for each move check if end tile is tile in question*/
 	node* move = enemy_moves.first;
 	for (int i = 0; i < enemy_moves.len; i++)

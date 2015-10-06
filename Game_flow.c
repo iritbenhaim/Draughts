@@ -30,9 +30,9 @@ int main(int argc, char* argv[])
 		print_message("too many command argumants. usage: Chess.exe <gui_type>");
 		return -1;
 	}
-	else if (argc == 2 || (DEBUG && DEBUG_GUI))
+	else if (argc == 2 || (DEBUG_GUI))
 	{
-		if ((DEBUG && DEBUG_GUI) || strcmp(argv[1], "gui") == 0)
+		if (( DEBUG_GUI) || strcmp(argv[1], "gui") == 0)
 		{
 			SDL_Init(SDL_INIT_VIDEO);
 			gui = 1;
@@ -263,11 +263,12 @@ int user_move(char* input, char player_color)
 		game_move move;
 		if (!get_move(input + strlen("move "), &move, player_color)) /*get move from user*/
 			return 0; /*error on get_move*/
-
+		if (should_terminate)
+			return -1;
 		do_move(board, move); /*do legal move*/
 		check = 0;
 		print_board(board);
-		if (check_game_end(player_color)) /*check if mate or tie*/
+		if (print_game_end(player_color)) /*check if mate or tie*/
 			return -1;
 		if (player_in_check(board, flip_color(player_color)))
 		{
@@ -337,8 +338,9 @@ int user_move(char* input, char player_color)
 		game_move move;
 		if (!get_move(move_str, &move, next_player) || should_terminate)
 			return 0;
-		int score = get_move_score(board, move, int_dif);
-		if (score != 0)
+		int score_legal;
+		int score = get_move_score(board, move, int_dif, &score_legal);
+		if (score_legal)
 			printf("%d\n", score);
 
 	}
@@ -377,6 +379,17 @@ int user_move(char* input, char player_color)
 			return 0;
 		}
 		do_move(board, move);
+
+		check = 0;
+		print_board(board);
+		if (print_game_end(player_color)) /*check if mate or tie*/
+			return -1;
+		if (player_in_check(board, flip_color(player_color)))
+		{
+			print_message("Check!\n");
+			check = 1;
+		}
+		return 1;
 	}
 	else
 	{
@@ -399,7 +412,7 @@ int do_computer_move(char color)
 	print_message("Computer: move "); 
 	print_single_move(chosen_move); 
 	print_board(board); /*print updated board*/
-	end_game = check_game_end(flip_color(color)); /*check for mate/tie*/
+	end_game = print_game_end(flip_color(color)); /*check for mate/tie*/
 	free_moves(moves);
 	if (should_terminate)
 		return -1;
@@ -622,27 +635,45 @@ void concat(char *orig, int *orig_size, char *addition)
 }
 
 /*returns 1 if game ended. otherwise returns 0*/
-int check_game_end(char player_color)
+int print_game_end(char player_color)
+{
+	char resault = check_game_end(player_color);
+	if (should_terminate)
+		return 0;
+	if (resault == WHITE || resault == BLACK)
+	{
+		char* winner_found = resault == WHITE ? "Mate! White player wins the game\n" : "Mate! Black player wins the game\n";
+		print_message(winner_found);
+		return 1;
+	}
+	else if (resault == 'T')
+	{
+		char* tie_found = "The game ends in a tie\n";
+		print_message(tie_found);
+		return 1;
+	}
+	return 0;
+}
+
+/*returns EMPTY if game didnt end. if check returns 'C',
+if tie returns 'T', if mate returns the winner color*/
+char check_game_end(char player_color)
 {
 	char winner = get_winner(board); /*check if there is a winner*/
 	if (should_terminate)
 		return 0;
 	if (winner != 0)
 	{
-		char* winner_found = winner == WHITE ? "Mate! White player wins the game\n" : "Mate! Black player wins the game\n";
-		print_message(winner_found);
 		mate = 1;
-		return 1;
+		return winner;
 	}
 	if (player_in_tie(board, player_color))
 	{
-		char* tie_found = "The game ends in a tie\n";
-		print_message(tie_found);
 		tie = 1;
-		return 1;
+		return 'T';
 	}
 	check = player_in_check(board, player_color);
-	return 0;
+	return check ? 'C' : EMPTY;
 }
 
 /*return 0 if input starts with*/

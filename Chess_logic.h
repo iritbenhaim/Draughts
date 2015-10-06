@@ -7,7 +7,7 @@
 #include "Game_flow.h"
 
 /*generate moves*/
-linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int is_check, int should_generate_king);
+linked_list generate_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char cur_player_color, int is_check);
 void generate_piece_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
 void generate_castling_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, linked_list* moves);
 void generate_pawn_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, linked_list* moves);
@@ -23,7 +23,7 @@ void generate_promotion_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_l
 
 /*general logic*/
 linked_list get_best_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color, int depth);
-int get_move_score(board_tile board[BOARD_SIZE][BOARD_SIZE], game_move move, int depth);
+int get_move_score(board_tile board[BOARD_SIZE][BOARD_SIZE], game_move move, int depth, int *out_is_legal);
 void filter_moves_with_check(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* moves, char color);
 char get_winner(board_tile board[BOARD_SIZE][BOARD_SIZE]);
 int score(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
