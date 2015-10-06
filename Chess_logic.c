@@ -108,7 +108,7 @@ int get_board_position(char* input, int* i, int* j)
 	int temp;
 	int start = strchr(input, '<') - input;
 	int end = strchr(input, ',') - input;
-	if (end - start != 2 || input[start + 1] < 'a' || input[start + 1] > 'a' + BOARD_SIZE)
+	if (end - start != 2 || input[start + 1] < 'a' || input[start + 1] >= 'a' + BOARD_SIZE)
 	{
 		print_message(WRONG_POSITION);
 		return 0;

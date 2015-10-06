@@ -56,7 +56,7 @@ int main_cmd();
 int get_move(char *input, game_move* move, char player_color);
 int check_game_end(char player_color);
 char *get_xml_game();
-void load_config(char *file_data);
+int load_config(char *file_data);
 int save_config(char * config_file_name);
 int user_move(char* input, char player_color);
 int settings(char* input);

@@ -46,8 +46,8 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 	}
-	main_cmd();
-	return 0;
+	
+	return main_cmd();
 }
 
 /*the main function of cmd game*/
@@ -137,6 +137,7 @@ int main_cmd()
 	{
 		getchar();
 	}
+	return 0;
 }
 
 
@@ -301,9 +302,9 @@ int user_move(char* input, char player_color)
 		should_terminate = 1;
 		return -1;
 	}
-	else if (0 == cmp_input_command(input, "get best moves "))
+	else if (0 == cmp_input_command(input, "get_best_moves "))
 	{
-		char *difficulty = input + strlen("get best moves ");
+		char *difficulty = input + strlen("get_best_moves ");
 		int int_dif;
 		if (0 == cmp_input_command(difficulty, "best"))
 			int_dif = -1;
@@ -315,9 +316,9 @@ int user_move(char* input, char player_color)
 		if (should_terminate)
 			return -1;
 	}
-	else if (0 == cmp_input_command(input, "get score"))
+	else if (0 == cmp_input_command(input, "get_score "))
 	{
-		char *difficulty = input + strlen("get best moves ");
+		char *difficulty = input + strlen("get_score ");
 		int int_dif;
 		char *move_str;
 		if (0 == cmp_input_command(difficulty, "best"))
@@ -726,8 +727,7 @@ int settings(char* input)
 	else if (0 == cmp_input_command(input, "load ")) /*load saved game settings*/
 	{
 		input += strlen("load ");
-		load_config(input);
-		if (should_terminate)
+		if (0 == load_config(input) || should_terminate)
 			return 0;
 		print_board(board);
 	}	
@@ -827,14 +827,15 @@ int settings(char* input)
 	return 0;
 }
 
-/*loads all data in a configuration file*/
-void load_config(char *file_name)
+/*loads all data in a configuration file
+returns 0 if failed. else 1*/
+int load_config(char *file_name)
 {
 	FILE *setting_file = fopen(file_name, "rt");
 	if (NULL == setting_file)
 	{
 		print_message(WRONG_FILE_NAME)
-		return;
+		return 0;
 	}
 	/*get file length*/
 	fseek(setting_file, 0, SEEK_END);
@@ -846,7 +847,7 @@ void load_config(char *file_name)
 		should_terminate = 1;
 		perror_message("malloc");
 		fclose(setting_file);
-		return;
+		return 0;
 	}
 	fread(file_data, 1, file_len, setting_file);
 	fclose(setting_file);
@@ -908,6 +909,7 @@ void load_config(char *file_name)
 
 
 	free(file_data);
+	return 1;
 
 }
 

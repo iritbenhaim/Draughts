@@ -1,7 +1,7 @@
 #ifndef CHESS_
 #define CHESS_
 
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG_GUI 1
 #define COMP_ONLY 0
 
