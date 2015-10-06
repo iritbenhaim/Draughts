@@ -63,7 +63,7 @@ int settings(char* input);
 int do_computer_move(char color);
 
 /*help functions*/
-void concat(char *orig, size_t *orig_size, char *addition);
+void concat(char *orig, int *orig_size, char *addition);
 char flip_color(char color);
 int count_piece(char color, char type);
 char get_color(char c);
@@ -72,4 +72,4 @@ int out_of_boarders(int first_indexer, int second_indexer);
 char get_tool_type(char color, char type);
 game_move choose_rand_move(linked_list moves);
 
-#endif GAME_FLOW_
+#endif

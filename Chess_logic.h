@@ -35,7 +35,6 @@ int player_in_tie(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 
 /*do moves*/
 void do_move(board_tile m_board[][BOARD_SIZE], game_move move);
-void do_castling_move(board_tile m_board[][BOARD_SIZE], board_tile rook, board_tile king);
 
 /*help functions*/
 game_move* copy_move(game_move* cur_move);
@@ -52,4 +51,4 @@ int promotion(board_tile tile);
 int move_cmp(game_move a, game_move b); 
 board_tile find_king(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
 
-#endif GAME_LOGIC_
+#endif

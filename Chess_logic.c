@@ -166,23 +166,6 @@ int promotion(board_tile tile)
 	return 0;
 }
 
-/*performs a castling move*/
-void do_castling_move(board_tile m_board[][BOARD_SIZE], board_tile rook, board_tile king)
-{
-	char k_end = king.char_indexer;
-	char r_end;
-	k_end += rook.char_indexer > king.char_indexer ? 2 : -2;
-	r_end = k_end + (k_end > king.char_indexer ? -1 : 1);
-	/*move king*/
-	m_board[k_end][king.int_indexer].color = king.color;
-	m_board[k_end][king.int_indexer].type = king.type;
-	m_board[king.char_indexer][king.int_indexer].type = EMPTY;
-	/*move rook*/
-	m_board[r_end][rook.int_indexer].color = rook.color;
-	m_board[r_end][rook.int_indexer].type = rook.type;
-	m_board[rook.char_indexer][rook.int_indexer].type = EMPTY;
-}
-
 /*
 determines if current player direction is up 
 according to tile and color
@@ -886,9 +869,6 @@ if possible, it attaches the rook tile to list of moves
 */
 int generate_direct_castling_move(linked_list* moves, board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile king, board_tile rook)
 {
-	int k_start[] = { king.char_indexer, king.int_indexer };
-	/*if (is_tile_in_check(board, king, king.color))
-		return 1;*/ /*checked in filter moves*/
 	board_tile k_end;
 	if (king.type != KING || rook.type != ROOK)
 		return 1;

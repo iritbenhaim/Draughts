@@ -473,8 +473,8 @@ char *get_xml_game()
 		return NULL;
 	}
 
-	char game_mode[10];
-	_itoa(player_vs_player, game_mode, 10);
+	char game_mode[2];
+	sprintf(game_mode, "%d", player_vs_player);
 	concat(xml_data, &xml_buf_size, game_mode);
 	if (should_terminate)
 	{
@@ -503,7 +503,7 @@ char *get_xml_game()
 		else
 		{
 			char diff[10];
-			_itoa(minimax_depth, diff, 10);
+			sprintf(diff, "%d", minimax_depth);
 			concat(xml_data, &xml_buf_size, diff);
 		}
 		if (should_terminate)
@@ -544,7 +544,7 @@ char *get_xml_game()
 		row[0] = '\0';
 		strcat(row, "\t\t<row_");
 		char line_num[8];
-		_itoa(i, line_num, 10);
+		sprintf(line_num, "%d", i);
 		strcat(row, line_num);
 		strcat(row, ">");
 		size_t cur_len = strlen(row);
@@ -602,7 +602,7 @@ char *get_xml_game()
 }
 
 /*concatinates to strings with reallocating if needed*/
-void concat(char *orig, size_t *orig_size, char *addition)
+void concat(char *orig, int *orig_size, char *addition)
 {
 
 	while (strlen(orig) + strlen(addition) >= *orig_size - 1)
@@ -673,7 +673,7 @@ int settings(char* input)
 			print_message(PLAYER_VS_AI_GAME_MODE);
 			player_vs_player = 2;
 		}
-		else if (DEBUG && "0\n" == input)
+		else if (DEBUG && strcmp("0\n", input))
 			player_vs_player = 0;
 		else
 			print_message(WRONG_GAME_MODE);

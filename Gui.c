@@ -24,7 +24,6 @@ int game_window()
 	int buttons_y = SQUERE_S;
 	SDL_Rect imgrect = { 0, 0, GAME_IMG_W, GAME_IMG_H };
 
-	int button_count = 6;
 	SDL_Rect top_button = { buttons_x, buttons_y, GAME_IMG_W, GAME_IMG_H };
 
 	int quit = 0;
@@ -567,7 +566,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 		piece_place.x += SQUERE_S;
 		tile.type = KING;
 		SDL_Rect tool_rect;
-		get_tool_rect(tile, &tool_rect);
+		get_tool_rect(&tile, &tool_rect);
 		if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
 			should_terminate = 1;
 			printf("ERROR: failed to blit image: %s\n", SDL_GetError());
@@ -580,7 +579,7 @@ void paint_boarder_pieces(int is_promotion, char color, int is_top, SDL_Surface 
 	/*paint the options for promotion*/
 	tile.type = QUEEN;
 	SDL_Rect tool_rect;
-	get_tool_rect(tile, &tool_rect);
+	get_tool_rect(&tile, &tool_rect);
 	if (SDL_BlitSurface(symbols_img, &tool_rect, w, &piece_place) != 0) {
 		should_terminate = 1;
 		printf("ERROR: failed to blit image: %s\n", SDL_GetError());
@@ -708,19 +707,19 @@ void draw_current_board(SDL_Surface *w)
 
 /*gets a rect in the SYMBOLS image matching the given tool
 returns null if given tool is EMPTY*/
-void get_tool_rect(board_tile tool, SDL_Rect *out_rect)
+void get_tool_rect(board_tile *tool, SDL_Rect *out_rect)
 {
-	if (tool.color == EMPTY || tool.type == EMPTY)
+	if (tool->color == EMPTY || tool->type == EMPTY)
 		return;
 	int rect_y = use_fancy_tools ? 150 : 0;
 	int rect_x = 10;
-	if (tool.color == BLACK)
+	if (tool->color == BLACK)
 	{
 		rect_y += SQUERE_S;
 		if (use_fancy_tools)
 			rect_y += 7;
 	}
-	switch (tool.type)
+	switch (tool->type)
 	{
 	case QUEEN:
 		rect_x += SQUERE_S;
@@ -870,7 +869,7 @@ char* get_fname_from_slot_num(int slot_num, char *fname)
 	fname[0] = '\0';
 	strcat(fname, SAVE_FILES_PATH);
 	char slot_ascii[1024];
-	_itoa(slot_num, slot_ascii, 10);
+	sprintf(slot_ascii, "%d", slot_num);
 	strcat(fname, slot_ascii);
 	return fname;
 }
