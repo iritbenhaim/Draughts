@@ -607,7 +607,7 @@ char *get_xml_game()
 void concat(char *orig, int *orig_size, char *addition)
 {
 
-	while (strlen(orig) + strlen(addition) >= *orig_size - 1)
+	while (strlen(orig) + strlen(addition) >= (size_t)(*orig_size - 1))
 	{
 		*orig_size *= 2;
 		orig = realloc(orig, *orig_size);

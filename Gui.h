@@ -87,7 +87,7 @@ void paint_all_buttons(SDL_Surface *w, char ** images, int img_count, SDL_Rect t
 
 void init_turn_gui(char **pEnd_game_image, SDL_Surface *w, int is_first_turn);
 int get_num_button_pressed(int x, int y, SDL_Rect top_button, int button_count);
-void get_tool_rect(int char_indexer, int int_indexer, SDL_Rect *out_rect);
+void get_tool_rect(char color, char type, SDL_Rect *out_rect);
 int is_in_rect(int x, int y, SDL_Rect rect);
 int is_save_slot_free(int slot_num);
 int save_load_game_from_slot(int slot_num, int is_save);
