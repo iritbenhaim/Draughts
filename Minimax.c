@@ -16,23 +16,22 @@ int minimax_depth = 1;		/*levels considered in minimax tree. -1: means difficult
 							the game. Using this option, the number of evaluated boards should not exceed 10^-6 */
 
 /*wrapper function for the minimax algorithm which determines all default values and runs minimax*/
-int run_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible, int depth, char color, game_move** best)
+int run_minimax(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible, int depth, char color)
 {
 	int a, b, top, max, minimax_depth;
 	a = INT_MIN;
 	b = INT_MAX;
-	top = 1;
 	max = 1;
 	if (depth == -1)
 		minimax_depth = calc_best_depth(board, color); /*calculate best possible depth*/
 	else
 		minimax_depth = depth;
-	return minimax_algo(board, possible, minimax_depth, max, a, b, best, color, top);
+	return minimax_algo(board, possible, minimax_depth, max, a, b, color);
 }
 
 /*running minimax algorithm with alpha-beta pruning*/
 int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible, 
-	int depth, int max, int a, int b, game_move** best, char color, int top)
+	int depth, int max, int a, int b, char color)
 {
 	int v = max ? INT_MIN : INT_MAX;
 	int tmp_v;
@@ -56,20 +55,12 @@ int minimax_algo(board_tile board[BOARD_SIZE][BOARD_SIZE], linked_list* possible
 		copy_board(board, copy);
 		do_move(copy, *(game_move*)(crnt->data));
 		linked_list next_level;
-		tmp_v = minimax_algo(copy, &next_level, depth - 1, flip_max(max), a, b, best, color, 0);
+		tmp_v = minimax_algo(copy, &next_level, depth - 1, flip_max(max), a, b, color);
 		free_moves(next_level);
-		if (determine_v(v, tmp_v, max))		/*change node value and best move if needed*/
-		{
+
+		if (determine_v(v, tmp_v, max))		/*change node value if needed*/
 			v = tmp_v;
-			if (top)
-			{
-				*best = copy_move((game_move*)(crnt->data));
-				if (should_terminate)
-				{
-					return -1;
-				}
-			}
-		}
+
 		((game_move*)(crnt->data))->score = v;
 		a = change_a(a, v, max);	/*update alpha - only for max node*/
 		b = change_b(b, v, max);	/*update beta - only for min node*/

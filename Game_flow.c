@@ -19,6 +19,9 @@ int tie = 0;
 int mate = 0;
 int check = 0;
 
+/* main function handles the game flow
+	it checks if in gui mode and if so, opens the main window and then no longer controls the game
+	if in cmd mode, it manages the players turns and game end*/
 int main(int argc, char* argv[])
 {
 	init_board(board);
@@ -67,7 +70,7 @@ int main_cmd()
 		{
 			return -1; /*no resources were allocated yet*/
 		}
-		if (settings(input))
+		if (settings(input)) /*reads settings from input*/
 			break;
 		if (should_terminate)
 		{
@@ -75,7 +78,6 @@ int main_cmd()
 			return -1;
 		}
 	}
-
 	int is_first_turn = 1;
 	while (1)
 	{/*game play*/
@@ -96,11 +98,11 @@ int main_cmd()
 			{
 				char* text = next_player == WHITE ? "White player - enter your move:\n" : "Black player - enter your move:\n";
 				print_message(text);
-				if (read_user_input_line(input, &input_size) == -1)
+				if (read_user_input_line(input, &input_size) == -1) /*get move from user*/
 				{
 					return -1; /*no resources were allocated yet*/
 				}
-				is_turn_end = user_move(input, next_player);
+				is_turn_end = user_move(input, next_player); /*perform move*/
 				if (should_terminate)
 				{
 					free(input);
@@ -120,7 +122,7 @@ int main_cmd()
 		}
 		else
 		{/*computer turn*/
-			if (1 == do_computer_move(next_player))
+			if (1 == do_computer_move(next_player)) /*perform computer move*/
 			{/*game ended*/
 				if (DEBUG)
 				{
@@ -147,7 +149,7 @@ int read_user_input_line(char* input, int* input_size)
 	while (c != '\0') /*read string from user. the string length can be varied*/
 	{
 		ch = getchar();
-		if (ch == EOF)
+		if (ch == EOF) /*end of input*/
 		{
 			free(input);
 			should_terminate = 1;
@@ -157,7 +159,7 @@ int read_user_input_line(char* input, int* input_size)
 		c = ch;
 		if (i >= *input_size - 1)
 		{
-			*input_size *= 2;
+			*input_size *= 2; /*double input length*/
 			input = realloc(input, *input_size);
 			if (input == NULL)
 			{
@@ -185,10 +187,10 @@ int get_move(char *input, game_move* move, char player_color)
 	input = input_copy;
 	if (out_of_boarders(i, j))
 	{
-		print_message(WRONG_POSITION);
+		print_message(WRONG_POSITION); /*wrong start position on board*/
 		return 0;
 	}
-	move->start = board[i][j];
+	move->start = board[i][j]; /*create start location for move*/
 
 
 	input = strchr(input, '<'); /*move to second board place in input*/
@@ -196,12 +198,12 @@ int get_move(char *input, game_move* move, char player_color)
 	if (0 == get_board_position(input, &i, &j))
 	return 0;
 	input = input_copy;
-	if (out_of_boarders(i, j))
+	if (out_of_boarders(i, j)) /*wrong end position on board*/
 	{
 		print_message(WRONG_POSITION);
 		return 0;
 	}
-	move->end = board[i][j];
+	move->end = board[i][j]; /*create end location for move*/
 
 	if (move->start.color != player_color || move->start.type == EMPTY)
 	{
@@ -211,13 +213,13 @@ int get_move(char *input, game_move* move, char player_color)
 	while (input[0] == ' ')
 		++input;	
 
-	int is_promotion = promotion(move->start);
+	int is_promotion = promotion(move->start); /*check if move contains promotion*/
 	if (is_promotion && input[0] == '\0')
 	{ /*bad move*/
 		print_message(NOT_YOUR_PIECE);
 		return 0;
 	}
-	else if (is_promotion)
+	else if (is_promotion) /*check the promotion*/
 	{
 		if (0 == cmp_input_command(input, "queen"))
 		{
@@ -238,14 +240,14 @@ int get_move(char *input, game_move* move, char player_color)
 	}
 	/*else not promotion, but legal move. do nothing*/
 
-	int legal = is_legal_move(*move, player_color);
+	int legal = is_legal_move(*move, player_color); /*check legality of move*/
 	if (should_terminate)
 	{
 		return 0;
 	}
 	if (!legal)
 	{
-		print_message(ILLEGAL_MOVE);
+		print_message(ILLEGAL_MOVE); /*illegal move*/
 		return 0;
 	}
 	return 1;
@@ -258,13 +260,13 @@ int user_move(char* input, char player_color)
 	if (0 == cmp_input_command(input, "move "))
 	{
 		game_move move;
-		if (!get_move(input + strlen("move "), &move, player_color))
-			return 0;
+		if (!get_move(input + strlen("move "), &move, player_color)) /*get move from user*/
+			return 0; /*error on get_move*/
 
-		do_move(board, move);
+		do_move(board, move); /*do legal move*/
 		check = 0;
 		print_board(board);
-		if (check_game_end(player_color))
+		if (check_game_end(player_color)) /*check if mate or tie*/
 			return -1;
 		if (player_in_check(board, flip_color(player_color)))
 		{
@@ -273,7 +275,7 @@ int user_move(char* input, char player_color)
 		}
 		return 1;
 	}
-	else if (0 == cmp_input_command(input, "get_moves "))
+	else if (0 == cmp_input_command(input, "get_moves ")) /*print all possible moves for piece*/
 	{
 		int i, j;
 		get_board_position(input + strlen("get_moves "), &i, &j);
@@ -281,26 +283,11 @@ int user_move(char* input, char player_color)
 			return -1;
 		if (board[i][j].color != next_player || board[i][j].type == EMPTY)
 		{
-			print_message(NOT_YOUR_PIECE);
+			print_message(NOT_YOUR_PIECE); /*other player piece*/
 		}
-
-		linked_list moves = new_list();
+		print_moves(board, board[i][j], next_player);
 		if (should_terminate)
 			return -1;
-		generate_piece_moves(board, board[i][j], &moves);
-		if (should_terminate)
-		{
-			free_moves(moves);
-			return -1;
-		}
-		filter_moves_with_check(board, &moves, next_player);
-		if (should_terminate)
-		{
-			free_moves(moves);
-			return -1;
-		}
-
-		free_moves(moves);
 		return 0;
 	}
 	else if (0 == cmp_input_command(input, "save "))
@@ -400,11 +387,10 @@ int do_computer_move(char color)
 {
 	int end_game;
 	game_move* chosen_move = NULL;
-	linked_list moves;
-	int s = run_minimax(board, &moves, minimax_depth, color, &chosen_move);
-	if (s == INT_MIN)
-		return 1;
-	do_move(board, *chosen_move); /*perform chosen move*/
+	linked_list moves = get_best_moves(board, color, minimax_depth);
+	if (should_terminate)
+		return -1;
+	do_move(board, choose_rand_move(moves)); /*perform chosen move*/
 	check = 0;
 	print_message("Computer: move "); 
 	print_single_move(*chosen_move); 
@@ -936,17 +922,33 @@ char get_color(char c)
 	return WHITE;
 }
 
-/*prints to the user all his legal moves*/
-void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color)
+/*prints to the user all legal moves for a specific piece*/
+void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color)
 {
-	linked_list moves = generate_moves(board, color, 1, 1);
-	node* crnt_move = moves.first;
+	linked_list moves = new_list();
+	node* crnt_move;
+	if (should_terminate)
+		return -1;
+	generate_piece_moves(board, tile, &moves);
+	if (should_terminate)
+	{
+		free_moves(moves);
+		return -1;
+	}
+	filter_moves_with_check(board, &moves, next_player);
+	if (should_terminate)
+	{
+		free_moves(moves);
+		return -1;
+	}
+	crnt_move = moves.first;
 	for (int i = 0; i < moves.len; i++)
 	{
 		print_single_move((*(game_move*)crnt_move->data));
 		crnt_move = crnt_move->next;
 	}
 	free_moves(moves);
+	return 0;
 }
 
 /*finds the moves with highest score and prints them*/
@@ -1005,6 +1007,19 @@ void free_moves(linked_list list)
 		prev = cur;
 	}
 	free(prev);
+}
+
+/*randomly chooses and returns a move from a list of moves*/
+game_move choose_rand_move(linked_list moves)
+{
+	int len = moves.len;
+	int rnd;
+	node* crnt = moves.first;
+	rnd = rand() % len; /*randomly choose the place of the move in the list*/
+	rnd = rnd < 0 ? rnd * (-1) : rnd;
+	for (int i = 0; i < rnd; i++)
+		crnt = crnt->next; /*advance in list until reaching the wanted move*/
+	return *(game_move*)crnt->data;
 }
 
 /*returns the char used on board to represent the given type and color of tool*/

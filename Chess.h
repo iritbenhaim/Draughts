@@ -1,12 +1,9 @@
-
 #ifndef CHESS_
 #define CHESS_
 
-
-#define DEBUG 0
-#define DEBUG_GUI 0
+#define DEBUG 1
+#define DEBUG_GUI 1
 #define COMP_ONLY 0
-
 
 #include <stdio.h>
 
@@ -21,19 +18,18 @@
 #define KING 'k'
 
 
+/*start locations of kings and rooks*/
 #define CASTLE_KING_COL		4
 #define CASTLE_LEFT_ROOK	0
 #define CASTLE_RIGHT_ROOK	7
 #define W_CASTLE_ROW		0
 #define B_CASTLE_ROW		7
 
-
-
 #define EMPTY ' '
 
 #define BOARD_SIZE 8
 
-/* board initialization*/
+/*prints*/
 #define ENTER_SETTINGS "Enter game settings:\n" 
 #define WRONG_GAME_MODE "Wrong game mode\n"
 #define TWO_PLAYERS_GAME_MODE "Running game in 2 players mode\n"

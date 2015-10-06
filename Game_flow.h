@@ -43,7 +43,7 @@ void free_moves(linked_list list);
 
 /*print and read functions*/
 void print_board(board_tile board[BOARD_SIZE][BOARD_SIZE]);
-void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], char color);
+void print_moves(board_tile board[BOARD_SIZE][BOARD_SIZE], board_tile tile, char color);
 void print_single_move(game_move move);
 void print_line();
 void print_tile(board_tile tile);
@@ -70,5 +70,6 @@ char get_color(char c);
 int tile_cmp(board_tile a, board_tile b);
 int out_of_boarders(int first_indexer, int second_indexer);
 char get_tool_type(char color, char type);
+game_move choose_rand_move(linked_list moves);
 
 #endif GAME_FLOW_
