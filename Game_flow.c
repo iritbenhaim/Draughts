@@ -91,7 +91,7 @@ int main_cmd()
 
 		}
 		is_first_turn = 0;
-		if (player_vs_player == 1 || (player_vs_player == 0 && next_player == user_color))
+		if (player_vs_player == 1 || (player_vs_player == 2 && next_player == user_color))
 		{/*user turn*/
 			int is_turn_end = 0;
 			while (!is_turn_end)
@@ -129,7 +129,7 @@ int main_cmd()
 					getchar();
 				}
 			}
-			break;
+			continue;
 		}
 	}
 	free(input);
@@ -279,12 +279,14 @@ int user_move(char* input, char player_color)
 	else if (0 == cmp_input_command(input, "get_moves ")) /*print all possible moves for piece*/
 	{
 		int i, j;
-		get_board_position(input + strlen("get_moves "), &i, &j);
+		if (!get_board_position(input + strlen("get_moves "), &i, &j))
+			return 0;
 		if (should_terminate)
 			return -1;
 		if (board[i][j].color != next_player || board[i][j].type == EMPTY)
 		{
 			print_message(NOT_YOUR_PIECE); /*other player piece*/
+			return 0;
 		}
 		print_moves(board, board[i][j], next_player);
 		if (should_terminate)

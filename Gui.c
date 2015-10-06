@@ -707,19 +707,20 @@ void draw_current_board(SDL_Surface *w)
 
 /*gets a rect in the SYMBOLS image matching the given tool
 returns null if given tool is EMPTY*/
-void get_tool_rect(board_tile *tool, SDL_Rect *out_rect)
+void get_tool_rect(int char_indexer, int int_indexer, SDL_Rect *out_rect)
 {
-	if (tool->color == EMPTY || tool->type == EMPTY)
+	board_tile tool = board[char_indexer][int_indexer];
+	if (tool.color == EMPTY || tool.type == EMPTY)
 		return;
 	int rect_y = use_fancy_tools ? 150 : 0;
 	int rect_x = 10;
-	if (tool->color == BLACK)
+	if (tool.color == BLACK)
 	{
 		rect_y += SQUERE_S;
 		if (use_fancy_tools)
 			rect_y += 7;
 	}
-	switch (tool->type)
+	switch (tool.type)
 	{
 	case QUEEN:
 		rect_x += SQUERE_S;
