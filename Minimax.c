@@ -130,10 +130,7 @@ int change_b(int b, int v, int max)
 /*determines if tree can be pruned at this point*/
 int prune(int v, int max, int a, int b)
 {
-	if (max)
-		return b > v ? 0 : 1;
-	else
-		return a < v ? 0 : 1;
+	return b < a ? 1 : 0;
 }
 
 /*returns the best depth while boards don't exceed 1000000*/
